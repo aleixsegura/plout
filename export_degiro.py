@@ -428,7 +428,6 @@ def build_summary(
     positions: list[dict],
     cash_breakdown: list[dict],
     total_portfolio: dict,
-    value_delta_eur: float = 0.0,
 ) -> dict:
     # totalPortfolio's totalCash is degiroCash + flatexCash — EUR rows only, so
     # foreign-currency cash (e.g. a USD account) is missing from it. Total the
@@ -438,13 +437,15 @@ def build_summary(
         cash = sum(e["amountEur"] for e in cash_breakdown)
     else:
         cash = total_portfolio.get("totalCash")
-    # reportNetliq prices the positions at the previous close like the rest of
-    # the snapshot, so shift it by however much re-pricing moved them. Shifting
-    # rather than recomputing (positions + cash) keeps whatever else DEGIRO
-    # folds into netliq — pending orders, unsettled transactions.
-    netliq = total_portfolio.get("reportNetliq")
-    if netliq is not None:
-        netliq = float(netliq) + value_delta_eur
+    # Net liquidation = re-priced positions + cash, which is what DEGIRO's own
+    # app totals. reportNetliq can't be used as a base and shifted by the
+    # re-pricing delta: it is not reliably at the previous close (observed
+    # already carrying today's move), so shifting it counted today's P/L twice.
+    # It stays as the fallback when there is no cash figure to add up.
+    if cash is not None:
+        netliq = sum(p["valueEur"] for p in positions) + float(cash)
+    else:
+        netliq = total_portfolio.get("reportNetliq")
     net_deposits = total_portfolio.get("totalDepositWithdrawal")
 
     # DEGIRO's account-level "Total P/L" (realized + unrealized + dividends +
@@ -507,15 +508,11 @@ def main() -> None:
         quotes = fetch_quotes(user_token, meta)
 
     positions = build_positions(raw_rows, meta, exchanges, quotes)
-    snapshot_value = sum(float(row.get("value") or 0) for row in raw_rows)
-    value_delta = sum(p["valueEur"] for p in positions) - snapshot_value
     payload = {
         "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "DEGIRO via degiro-connector",
         "baseCurrency": "EUR",
-        "summary": build_summary(
-            positions, build_cash_breakdown(cash_rows), total_portfolio, value_delta
-        ),
+        "summary": build_summary(positions, build_cash_breakdown(cash_rows), total_portfolio),
         "positions": positions,
     }
 
