@@ -35,6 +35,14 @@ export const pct1 = new Intl.NumberFormat("es-ES", {
   useGrouping: true,
 });
 
+/** A correlation coefficient: two decimals and a true minus sign ("−0,04"). */
+export function rho(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  return value
+    .toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    .replace("-", "−");
+}
+
 /** Money in an arbitrary currency with a narrow symbol ("US$", "£"). */
 export function money(value: number, currency: string, maximumFractionDigits = 2): string {
   return new Intl.NumberFormat("es-ES", {

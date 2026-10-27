@@ -375,6 +375,8 @@ def build_positions(
                 "id": row["id"],
                 "symbol": product.get("symbol") or row["id"],
                 "name": product.get("name") or "",
+                # What export_prices.py looks the price history up by.
+                "isin": product.get("isin"),
                 # DEGIRO's own classification ("STOCK", "ETF", "FUND", …),
                 # which the web app turns into the row's type icon.
                 "productType": product.get("productType"),

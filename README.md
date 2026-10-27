@@ -41,6 +41,7 @@ Real data never reaches the repository:
 | `export_fees.py` | `fees.json` | Tax return (the non-deductible-fees notice) |
 | `export_taxes.py` | `taxes.json`, `renta/renta-<year>.{json,md}` | Tax return |
 | `export_marketcaps.py` | `marketcaps.json` | The Market Cap column, everywhere (runs itself on `npm run dev`) |
+| `export_prices.py` | `prices.json` | Correlation (runs itself on `npm run dev`) |
 | `history.py` | `history.json` | The portfolio chart on Holdings |
 
 ## Broker exporters
@@ -270,6 +271,22 @@ You can still run it by hand — it needs no credentials and no browser — whic
 .venv/bin/python export_marketcaps.py
 ```
 
+## Price history
+
+Also run by `npm run dev`, with the same 12-hour `--max-age-hours` rule: `export_prices.py` writes about three years of daily closes per holding into `data/prices.json`, **converted to EUR** — the returns a euro investor actually lives through, currency moves included. The Correlation page builds everything from it.
+
+| Source | Covers |
+|---|---|
+| `api.onvista.de` | every DEGIRO product, looked up by ISIN; US stocks price off their home listing in USD, Tradegate products off Xetra |
+| Coinbase daily candles | crypto, quoted straight in EUR |
+| ECB reference rates (`api.frankfurter.dev`) | the FX conversion of non-EUR closes |
+
+The ISIN comes from `positions.json` or, for exports from before that field, from the trades in `taxes.json`. A series that fails to download keeps the previous run's copy. Yahoo is deliberately not used: its keyless chart API answers 429 more often than not.
+
+```bash
+.venv/bin/python export_prices.py
+```
+
 ## Portfolio history
 
 `history.py` is not run directly — the broker exporters call `record_snapshot()`, which upserts
@@ -290,6 +307,7 @@ you've run the exporter behind it.
 | **Dashboard** (`/`) | Net worth with today's move and the value chart, cash accounts, top holdings, this month's spending by category, Boosted interest, recent transactions, upcoming dividends | whatever exists — every card degrades to an empty state |
 | **Holdings** (`/holdings`) | KPI cards, sector donut, portfolio-value chart, positions table | `export_degiro.py`, `export_revolut.py`, `history.py` |
 | **Transactions** (`/transactions`) | Month navigator, spend/income KPIs, 12-month stacked bar chart, category donut and breakdown, searchable statement grouped by day, Boosted interest (daily chart, monthly effective rate) | `export_revolut.py` |
+| **Correlation** (`/correlation`) | Diversification KPIs (portfolio volatility, diversification ratio, weighted correlation, independent bets), clustered correlation heatmap, market graph with a θ slider and its maximum independent set (the uncorrelated core, after Hidaka et al., IEEE Access 2023), risk contribution per holding vs. its weight | `export_prices.py` plus the broker exports |
 | **Dividends** | Net/gross totals, per-year table, upcoming and all payments | `export_dividends.py` |
 | **Tax return** | Per-fiscal-year capital gains (FIFO), investment income, filing pack | `export_taxes.py` |
 

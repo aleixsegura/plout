@@ -33,6 +33,31 @@ export interface MarketCapsFile {
   entries: Record<string, MarketCapEntry>;
 }
 
+// Mirror of data/prices.json written by export_prices.py: ~3 years of daily
+// closes per holding, converted to EUR, keyed by the symbol the app uses.
+// Dates are ascending and unique; weekends only appear for crypto.
+export interface PriceSeries {
+  /** "onvista" or "coinbase". */
+  source: string;
+  isin?: string;
+  /** Venue the closes come from ("Xetra", "NYSE", "Coinbase", …). */
+  market?: string;
+  /** Quote currency before the EUR conversion. */
+  currency: string;
+  at: string;
+  dates: string[];
+  closesEur: number[];
+}
+
+export interface PricesFile {
+  updatedAt: string;
+  source: string;
+  baseCurrency: string;
+  /** Holdings no source had prices for. */
+  unresolved: string[];
+  series: Record<string, PriceSeries>;
+}
+
 // Mirror of data/positions.json written by export_degiro.py. Monetary
 // value/cost/P&L fields are in the DEGIRO account base currency (EUR);
 // avgPrice/lastPrice are in the product's own currency (`currency`).
@@ -40,6 +65,8 @@ export interface Position {
   id: string;
   symbol: string;
   name: string;
+  /** Absent in files from exports before the Correlation page. */
+  isin?: string | null;
   /** DEGIRO's product classification ("STOCK", "ETF", "FUND", …), mapped to a
    * `symbolType` for the row's type icon. Absent in older exports. */
   productType?: string | null;

@@ -539,4 +539,65 @@ w("symbols.json", dict(
     },
 ))
 
+# ---------------------------------------------------------------------------
+# Price history (export_prices.py) — correlated random walks from a factor
+# model: market + sector + idiosyncratic, so the Correlation page shows real
+# structure (a tech cluster, crypto apart, the REIT and the ETF in between).
+# Own RNG, so adding this didn't reshuffle the fixtures above.
+# ---------------------------------------------------------------------------
+price_rng = random.Random(7)
+PRICE_DAYS = 3 * 365 + 30
+# symbol: (market beta, sector, sector loading, idiosyncratic daily sd)
+FACTOR_MODEL = {
+    "AAPL": (1.0, "tech", 0.6, 0.012),
+    "MSFT": (0.95, "tech", 0.6, 0.011),
+    "NVDA": (1.4, "tech", 1.1, 0.022),
+    "ASML": (1.1, "tech", 0.8, 0.016),
+    "VWCE.DE": (0.9, "tech", 0.1, 0.003),
+    "O": (0.5, "reit", 0.8, 0.010),
+    "BTC": (0.4, "crypto", 1.0, 0.012),
+    "ETH": (0.45, "crypto", 1.15, 0.018),
+}
+SECTOR_SD = {"tech": 0.008, "reit": 0.009, "crypto": 0.03}
+last_eur = {
+    **{p["symbol"]: p["valueEur"] / p["quantity"] for p in positions},
+    **{p["symbol"]: p["lastPriceEur"] for p in revolut_positions},
+}
+
+log_level = {s: 0.0 for s in FACTOR_MODEL}
+paths = {s: [] for s in FACTOR_MODEL}
+for k in range(PRICE_DAYS, -1, -1):
+    day = TODAY - timedelta(days=k)
+    weekend = day.weekday() >= 5
+    market = 0.0 if weekend else price_rng.gauss(0, 0.009)
+    sector = {name: price_rng.gauss(0, sd) for name, sd in SECTOR_SD.items()}
+    for symbol, (beta, sector_name, loading, idio) in FACTOR_MODEL.items():
+        crypto = sector_name == "crypto"
+        if weekend and not crypto:
+            continue
+        log_level[symbol] += beta * market + loading * sector[sector_name] + price_rng.gauss(0, idio)
+        paths[symbol].append((iso(day), log_level[symbol]))
+
+price_series = {}
+for symbol, path in paths.items():
+    # Anchor each walk so its last close is the position's current EUR price.
+    shift = math.log(last_eur[symbol]) - path[-1][1]
+    crypto = FACTOR_MODEL[symbol][1] == "crypto"
+    price_series[symbol] = dict(
+        source="coinbase" if crypto else "onvista",
+        market="Coinbase" if crypto else next(p["exchange"] for p in POSITIONS_RAW if p["symbol"] == symbol),
+        currency="EUR" if crypto else next(p["currency"] for p in POSITIONS_RAW if p["symbol"] == symbol),
+        at=ts(TODAY),
+        dates=[d for d, _ in path],
+        closesEur=[round(math.exp(level + shift), 4) for _, level in path],
+    )
+
+(OUT / "prices.json").write_text(json.dumps(dict(
+    updatedAt=ts(TODAY),
+    source="onvista (DEGIRO products), Coinbase (crypto), ECB reference rates (FX)",
+    baseCurrency="EUR",
+    unresolved=[],
+    series=price_series,
+), ensure_ascii=False) + "\n")
+
 print(f"Wrote demo fixtures to {OUT}")

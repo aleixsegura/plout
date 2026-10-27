@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState } from "react";
-import type React from "react";
+import { useId, useRef, useState } from "react";
+import useContainerWidth from "./useContainerWidth";
 
 export interface BarSegment {
   key: string;
@@ -177,22 +177,6 @@ export default function Bars({
       )}
     </div>
   );
-}
-
-/** The SVG is drawn 1:1 in CSS pixels (text must not scale with the box), so
- * the viewBox width follows the container. */
-function useContainerWidth(ref: React.RefObject<HTMLDivElement>): number {
-  const [width, setWidth] = useState(600);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const update = () => setWidth(Math.max(Math.floor(el.clientWidth), 200));
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [ref]);
-  return width;
 }
 
 /** Round a maximum up to a "nice" tick ceiling (1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8 × 10^n). */

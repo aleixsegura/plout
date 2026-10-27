@@ -57,6 +57,13 @@
   --chart-10: #3b4cca; /* Cobalt */
   --chart-other: #9fa1b0;
 
+  /* Correlation (diverging): madder where two holdings move together, woad
+     where they offset each other, a neutral dyed grey at zero — never a hue
+     at the midpoint. The heatmap mixes towards each pole by |ρ|. */
+  --corr-pos: var(--loss);
+  --corr-neg: var(--accent);
+  --corr-mid: #ecedf3;
+
   /* Sector slots: slot N is the N-th largest slice (see sectorBreakdown), so
      they map straight onto the gradient above. */
   --sector-1: var(--chart-1);

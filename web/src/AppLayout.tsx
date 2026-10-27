@@ -60,6 +60,14 @@ const icons: Record<string, ReactNode> = {
       <path d="M15 9.5a3.8 3.8 0 0 0-5.6 1.2 4.7 4.7 0 0 0 0 2.6A3.8 3.8 0 0 0 15 14.5M8.5 11.2h4.8M8.5 13.1h4.8" />
     </svg>
   ),
+  correlation: (
+    <svg {...iconProps}>
+      <circle cx="6" cy="7" r="2.5" />
+      <circle cx="18" cy="6" r="2.5" />
+      <circle cx="12" cy="18" r="2.5" />
+      <path d="M8.3 8.4 10.8 15.8M15.9 7.6l-2.6 8.2" />
+    </svg>
+  ),
   taxes: (
     <svg {...iconProps}>
       <path d="M4.5 20.5 19 6M7.5 4.5a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2ZM16.5 14.3a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2Z" />
@@ -98,7 +106,7 @@ export default function AppLayout() {
 
   // Dashboard/Holdings/Transactions are the daily views (where do I stand,
   // what do I hold, what did I spend) and get full nav weight. Everything
-  // else — the retrospective reports — sits below a divider with
+  // else — the analyses and retrospective reports — sits below a divider with
   // lighter visual weight; same routes, not nested.
   const primaryItems = [
     { to: "/", end: true, label: t.nav.dashboard, icon: icons.dashboard },
@@ -106,6 +114,7 @@ export default function AppLayout() {
     { to: "/transactions", label: t.nav.transactions, icon: icons.transactions },
   ];
   const secondaryItems = [
+    { to: "/correlation", label: t.nav.correlation, icon: icons.correlation },
     { to: "/dividends", label: t.nav.dividends, icon: icons.dividends },
     { to: "/taxes", label: t.nav.taxes, icon: icons.taxes },
   ];

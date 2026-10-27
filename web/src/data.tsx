@@ -11,6 +11,7 @@ import type {
   HistoryFile,
   MarketCapsFile,
   PositionsFile,
+  PricesFile,
   RevolutFile,
   RevolutTransactionsFile,
   TaxesFile,
@@ -24,6 +25,7 @@ interface AppData {
   taxes: TaxesFile | null;
   marketCaps: MarketCapsFile | null;
   transactions: RevolutTransactionsFile | null;
+  prices: PricesFile | null;
 }
 
 const AppDataContext = createContext<AppData | null>(null);
@@ -36,6 +38,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [taxes, setTaxes] = useState<TaxesFile | null>(null);
   const [marketCaps, setMarketCaps] = useState<MarketCapsFile | null>(null);
   const [transactions, setTransactions] = useState<RevolutTransactionsFile | null>(null);
+  const [prices, setPrices] = useState<PricesFile | null>(null);
 
   useEffect(() => {
     // Written by export_degiro.py; degrade silently when it doesn't exist.
@@ -119,6 +122,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .catch(() => setTransactions(null));
   }, []);
 
+  useEffect(() => {
+    // Written by export_prices.py; same silent degrade — the Correlation page
+    // shows how to create it until it exists.
+    fetch("/prices.json")
+      .then((res) => {
+        const isJson = res.headers.get("content-type")?.includes("application/json");
+        return res.ok && isJson ? res.json() : null;
+      })
+      .then((data: PricesFile | null) => setPrices(data))
+      .catch(() => setPrices(null));
+  }, []);
+
   return (
     <AppDataContext.Provider
       value={{
@@ -129,6 +144,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         taxes,
         marketCaps,
         transactions,
+        prices,
       }}
     >
       {children}

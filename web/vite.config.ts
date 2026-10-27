@@ -9,32 +9,33 @@ import tailwindcss from "@tailwindcss/vite";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 
-// How old marketcaps.json may be before a dev-server start refreshes it. The
-// exporter exits without a single request when the file is younger than this
-// and still covers every symbol, so restarting the dev server stays instant.
-const MARKET_CAPS_MAX_AGE_HOURS = 12;
+// How old an export may be before a dev-server start refreshes it. Each
+// exporter exits without a single request when its file is younger than this
+// and still covers every holding, so restarting the dev server stays instant.
+const EXPORT_MAX_AGE_HOURS = 12;
 
 /**
- * Refresh data/marketcaps.json when the dev server starts.
+ * Refresh one of the keyless exports (market caps, price history) when the dev
+ * server starts.
  *
- * Market cap is the one column with no broker behind it, and having to
- * remember a separate `python export_marketcaps.py` before opening the page
- * defeats the point — so the dev server runs it, in the background (the server
- * is up and serving meanwhile) and reloads the page if the file changed.
+ * These are the files with no broker behind them, and having to remember a
+ * separate `python export_*.py` before opening the page defeats the point — so
+ * the dev server runs them, in the background (the server is up and serving
+ * meanwhile) and reloads the page if the file changed.
  */
-function marketCaps(): Plugin {
+function backgroundExport(name: string, script: string, outName: string): Plugin {
   return {
-    name: "plout:market-caps",
+    name: `plout:${name.replace(/ /g, "-")}`,
     apply: "serve",
     configureServer(server: ViteDevServer) {
       const venvPython = path.join(PROJECT_ROOT, ".venv/bin/python");
       const python = fs.existsSync(venvPython) ? venvPython : "python3";
-      const outFile = path.join(PROJECT_ROOT, "data/marketcaps.json");
+      const outFile = path.join(PROJECT_ROOT, "data", outName);
       const before = fs.statSync(outFile, { throwIfNoEntry: false })?.mtimeMs;
 
       const child = spawn(
         python,
-        ["export_marketcaps.py", "--max-age-hours", String(MARKET_CAPS_MAX_AGE_HOURS)],
+        [script, "--max-age-hours", String(EXPORT_MAX_AGE_HOURS)],
         { cwd: PROJECT_ROOT, stdio: ["ignore", "pipe", "pipe"] },
       );
 
@@ -42,14 +43,14 @@ function marketCaps(): Plugin {
         String(data)
           .trimEnd()
           .split("\n")
-          .forEach((line) => server.config.logger.info(`  market caps: ${line.trim()}`));
+          .forEach((line) => server.config.logger.info(`  ${name}: ${line.trim()}`));
       child.stdout.on("data", log);
       child.stderr.on("data", log);
 
       // A missing interpreter (or missing `requests`) must never take the dev
-      // server down with it: the page just keeps the market caps it has.
+      // server down with it: the page just keeps the data it has.
       child.on("error", (err) =>
-        server.config.logger.warn(`  market caps: could not run the exporter (${err.message})`),
+        server.config.logger.warn(`  ${name}: could not run the exporter (${err.message})`),
       );
       child.on("close", () => {
         const after = fs.statSync(outFile, { throwIfNoEntry: false })?.mtimeMs;
@@ -63,6 +64,11 @@ function marketCaps(): Plugin {
 // exporters) as static files at the site root, so the app can fetch
 // /positions.json and the rest without a backend or data duplication.
 export default defineConfig({
-  plugins: [react(), tailwindcss(), marketCaps()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    backgroundExport("market caps", "export_marketcaps.py", "marketcaps.json"),
+    backgroundExport("prices", "export_prices.py", "prices.json"),
+  ],
   publicDir: path.resolve(__dirname, "../data"),
 });

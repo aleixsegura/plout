@@ -8,7 +8,8 @@
     "demo": "vite --config vite.demo.config.ts --mode demo",
     "build:demo": "tsc -b && vite build --config vite.demo.config.ts --mode demo",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fontsource-variable/lora": "^5.3.0",
@@ -25,6 +26,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^2.1.9"
   }
 }
