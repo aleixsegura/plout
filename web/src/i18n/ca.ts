@@ -13,6 +13,7 @@ const ca: Translations = {
   app: {
     brand: "Plout",
     demoNotice: "Demo amb dades sintètiques: no es mostra cap compte ni posició real.",
+    chartsBy: "Gràfics de",
   },
   nav: {
     dashboard: "Tauler",

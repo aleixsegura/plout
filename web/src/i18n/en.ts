@@ -14,6 +14,7 @@ const en = {
   app: {
     brand: "Plout",
     demoNotice: "Demo with synthetic data: no real account or holding is shown.",
+    chartsBy: "Charts by",
   },
   nav: {
     dashboard: "Dashboard",

@@ -13,6 +13,7 @@ const es: Translations = {
   app: {
     brand: "Plout",
     demoNotice: "Demo con datos sintéticos: no se muestra ninguna cuenta ni posición real.",
+    chartsBy: "Gráficos de",
   },
   nav: {
     dashboard: "Panel",

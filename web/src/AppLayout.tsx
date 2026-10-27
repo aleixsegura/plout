@@ -204,7 +204,7 @@ export default function AppLayout() {
         {/* lightweight-charts is Apache-2.0 with an attribution requirement;
             the in-chart logo is off, so the notice lives here. */}
         <footer className="mt-10 text-[11px] text-muted">
-          Charts by{" "}
+          {t.app.chartsBy}{" "}
           <a
             href="https://www.tradingview.com/"
             target="_blank"
