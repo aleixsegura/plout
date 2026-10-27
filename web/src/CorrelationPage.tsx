@@ -47,7 +47,7 @@ export default function CorrelationPage() {
   const { t, lang } = useTranslation();
   const [years, setYears] = useState<(typeof WINDOWS)[number]>(3);
   const [frequency, setFrequency] = useState<Frequency>("daily");
-  const [theta, setTheta] = useState(0.5);
+  const [theta, setTheta] = useState(0.3);
 
   const nameBySymbol = useMemo(() => new Map(stocks.map((s) => [s.symbol, s.name])), [stocks]);
   const symbols = useMemo(() => stocks.map((s) => s.symbol), [stocks]);
