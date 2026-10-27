@@ -64,8 +64,8 @@ export default function CorrelationPage() {
   const order = useMemo(() => (stats ? clusterOrder(stats.corr) : []), [stats]);
   const graph = useMemo(() => (stats ? marketGraph(stats.corr, theta) : null), [stats, theta]);
   const core = useMemo(
-    () => (graph && stats ? new Set(maximumIndependentSet(graph.adjacency, stats.corr)) : new Set<number>()),
-    [graph, stats],
+    () => (graph && stats ? new Set(maximumIndependentSet(graph.adjacency, stats.corr, weights)) : new Set<number>()),
+    [graph, stats, weights],
   );
 
   const title = <h1 className="mb-2 font-display text-[26px] font-semibold tracking-tight">{t.nav.correlation}</h1>;
@@ -203,7 +203,12 @@ export default function CorrelationPage() {
             <span className="w-10 text-right font-semibold tabular-nums text-primary">{rho(theta)}</span>
           </label>
           <MarketGraph
-            nodes={panel.symbols.map((label, i) => ({ label, weight: weights[i], highlighted: core.has(i) }))}
+            nodes={panel.symbols.map((label, i) => ({
+              label,
+              weight: weights[i],
+              highlighted: core.has(i),
+              linked: core.has(i) && graph.degree[i] > 0,
+            }))}
             edges={graph.edges}
             corr={stats.corr}
             theta={theta}
@@ -213,7 +218,11 @@ export default function CorrelationPage() {
                 <div className="font-semibold text-primary">{panel.symbols[i]}</div>
                 <div className="mb-1 max-w-[180px] truncate text-muted">{nameBySymbol.get(panel.symbols[i])}</div>
                 <div className={core.has(i) ? "text-accent" : "text-secondary"}>
-                  {core.has(i) ? t.correlation.inCore : t.correlation.outsideCore}
+                  {!core.has(i)
+                    ? t.correlation.outsideCore
+                    : graph.degree[i] > 0
+                      ? t.correlation.inCoreLinked
+                      : t.correlation.inCore}
                 </div>
                 <div className="tabular-nums text-secondary">
                   {t.correlation.weightOf(pct(weights[i]))} · {t.correlation.links(graph.degree[i])}
@@ -237,7 +246,13 @@ export default function CorrelationPage() {
           </dl>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {[...core].map((i) => (
-              <span key={i} className="rounded-full bg-accent-subtle px-2.5 py-1 text-xs font-medium text-accent">
+              <span
+                key={i}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium text-accent ${
+                  graph.degree[i] > 0 ? "border border-dashed border-accent" : "bg-accent-subtle"
+                }`}
+                title={graph.degree[i] > 0 ? t.correlation.inCoreLinked : t.correlation.inCore}
+              >
                 {panel.symbols[i]}
               </span>
             ))}

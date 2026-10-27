@@ -307,7 +307,7 @@ you've run the exporter behind it.
 | **Dashboard** (`/`) | Net worth with today's move and the value chart, cash accounts, top holdings, this month's spending by category, Boosted interest, recent transactions, upcoming dividends | whatever exists — every card degrades to an empty state |
 | **Holdings** (`/holdings`) | KPI cards, sector donut, portfolio-value chart, positions table | `export_degiro.py`, `export_revolut.py`, `history.py` |
 | **Transactions** (`/transactions`) | Month navigator, spend/income KPIs, 12-month stacked bar chart, category donut and breakdown, searchable statement grouped by day, Boosted interest (daily chart, monthly effective rate) | `export_revolut.py` |
-| **Correlation** (`/correlation`) | Diversification KPIs (portfolio volatility, diversification ratio, weighted correlation, independent bets), clustered correlation heatmap, market graph with a θ slider and its maximum independent set (the uncorrelated core, after Hidaka et al., IEEE Access 2023), risk contribution per holding vs. its weight | `export_prices.py` plus the broker exports |
+| **Correlation** (`/correlation`) | Diversification KPIs (portfolio volatility, diversification ratio, weighted correlation, independent bets), clustered correlation heatmap, market graph with a θ slider and its maximum independent set (the heaviest when several tie, after Hidaka et al., IEEE Access 2023), risk contribution per holding vs. its weight | `export_prices.py` plus the broker exports |
 | **Dividends** | Net/gross totals, per-year table, upcoming and all payments | `export_dividends.py` |
 | **Tax return** | Per-fiscal-year capital gains (FIFO), investment income, filing pack | `export_taxes.py` |
 

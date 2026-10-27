@@ -152,6 +152,31 @@ describe("market graph and MIS", () => {
     ];
     expect(maximumIndependentSet(marketGraph(d, 0.5).adjacency, d)).toEqual([1, 2]);
   });
+
+  it("prefers the heavier of equally large sets over the less correlated one", () => {
+    // Same two disjoint edges: {1, 2} is the least correlated, {0, 3} the heaviest.
+    const d = [
+      [1, 0.9, 0.2, 0.1],
+      [0.9, 1, -0.5, 0.0],
+      [0.2, -0.5, 1, 0.9],
+      [0.1, 0.0, 0.9, 1],
+    ];
+    const { adjacency } = marketGraph(d, 0.5);
+    expect(maximumIndependentSet(adjacency, d, [0.4, 0.1, 0.1, 0.4])).toEqual([0, 3]);
+    // Equal weights fall back to the correlation tie-break.
+    expect(maximumIndependentSet(adjacency, d, [0.25, 0.25, 0.25, 0.25])).toEqual([1, 2]);
+  });
+
+  it("never trades size for weight", () => {
+    // Star: the heavy hub against three light leaves; the leaves win on count.
+    const c = [
+      [1, 0.9, 0.9, 0.9],
+      [0.9, 1, 0, 0],
+      [0.9, 0, 1, 0],
+      [0.9, 0, 0, 1],
+    ];
+    expect(maximumIndependentSet(marketGraph(c, 0.5).adjacency, c, [0.9, 0.03, 0.03, 0.04])).toEqual([1, 2, 3]);
+  });
 });
 
 describe("clusterOrder", () => {

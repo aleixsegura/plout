@@ -8,6 +8,10 @@ export interface GraphNode {
   weight: number;
   /** Drawn filled in the accent: a member of the maximum independent set. */
   highlighted: boolean;
+  /** A member that still has links, all to holdings left outside the set: it
+   * stands in for its cluster rather than being uncorrelated with everything,
+   * so it's drawn half-filled. */
+  linked?: boolean;
 }
 
 interface Props {
@@ -126,8 +130,14 @@ export default function MarketGraph({ nodes, edges, corr, theta, height = 360, t
                 cx={px(i)}
                 cy={py(i)}
                 r={radius(i)}
-                fill={node.highlighted ? "var(--accent)" : "var(--bg-surface)"}
-                stroke={node.highlighted ? "var(--bg-surface)" : "var(--text-secondary)"}
+                fill={
+                  !node.highlighted
+                    ? "var(--bg-surface)"
+                    : node.linked
+                      ? "color-mix(in oklab, var(--accent) 35%, var(--bg-surface))"
+                      : "var(--accent)"
+                }
+                stroke={!node.highlighted ? "var(--text-secondary)" : node.linked ? "var(--accent)" : "var(--bg-surface)"}
                 strokeWidth={2}
               />
               <text

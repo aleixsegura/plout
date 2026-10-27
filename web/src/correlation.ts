@@ -19,6 +19,8 @@ export const MIN_OBSERVATIONS: Record<Frequency, number> = { daily: 120, weekly:
 
 /** Above this many assets the exact MIS search gives way to a greedy one. */
 const EXACT_MIS_LIMIT = 60;
+/** Equally large independent sets whose weights differ by less than this tie. */
+const TIE_EPSILON = 1e-9;
 
 export interface PriceSeriesInput {
   dates: string[];
@@ -252,13 +254,20 @@ function meanInternalCorrelation(set: number[], corr: number[][]): number {
  * pairwise below θ. Exact branch and bound for portfolio-sized graphs (the
  * paper needed an Ising machine for 2,000 nodes; a dozen is instant), greedy
  * minimum-degree (Butenko) beyond EXACT_MIS_LIMIT. Among equally large sets
- * the one with the lowest mean internal correlation wins. Indices ascending.
+ * the one holding the most portfolio weight wins, then the one with the
+ * lowest mean internal correlation. Indices ascending.
  */
-export function maximumIndependentSet(adjacency: boolean[][], corr: number[][]): number[] {
+export function maximumIndependentSet(
+  adjacency: boolean[][],
+  corr: number[][],
+  weights: number[] = [],
+): number[] {
   const n = adjacency.length;
-  if (n > EXACT_MIS_LIMIT) return greedyIndependentSet(adjacency);
+  const weightOf = (set: number[]) => set.reduce((s, i) => s + (weights[i] ?? 0), 0);
+  if (n > EXACT_MIS_LIMIT) return greedyIndependentSet(adjacency, weights);
 
   let best: number[] = [];
+  let bestWeight = -Infinity;
   let bestScore = Infinity;
 
   const search = (chosen: number[], candidates: number[]) => {
@@ -274,9 +283,13 @@ export function maximumIndependentSet(adjacency: boolean[][], corr: number[][]):
       return;
     }
     if (candidates.length === 0) {
+      const weight = weightOf(chosen);
       const score = meanInternalCorrelation(chosen, corr);
-      if (chosen.length > best.length || score < bestScore) {
+      const heavier = weight > bestWeight + TIE_EPSILON;
+      const asHeavy = Math.abs(weight - bestWeight) <= TIE_EPSILON;
+      if (chosen.length > best.length || heavier || (asHeavy && score < bestScore)) {
         best = [...chosen].sort((a, b) => a - b);
+        bestWeight = weight;
         bestScore = score;
       }
       return;
@@ -306,12 +319,16 @@ export function maximumIndependentSet(adjacency: boolean[][], corr: number[][]):
   return best;
 }
 
-function greedyIndependentSet(adjacency: boolean[][]): number[] {
+function greedyIndependentSet(adjacency: boolean[][], weights: number[]): number[] {
   let remaining = adjacency.map((_, i) => i);
   const chosen: number[] = [];
   while (remaining.length) {
     const degreeOf = (v: number) => remaining.filter((u) => adjacency[v][u]).length;
-    const v = remaining.reduce((a, b) => (degreeOf(b) < degreeOf(a) ? b : a));
+    // Fewest links first; the heavier holding when they tie.
+    const v = remaining.reduce((a, b) => {
+      const d = degreeOf(b) - degreeOf(a);
+      return d < 0 || (d === 0 && (weights[b] ?? 0) > (weights[a] ?? 0)) ? b : a;
+    });
     chosen.push(v);
     remaining = remaining.filter((u) => u !== v && !adjacency[v][u]);
   }
