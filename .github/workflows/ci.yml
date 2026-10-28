@@ -27,7 +27,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -r requirements.txt
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e .
       - run: python -m unittest discover -s tests -v
 
   web:

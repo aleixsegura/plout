@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Export ~3 years of daily closes, in EUR, to data/prices.json.
 
@@ -26,12 +25,12 @@ same methodology minus the small caps — chain-linked on VALL's first close.
 A series that fails to download keeps the previous run's copy, so one flaky
 request never empties the page.
 
-Like export_marketcaps.py, the web app's dev server runs this with
+Like marketcaps.py, the web app's dev server runs this with
 --max-age-hours, so it exits before its first request unless the export is stale
 or a holding is new.
 
 Usage:
-  .venv/bin/python export_prices.py [--output-dir .] [--max-age-hours 12]
+  plout prices [--output-dir DIR] [--max-age-hours 12]
 """
 
 import argparse
@@ -44,7 +43,8 @@ from pathlib import Path
 
 import requests
 
-from export_marketcaps import BROWSER_HEADERS, US_EXCHANGES, _read_json
+from plout.config import PROJECT_ROOT
+from plout.exporters.marketcaps import BROWSER_HEADERS, US_EXCHANGES, _read_json
 
 OUT_NAME = "prices.json"
 
@@ -438,7 +438,7 @@ def build_benchmark(previous: dict | None) -> dict | None:
 def is_fresh(previous: dict, targets: list[Target], max_age_hours: float) -> bool:
     """Is the last export recent enough, and does it still cover every holding?
 
-    Same contract as export_marketcaps.is_fresh: a new holding forces a refresh
+    Same contract as marketcaps.is_fresh: a new holding forces a refresh
     however recent the file is, an unresolvable one doesn't keep forcing them.
     """
     series = previous.get("series") if isinstance(previous, dict) else None
@@ -458,8 +458,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
     )
     parser.add_argument(
         "--max-age-hours",
@@ -479,7 +479,7 @@ def main() -> None:
     if not targets:
         raise SystemExit(
             f"No holdings found in {out_dir}/.\n"
-            "  Run export_degiro.py / export_revolut.py first."
+            "  Run `plout degiro` / `plout revolut` first."
         )
 
     previous = _read_json(out_file) or {}

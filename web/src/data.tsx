@@ -44,7 +44,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [deposits, setDeposits] = useState<DepositsFile | null>(null);
 
   useEffect(() => {
-    // Written by export_degiro.py; degrade silently when it doesn't exist.
+    // Written by plout degiro; degrade silently when it doesn't exist.
     // Vite's dev server SPA-fallbacks unknown paths to index.html with a 200,
     // so the content-type check is what actually detects a missing file.
     fetch("/positions.json")
@@ -57,7 +57,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Written by export_revolut.py; same silent degrade as positions.json.
+    // Written by plout revolut; same silent degrade as positions.json.
     fetch("/revolut.json")
       .then((res) => {
         const isJson = res.headers.get("content-type")?.includes("application/json");
@@ -80,7 +80,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Written by export_dividends.py; same silent degrade as positions.json.
+    // Written by plout dividends; same silent degrade as positions.json.
     fetch("/dividends.json")
       .then((res) => {
         const isJson = res.headers.get("content-type")?.includes("application/json");
@@ -91,7 +91,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Written by export_taxes.py; same silent degrade as positions.json.
+    // Written by plout taxes; same silent degrade as positions.json.
     fetch("/taxes.json")
       .then((res) => {
         const isJson = res.headers.get("content-type")?.includes("application/json");
@@ -102,7 +102,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Written by export_marketcaps.py; same silent degrade as positions.json —
+    // Written by plout marketcaps; same silent degrade as positions.json —
     // without it the Market Cap column shows "—".
     fetch("/marketcaps.json")
       .then((res) => {
@@ -114,7 +114,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Written by export_revolut.py (write_transactions); same silent degrade —
+    // Written by plout revolut (write_transactions); same silent degrade —
     // the Dashboard and Transactions pages show empty states until it exists.
     fetch("/revolut_transactions.json")
       .then((res) => {
@@ -126,7 +126,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Written by export_prices.py; same silent degrade — the Correlation page
+    // Written by plout prices; same silent degrade — the Correlation page
     // shows how to create it until it exists.
     fetch("/prices.json")
       .then((res) => {
@@ -138,7 +138,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Written by export_deposits.py; same silent degrade — the Holdings page
+    // Written by plout deposits; same silent degrade — the Holdings page
     // just leaves out the since-opening comparison with the index.
     fetch("/deposits.json")
       .then((res) => {
@@ -174,7 +174,7 @@ export function useAppData(): AppData {
   return data;
 }
 
-/** Look a symbol's market cap up in marketcaps.json (export_marketcaps.py).
+/** Look a symbol's market cap up in marketcaps.json (plout marketcaps).
  *
  * Entries are written under every symbol spelling, so an exact hit is the
  * normal case; the bare-ticker retry covers a Yahoo-style "VWCE.DE".

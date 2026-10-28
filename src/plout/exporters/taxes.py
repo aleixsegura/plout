@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Export what has to be declared in the Spanish IRPF to data/taxes.json.
 
@@ -19,7 +18,7 @@ Sources, in the order they are merged:
                 the valid acquisition lots. Quoted in USDC, converted to EUR at
                 the ECB reference rate of each trade date.
   revolut_trades.json
-                Revolut's own crypto ledger, captured by export_revolut.py from
+                Revolut's own crypto ledger, captured by revolut.py from
                 the per-pocket transaction history: Revolut X trades with their
                 gross amount and fee, wallet deposits, and every staking reward
                 with its real date. Authoritative for the period it covers.
@@ -38,8 +37,8 @@ None of this is tax advice: every figure carries the inputs it came from so
 you (or your advisor) can check it.
 
 Usage:
-  .venv/bin/python export_taxes.py [--from YYYY-MM-DD] [--year 2026]
-                                   [--bybit bybit.csv] [--output-dir .] [--debug]
+  plout taxes [--from YYYY-MM-DD] [--year 2026]
+              [--bybit bybit.csv] [--output-dir DIR] [--debug]
 """
 
 import argparse
@@ -55,10 +54,10 @@ from pathlib import Path
 
 from degiro_connector.trading.models.transaction import HistoryRequest
 
-from export_degiro import connect, fetch_product_meta
-from export_dividends import to_eur
-from export_revolut import crypto_price_eur, crypto_price_eur_at
-from common import SCRIPT_DIR
+from plout.config import PROJECT_ROOT
+from plout.exporters.degiro import connect, fetch_product_meta
+from plout.exporters.dividends import to_eur
+from plout.exporters.revolut import crypto_price_eur, crypto_price_eur_at
 
 # Quantities carry 8 decimals for crypto, so exact float comparison never
 # holds and matching a sale against a dozen lots leaves float dust behind.
@@ -87,8 +86,8 @@ MODELO_721_THRESHOLD = 50_000.0
 # form was created, and counting it here would double-declare it.
 MODELO_720_THRESHOLD = 50_000.0
 
-MANUAL_FILE = SCRIPT_DIR / "manual_trades.json"
-BYBIT_FILE = SCRIPT_DIR / "bybit.csv"
+MANUAL_FILE = PROJECT_ROOT / "manual_trades.json"
+BYBIT_FILE = PROJECT_ROOT / "bybit.csv"
 
 
 # ── FX ─────────────────────────────────────────────────────────────────────────
@@ -732,7 +731,7 @@ def normalize_degiro(transactions: list[dict], meta: dict[str, dict]) -> list[di
     same trades. On a USD order it works out to 0.25–0.38% of the notional:
     the flat handling fee *plus* the 0.25% AutoFX charge, which DEGIRO takes
     inside the exchange rate rather than as a separate cash movement — so
-    export_fees.py, reading the cash statement, never sees it. For tax it
+    fees.py, reading the cash statement, never sees it. For tax it
     belongs here: it is a cost inherent to the trade, and it is part of the
     euros that actually left or entered the account.
     """
@@ -870,7 +869,7 @@ def load_manual(path: Path) -> dict:
 
 
 def load_revolut_ledger(out_dir: Path) -> dict:
-    """Revolut's crypto ledger as written by export_revolut.py.
+    """Revolut's crypto ledger as written by revolut.py.
 
     Best-effort like load_manual: this file only exists once the Revolut export
     has run with a live session, and its absence just means "nothing to add".
@@ -1290,7 +1289,7 @@ def estimate_savings_tax(base: float) -> float:
 
 
 def load_dividends(out_dir: Path) -> list[dict]:
-    """Payments already exported by export_dividends.py, if it has ever run."""
+    """Payments already exported by dividends.py, if it has ever run."""
     path = out_dir / "data" / "dividends.json"
     if not path.exists():
         return []
@@ -2070,7 +2069,7 @@ def build_renta_pack(year_data: dict) -> dict:
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "yearIsOpen": year_data["open"],
         "disclaimer": (
-            "Cifras calculadas por export_taxes.py a partir de los extractos del usuario. "
+            "Cifras calculadas por plout taxes a partir de los extractos del usuario. "
             "No son asesoramiento fiscal: revísalas antes de presentar nada."
         ),
         "sections": sections,
@@ -2086,7 +2085,7 @@ def render_renta_markdown(pack: dict) -> str:
         f"# Renta {year} — guion de relleno",
         "",
         f"Ejercicio **{year}**, que se presenta en **{pack['filedIn']}**. "
-        f"Generado el {pack['generatedAt'][:10]} por `export_taxes.py`.",
+        f"Generado el {pack['generatedAt'][:10]} por `plout taxes`.",
         "",
         "## Reglas para quien rellene el formulario",
         "",
@@ -2275,8 +2274,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
     )
     parser.add_argument(
         "--no-degiro",

@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 """
-Refresh every export in one go.
+Refresh every export in one go: `plout sync`.
 
 Runs the exporters one after another, each as its own process exactly as if it
 had been started by hand, keeps going when one fails, and prints a summary.
@@ -8,17 +7,17 @@ had been started by hand, keeps going when one fails, and prints a summary.
 Revolut runs first because it is the only step that may need you: its browser
 window opens and, if the session has expired, waits for the login. Everything
 after it runs unattended. The DEGIRO exporters share one session (see
-export_degiro.SESSION_FILE), so the batch logs in to DEGIRO once — and with
+plout.exporters.degiro.SESSION_FILE), so the batch logs in to DEGIRO once — and with
 DEGIRO_TOTP_SECRET in .env, without the phone.
 
-export_taxes.py is left out unless --taxes is passed: it is a once-a-year job
+The tax return is left out unless --taxes is passed: it is a once-a-year job
 and refuses to run without its manual inputs.
 
 Examples:
-  python3 refresh.py
-  python3 refresh.py --taxes
-  python3 refresh.py --skip revolut
-  python3 refresh.py --only degiro,dividends
+  plout sync
+  plout sync --taxes
+  plout sync --skip revolut
+  plout sync --only degiro,dividends
 """
 
 import argparse
@@ -27,8 +26,13 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 
-from common import SCRIPT_DIR
+from plout.config import PROJECT_ROOT
+
+# The directory `import plout` resolves from (src/), handed to the exporters
+# so they import the same code even when the package isn't installed.
+PACKAGE_PARENT = str(Path(__file__).resolve().parents[1])
 
 # Same freshness window the dev server uses for the keyless exports.
 KEYLESS_MAX_AGE_HOURS = "12"
@@ -36,23 +40,22 @@ KEYLESS_MAX_AGE_HOURS = "12"
 
 @dataclass(frozen=True)
 class Step:
-    name: str
-    script: str
+    name: str  # also the `plout` command that runs it
     args: tuple[str, ...] = ()
     degiro: bool = False  # logs in to DEGIRO
     default: bool = True
 
 
 STEPS: tuple[Step, ...] = (
-    Step("revolut", "export_revolut.py"),
-    Step("degiro", "export_degiro.py", degiro=True),
-    Step("deposits", "export_deposits.py", degiro=True),
-    Step("dividends", "export_dividends.py", degiro=True),
-    Step("fees", "export_fees.py", degiro=True),
-    Step("taxes", "export_taxes.py", degiro=True, default=False),
+    Step("revolut"),
+    Step("degiro", degiro=True),
+    Step("deposits", degiro=True),
+    Step("dividends", degiro=True),
+    Step("fees", degiro=True),
+    Step("taxes", degiro=True, default=False),
     # After the brokers: both read the holdings the steps above just wrote.
-    Step("prices", "export_prices.py", ("--max-age-hours", KEYLESS_MAX_AGE_HOURS)),
-    Step("marketcaps", "export_marketcaps.py", ("--max-age-hours", KEYLESS_MAX_AGE_HOURS)),
+    Step("prices", ("--max-age-hours", KEYLESS_MAX_AGE_HOURS)),
+    Step("marketcaps", ("--max-age-hours", KEYLESS_MAX_AGE_HOURS)),
 )
 STEP_NAMES = tuple(s.name for s in STEPS)
 
@@ -83,9 +86,10 @@ def select_steps(only: str | None = None, skip: str | None = None, taxes: bool =
 
 
 def run_step(step: Step, output_dir: str) -> int:
-    cmd = [sys.executable, str(SCRIPT_DIR / step.script), "--output-dir", output_dir, *step.args]
-    env = {**os.environ, "PYTHONUNBUFFERED": "1"}
-    return subprocess.run(cmd, cwd=SCRIPT_DIR, env=env).returncode
+    cmd = [sys.executable, "-m", "plout", step.name, "--output-dir", output_dir, *step.args]
+    pythonpath = os.pathsep.join(p for p in (PACKAGE_PARENT, os.environ.get("PYTHONPATH")) if p)
+    env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONPATH": pythonpath}
+    return subprocess.run(cmd, cwd=PROJECT_ROOT, env=env).returncode
 
 
 def run(steps: list[Step], output_dir: str, runner=run_step) -> list[tuple[Step, str, float]]:
@@ -98,15 +102,14 @@ def run(steps: list[Step], output_dir: str, runner=run_step) -> list[tuple[Step,
             # TOTP secret, ask the phone again for every one of them.
             results.append((step, "skipped", 0.0))
             continue
-        rule = "─" * max(0, 50 - len(step.name) - len(step.script))
-        print(f"\n── {step.name} ({step.script}) {rule}", flush=True)
+        print(f"\n── {step.name} {'─' * max(0, 52 - len(step.name))}", flush=True)
         started = time.monotonic()
         try:
             code = runner(step, output_dir)
         except KeyboardInterrupt:
             raise
         except Exception as exc:
-            print(f"  could not run {step.script}: {exc}", file=sys.stderr)
+            print(f"  could not run plout {step.name}: {exc}", file=sys.stderr)
             code = 1
         status = "ok" if code == 0 else "failed"
         if step.degiro and status == "failed":
@@ -125,13 +128,13 @@ def print_summary(results: list[tuple[Step, str, float]]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
-    parser.add_argument("--taxes", action="store_true", help="Also run export_taxes.py")
+    parser.add_argument("--taxes", action="store_true", help="Also run the tax return (plout taxes)")
     parser.add_argument("--only", help=f"Comma-separated steps to run instead of the defaults ({', '.join(STEP_NAMES)})")
     parser.add_argument("--skip", help="Comma-separated steps to leave out")
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder, passed to every exporter (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder, passed to every exporter (default: the project root)",
     )
     args = parser.parse_args()
 

@@ -97,7 +97,7 @@ const es: Translations = {
     sameMoneyIn: (symbol: string) => `Mismo dinero en ${symbol}`,
     difference: "diferencia",
     noPerformance:
-      "Aún no hay suficientes instantáneas con datos de ingresos — ejecuta export_deposits.py para completar los días anteriores.",
+      "Aún no hay suficientes instantáneas con datos de ingresos — ejecuta plout deposits para completar los días anteriores.",
   },
   kpis: {
     ariaLabel: "Métricas clave de la cartera",
@@ -381,7 +381,7 @@ const es: Translations = {
       avgBalance: "Saldo medio",
       effectiveRate: "Tipo efectivo",
       days: "Días",
-      noInterest: "Todavía no se han encontrado intereses — vuelve a ejecutar export_revolut.py cuando la cuenta Boosted haya pagado.",
+      noInterest: "Todavía no se han encontrado intereses — vuelve a ejecutar plout revolut cuando la cuenta Boosted haya pagado.",
     },
   },
   correlation: {
@@ -445,7 +445,7 @@ const es: Translations = {
       `Volatilidad, diversificación, apuestas y contribuciones usan correlaciones contraídas un ${lambda} hacia su media (${target}) para filtrar ruido de estimación (Ledoit-Wolf); la matriz y el grafo muestran las observadas.`,
     excluded: (list: string) => `Sin historial de precios suficiente en esta ventana: ${list}.`,
     unresolved: (list: string) => `No se han encontrado precios para: ${list}.`,
-    empty: "Todavía no hay historial de precios. Ejecuta .venv/bin/python export_prices.py (el servidor de desarrollo también lo hace al arrancar).",
+    empty: "Todavía no hay historial de precios. Ejecuta .venv/bin/plout prices (el servidor de desarrollo también lo hace al arrancar).",
     tooFew: "Hacen falta al menos dos posiciones con historial de precios para correlacionar algo.",
     source: (s: string) => `Precios: ${s}.`,
   },

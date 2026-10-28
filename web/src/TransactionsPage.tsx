@@ -190,7 +190,7 @@ export default function TransactionsPage() {
         <h1 className="mb-2 font-display text-[26px] font-semibold tracking-tight">{t.transactions.title}</h1>
         <p className="max-w-prose text-secondary">
           {t.transactions.noDataIntro}{" "}
-          <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">.venv/bin/python export_revolut.py</code>{" "}
+          <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">.venv/bin/plout revolut</code>{" "}
           {t.transactions.noDataOutro}{" "}
           <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">data/revolut_transactions.json</code>.
         </p>

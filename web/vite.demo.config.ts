@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Serves ../demo-data (synthetic fixtures, see generate_demo_data.py) instead
+// Serves ../demo-data (synthetic fixtures, see scripts/generate_demo_data.py) instead
 // of the real ../data, so the app can be demoed without touching or
 // exposing real broker/account data. Separate port from `npm run dev`.
 export default defineConfig({

@@ -10,3 +10,5 @@ crypto_cost_basis.json
 bybit.csv
 manual_trades.json
 *.local.md
+*.egg-info/
+build/

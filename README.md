@@ -11,7 +11,7 @@ Nothing is uploaded anywhere and no data is committed: the exports stay on your 
 ## Try it without any account
 
 The repo ships with synthetic fixtures in `demo-data/` (regenerate with
-`python3 generate_demo_data.py`), so the whole app runs without broker credentials:
+`python3 scripts/generate_demo_data.py`), so the whole app runs without broker credentials:
 
 ```bash
 cd web
@@ -31,28 +31,57 @@ Real data never reaches the repository:
   exports, when any tracked file mentions a symbol found in them. Enable it before every commit
   with `git config core.hooksPath .githooks`; CI runs it too, alongside gitleaks.
 
+## Setup
+
+The exporters are a Python package (`src/plout/`) with one command, `plout`:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e .                 # or: uv pip install --python .venv/bin/python -e .
+.venv/bin/playwright install chromium      # only for Revolut
+source .venv/bin/activate                  # puts `plout` on the PATH (or call .venv/bin/plout)
+plout --help
+```
+
+The install is editable, so the code runs straight from `src/` and finds `.env`, `data/` and the
+manual inputs in the repository root, whatever directory you run `plout` from.
+
+```
+src/plout/
+  cli.py             the `plout` command
+  sync.py            plout sync — every exporter in one go
+  config.py          repository paths and .env loading
+  history.py         data/history.json, written by the broker exporters
+  exporters/         one module per source: degiro, deposits, dividends, fees,
+                     revolut, taxes, prices, marketcaps
+tests/               python -m unittest discover -s tests
+scripts/             privacy_check.py (pre-commit + CI), generate_demo_data.py
+web/                 the dashboard
+data/                your exports (gitignored); demo-data/ holds the synthetic ones
+```
+
 ## Exporters
 
-| Exporter | Writes | Feeds |
+| Command | Writes | Feeds |
 |---|---|---|
-| `refresh.py` | everything below except `taxes.json` (add `--taxes`) | — runs the others in one go |
-| `export_degiro.py` | `positions.json` | Holdings |
-| `export_deposits.py` | `deposits.json` | Holdings (net deposits) |
-| `export_revolut.py` | `revolut.json`, `revolut_trades.json`, `revolut_transactions.json` | Dashboard, Holdings, Transactions |
-| `export_dividends.py` | `dividends.json` | Dividends |
-| `export_fees.py` | `fees.json` | Tax return (the non-deductible-fees notice) |
-| `export_taxes.py` | `taxes.json`, `renta/renta-<year>.{json,md}` | Tax return |
-| `export_marketcaps.py` | `marketcaps.json` | The Market Cap column, everywhere (runs itself on `npm run dev`) |
-| `export_prices.py` | `prices.json` | Correlation (runs itself on `npm run dev`) |
-| `history.py` | `history.json` | The portfolio chart on Holdings |
+| `plout sync` | everything below except `taxes.json` (add `--taxes`) | — runs the others in one go |
+| `plout degiro` | `positions.json` | Holdings |
+| `plout deposits` | `deposits.json` | Holdings (net deposits) |
+| `plout revolut` | `revolut.json`, `revolut_trades.json`, `revolut_transactions.json` | Dashboard, Holdings, Transactions |
+| `plout dividends` | `dividends.json` | Dividends |
+| `plout fees` | `fees.json` | Tax return (the non-deductible-fees notice) |
+| `plout taxes` | `taxes.json`, `renta/renta-<year>.{json,md}` | Tax return |
+| `plout marketcaps` | `marketcaps.json` | The Market Cap column, everywhere (runs itself on `npm run dev`) |
+| `plout prices` | `prices.json` | Correlation (runs itself on `npm run dev`) |
+| `plout history` | `history.json` (normally written by the broker exporters) | The portfolio chart on Holdings |
 
 ## Refresh everything in one step
 
 ```bash
-python3 refresh.py            # Revolut, DEGIRO (positions, deposits, dividends, fees), prices, market caps
-python3 refresh.py --taxes    # …and the tax return
-python3 refresh.py --skip revolut
-python3 refresh.py --only degiro,dividends
+plout sync            # Revolut, DEGIRO (positions, deposits, dividends, fees), prices, market caps
+plout sync --taxes    # …and the tax return
+plout sync --skip revolut
+plout sync --only degiro,dividends
 ```
 
 Each exporter runs as its own process, one after the other; a failure doesn't stop the rest and
@@ -61,7 +90,7 @@ need you (its login window); after that the batch runs unattended.
 
 The DEGIRO exporters share one session, saved in `.degiro-session.json` (gitignored, `0600`), so a
 batch — or exporters run by hand within half an hour of each other — logs in once. DEGIRO ends the
-session after 30 minutes without a request; `python3 export_degiro.py --logout` ends it right away.
+session after 30 minutes without a request; `plout degiro --logout` ends it right away.
 
 ### DEGIRO without the phone
 
@@ -79,8 +108,7 @@ Both exporters write into the same `data/` folder the web app serves, and read c
 ### DEGIRO
 
 ```bash
-.venv/bin/pip install -r requirements.txt
-python3 export_degiro.py
+plout degiro
 ```
 
 Logs in with `DEGIRO_USERNAME`/`DEGIRO_PASSWORD` from `.env` (approve the in-app confirmation when prompted, or set `DEGIRO_TOTP_SECRET` — see [DEGIRO without the phone](#degiro-without-the-phone)) and writes portfolio positions and account totals to `data/positions.json`.
@@ -90,43 +118,36 @@ DEGIRO's portfolio endpoint prices every position at the *previous* close (today
 ### DEGIRO fees
 
 ```bash
-.venv/bin/python export_fees.py
+plout fees
 ```
 
-Pulls the same cash statement as the dividend exporter and keeps only what DEGIRO *charged* the account, split into `transaction`, `connectivity`, `currency` and `other`, into `data/fees.json`. There is no fees page: buy and sell commissions already reach the UI inside the tax return's acquisition and disposal values. What this file adds is the rest — connectivity, custody and FX — which `export_taxes.py` reads back to raise its non-deductible-fees notice. Read it directly for anything beyond that.
+Pulls the same cash statement as the dividend exporter and keeps only what DEGIRO *charged* the account, split into `transaction`, `connectivity`, `currency` and `other`, into `data/fees.json`. There is no fees page: buy and sell commissions already reach the UI inside the tax return's acquisition and disposal values. What this file adds is the rest — connectivity, custody and FX — which `plout taxes` reads back to raise its non-deductible-fees notice. Read it directly for anything beyond that.
 
-Descriptions are localised to your account language, so charges are matched by keyword. A movement only counts as a fee if its description actually says so ("comisión", "coste", "fee", "AutoFX"), which is what keeps DEGIRO's `Cambio de Divisa (Débito)`/`(Crédito)` pairs — the conversion itself, not a charge on it — out of the total. Run with `--debug` to print every distinct movement description next to the category it landed in; if something is mis-bucketed, adjust `FEE_CATEGORIES` / `FEE_TOKENS` in the script.
+Descriptions are localised to your account language, so charges are matched by keyword. A movement only counts as a fee if its description actually says so ("comisión", "coste", "fee", "AutoFX"), which is what keeps DEGIRO's `Cambio de Divisa (Débito)`/`(Crédito)` pairs — the conversion itself, not a charge on it — out of the total. Run with `--debug` to print every distinct movement description next to the category it landed in; if something is mis-bucketed, adjust `FEE_CATEGORIES` / `FEE_TOKENS` in `src/plout/exporters/fees.py`.
 
 | Flag | Description |
 |---|---|
 | `--from YYYY-MM-DD` | Earliest date to scan (default: `2015-01-01`) |
 | `--debug` | Print every cash-movement description with its category and exit |
-| `--output-dir DIR` | Where the `data/` folder lives (default: current directory) |
+| `--output-dir DIR` | Where the `data/` folder lives (default: the project root) |
 
 ### Revolut
 
-Revolut has no personal API, so `export_revolut.py` drives the Revolut web app with Playwright, capturing the app's own internal JSON responses for cash (current + savings/"Boosted" accounts) and crypto balances. Everything is normalized to EUR via Coinbase's public API (no key needed).
+Revolut has no personal API, so `plout revolut` drives the Revolut web app with Playwright, capturing the app's own internal JSON responses for cash (current + savings/"Boosted" accounts) and crypto balances. Everything is normalized to EUR via Coinbase's public API (no key needed).
 
 Crypto positions carry two prices, because the two answer different questions: `lastPriceEur` drives the portfolio maths, while `lastPrice` (in USD, crypto's conventional quote currency) is what the Holdings table displays — it is the number every price site shows, and it sits ~13% above the EUR one.
 
-One-time setup:
+One-time setup: `.venv/bin/playwright install chromium` (see [Setup](#setup)). Then just run:
 
 ```bash
-.venv/bin/pip install -r requirements.txt
-.venv/bin/playwright install chromium
-```
-
-Then just run:
-
-```bash
-python3 export_revolut.py
+plout revolut
 ```
 
 A browser window opens automatically. **If your session is still active, it captures and closes on its own.** Otherwise, log in there (phone number, passcode, approve the push in the Revolut phone app) and it continues once you're in, writing `data/revolut.json`.
 
 Note: Revolut runs the web app behind Cloudflare and does not keep the session across browser restarts, so the window must be visible (headless is blocked) and you'll typically re-approve a login each run. This is as unattended as a personal Revolut account allows — there is no official API.
 
-The session itself does survive the restart — it lives in the `credentials` and `refresh-token` cookies of `app.revolut.com`, which the profile keeps — but Revolut gives them a **5-minute sliding expiry**: the open app keeps renewing them, and once the browser closes the clock runs. A run within 5 minutes of the previous one needs no login; anything later does. (Restoring session cookies and `sessionStorage` was tried and changes nothing: neither holds the auth.) `refresh.py` runs Revolut first, so a full refresh costs one approval at the start.
+The session itself does survive the restart — it lives in the `credentials` and `refresh-token` cookies of `app.revolut.com`, which the profile keeps — but Revolut gives them a **5-minute sliding expiry**: the open app keeps renewing them, and once the browser closes the clock runs. A run within 5 minutes of the previous one needs no login; anything later does. (Restoring session cookies and `sessionStorage` was tried and changes nothing: neither holds the auth.) `plout sync` runs Revolut first, so a full refresh costs one approval at the start.
 
 | Flag | Description |
 |---|---|
@@ -134,9 +155,9 @@ The session itself does survive the restart — it lives in the `credentials` an
 | `--full` | Refetch the whole transaction history instead of only what is newer than the existing `revolut_transactions.json` |
 | `--from YYYY-MM-DD` | Earliest transaction to keep (default: everything Revolut returns) |
 | `--no-transactions` | Skip the transactions / interest export |
-| `--debug` | Dump every captured Revolut API response to `.revolut-debug/` (gitignored — contains personal financial data). Use this to re-pin `CAPTURE_PATTERNS` in the script if Revolut changes their internal API. |
+| `--debug` | Dump every captured Revolut API response to `.revolut-debug/` (gitignored — contains personal financial data). Use this to re-pin `CAPTURE_PATTERNS` in `src/plout/exporters/revolut.py` if Revolut changes their internal API. |
 | `--headless` | Run with no visible window (usually blocked by Cloudflare; expert use) |
-| `--output-dir DIR` | Where the `data/` folder lives (default: current directory) |
+| `--output-dir DIR` | Where the `data/` folder lives (default: the project root) |
 
 ### Revolut transactions and Boosted interest
 
@@ -173,7 +194,7 @@ classification rules are pinned by `tests/test_revolut_transactions.py`:
 ## Tax return
 
 ```bash
-.venv/bin/python export_taxes.py
+plout taxes
 ```
 
 The only exporter that needs a *ledger* rather than a snapshot. `positions.json` shows what you
@@ -204,7 +225,7 @@ What it works out for you:
   and custody fees are a real cost but are *not* deductible, and the page says so.
   Expect the commissions here to exceed what `fees.json` holds for the same trades — on a USD
   order they run 0.25–0.38% of the notional, because they include the 0.25% AutoFX charge DEGIRO
-  takes inside the exchange rate instead of as a cash movement. `export_fees.py` reads the cash
+  takes inside the exchange rate instead of as a cash movement. `plout fees` reads the cash
   statement, so it never sees that part; for tax it counts.
 - **Regla de los dos meses** (art. 33.5 f): a loss on listed shares is deferred when homogeneous
   securities were repurchased within two months either side — *proportionally*, so buying back 25
@@ -298,12 +319,12 @@ Most dev-server starts cost nothing: `--max-age-hours` makes the exporter exit b
 You can still run it by hand — it needs no credentials and no browser — which is also how to refresh the column without restarting the dev server:
 
 ```bash
-.venv/bin/python export_marketcaps.py
+plout marketcaps
 ```
 
 ## Price history
 
-Also run by `npm run dev`, with the same 12-hour `--max-age-hours` rule: `export_prices.py` writes about three years of daily closes per holding into `data/prices.json`, **converted to EUR** — the returns a euro investor actually lives through, currency moves included. The Correlation page builds everything from it.
+Also run by `npm run dev`, with the same 12-hour `--max-age-hours` rule: `plout prices` writes about three years of daily closes per holding into `data/prices.json`, **converted to EUR** — the returns a euro investor actually lives through, currency moves included. The Correlation page builds everything from it.
 
 | Source | Covers |
 |---|---|
@@ -314,15 +335,16 @@ Also run by `npm run dev`, with the same 12-hour `--max-age-hours` rule: `export
 The ISIN comes from `positions.json` or, for exports from before that field, from the trades in `taxes.json`. A series that fails to download keeps the previous run's copy. Yahoo is deliberately not used: its keyless chart API answers 429 more often than not.
 
 ```bash
-.venv/bin/python export_prices.py
+plout prices
 ```
 
 ## Portfolio history
 
-`history.py` is not run directly — the broker exporters call `record_snapshot()`, which upserts
+`plout.history` is not run directly — the broker exporters call `record_snapshot()`, which upserts
 one entry per local date into `data/history.json` from whichever of `positions.json` and
 `revolut.json` exist. Re-running an exporter the same day refreshes that day's numbers rather
 than appending a duplicate; the portfolio-value chart on Holdings reads the result.
+`plout history` only fills in the running totals of past days, without a new snapshot.
 
 ## Web app
 
@@ -335,11 +357,11 @@ you've run the exporter behind it.
 | Page | Shows | Needs |
 |---|---|---|
 | **Dashboard** (`/`) | Net worth with today's move and the value chart, cash accounts, top holdings, this month's spending by category, Boosted interest, recent transactions, upcoming dividends | whatever exists — every card degrades to an empty state |
-| **Holdings** (`/holdings`) | KPI cards, sector donut, portfolio-value chart, positions table | `export_degiro.py`, `export_revolut.py`, `history.py` |
-| **Transactions** (`/transactions`) | Month navigator, spend/income KPIs, 12-month stacked bar chart, category donut and breakdown, searchable statement grouped by day, Boosted interest (daily chart, monthly effective rate) | `export_revolut.py` |
-| **Correlation** (`/correlation`) | Diversification KPIs (portfolio volatility, diversification ratio, weighted correlation, independent bets), clustered correlation heatmap, market graph with a θ slider and its maximum independent set (the heaviest when several tie, after Hidaka et al., IEEE Access 2023), risk contribution per holding vs. its weight; the risk figures use a covariance shrunk toward the average correlation (Ledoit–Wolf target, Schäfer–Strimmer intensity), raised just enough to stay positive semi-definite | `export_prices.py` plus the broker exports |
-| **Dividends** | Net/gross totals, per-year table, upcoming and all payments | `export_dividends.py` |
-| **Tax return** | Per-fiscal-year capital gains (FIFO), investment income, filing pack | `export_taxes.py` |
+| **Holdings** (`/holdings`) | KPI cards, sector donut, portfolio-value chart, positions table | `plout degiro`, `plout revolut`, `plout.history` |
+| **Transactions** (`/transactions`) | Month navigator, spend/income KPIs, 12-month stacked bar chart, category donut and breakdown, searchable statement grouped by day, Boosted interest (daily chart, monthly effective rate) | `plout revolut` |
+| **Correlation** (`/correlation`) | Diversification KPIs (portfolio volatility, diversification ratio, weighted correlation, independent bets), clustered correlation heatmap, market graph with a θ slider and its maximum independent set (the heaviest when several tie, after Hidaka et al., IEEE Access 2023), risk contribution per holding vs. its weight; the risk figures use a covariance shrunk toward the average correlation (Ledoit–Wolf target, Schäfer–Strimmer intensity), raised just enough to stay positive semi-definite | `plout prices` plus the broker exports |
+| **Dividends** | Net/gross totals, per-year table, upcoming and all payments | `plout dividends` |
+| **Tax return** | Per-fiscal-year capital gains (FIFO), investment income, filing pack | `plout taxes` |
 
 ```bash
 cd web

@@ -105,7 +105,7 @@ export default function DividendsPage() {
         <p className="max-w-prose text-secondary">
           {t.dividends.noDataIntro}{" "}
           <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">
-            .venv/bin/python export_dividends.py
+            .venv/bin/plout dividends
           </code>{" "}
           {t.dividends.noDataOutro}{" "}
           <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">

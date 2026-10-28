@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for export_prices.py's offline parts: parsing, FX, symbol collection.
+"""Tests for the price exporter's offline parts: parsing, FX, symbol collection.
 
 The correlation page trusts these series blindly — a close in the wrong
 currency or on the wrong date shows up as a fake return spike, not an error.
@@ -13,9 +13,9 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from export_prices import (
+from plout.exporters.prices import (
     Target,
     collect_targets,
     is_fresh,

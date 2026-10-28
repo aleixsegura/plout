@@ -12,9 +12,9 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from export_taxes import Asset, Lot, Sale, _gain_entries, aggregate_asset_year, match_fifo
+from plout.exporters.taxes import Asset, Lot, Sale, _gain_entries, aggregate_asset_year, match_fifo
 
 
 def fields_of(entry: dict) -> dict:

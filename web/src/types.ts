@@ -10,7 +10,7 @@ export interface Stock {
   marketCap: number | null;
 }
 
-// Mirror of data/marketcaps.json written by export_marketcaps.py. Keyed
+// Mirror of data/marketcaps.json written by plout marketcaps. Keyed
 // by every symbol spelling of a company ("VWCE.DE" on Yahoo, "VWCE" at
 // DEGIRO), so a row looks its market cap up by whatever symbol it carries. `at` is per entry: a symbol no source answered for on the
 // last run keeps the value (and timestamp) of the run that did resolve it.
@@ -33,7 +33,7 @@ export interface MarketCapsFile {
   entries: Record<string, MarketCapEntry>;
 }
 
-// Mirror of data/prices.json written by export_prices.py: ~3 years of daily
+// Mirror of data/prices.json written by plout prices: ~3 years of daily
 // closes per holding, converted to EUR, keyed by the symbol the app uses.
 // Dates are ascending and unique; weekends only appear for crypto.
 export interface PriceSeries {
@@ -73,7 +73,7 @@ export interface BenchmarkSeries {
   closesEur: number[];
 }
 
-// Mirror of data/deposits.json written by export_deposits.py: every transfer
+// Mirror of data/deposits.json written by plout deposits: every transfer
 // into (positive) or out of (negative) the DEGIRO account, oldest first.
 export interface DepositMovement {
   /** ISO timestamp of the booking. */
@@ -91,7 +91,7 @@ export interface DepositsFile {
   movements: DepositMovement[];
 }
 
-// Mirror of data/positions.json written by export_degiro.py. Monetary
+// Mirror of data/positions.json written by plout degiro. Monetary
 // value/cost/P&L fields are in the DEGIRO account base currency (EUR);
 // avgPrice/lastPrice are in the product's own currency (`currency`).
 export interface Position {
@@ -151,7 +151,7 @@ export interface PositionsFile {
   positions: Position[];
 }
 
-// Mirror of data/revolut.json written by export_revolut.py. All EUR
+// Mirror of data/revolut.json written by plout revolut. All EUR
 // fields are converted by the exporter; `amount` is in the pocket's own
 // currency.
 export interface RevolutCash {
@@ -186,7 +186,7 @@ export interface RevolutPosition {
   /** null when no EUR price was available at export time. */
   valueEur: number | null;
   // Cost basis — present only when a manual average buy price is configured in
-  // crypto_cost_basis.json (Revolut exposes none). See export_revolut.py.
+  // crypto_cost_basis.json (Revolut exposes none). See src/plout/exporters/revolut.py.
   /** Average buy price per unit, in `avgPriceCurrency` (e.g. USD). */
   avgPrice?: number;
   /** Currency of `avgPrice` (e.g. "USD"); may differ from the EUR value base. */
@@ -223,7 +223,7 @@ export interface HistoryDay {
     valueEur: number;
     cashEur: number | null;
     /** Net EUR deposited into DEGIRO so far. Absent or null on days recorded
-     * before it existed and not yet backfilled by export_deposits.py. */
+     * before it existed and not yet backfilled by plout deposits. */
     netDepositsEur?: number | null;
   } | null;
   /** null when revolut.json didn't exist at snapshot time. */
@@ -249,7 +249,7 @@ export interface HistoryFile {
   days: HistoryDay[];
 }
 
-// Mirror of data/dividends.json written by export_dividends.py. One entry
+// Mirror of data/dividends.json written by plout dividends. One entry
 // per (product, settlement day); gross/tax/net are in the payment's own
 // `currency` (USD for US stocks, EUR for Xetra ETFs) — no FX conversion, so the
 // page totals per currency. `tax` is the withholding, booked negative.
@@ -292,7 +292,7 @@ export interface DividendsFile {
   upcoming?: UpcomingDividend[];
 }
 
-// Mirror of data/taxes.json written by export_taxes.py. Everything is in
+// Mirror of data/taxes.json written by plout taxes. Everything is in
 // EUR: DEGIRO already books trades in the account's base currency, and crypto
 // lots are converted at the ECB reference rate of their trade date.
 //
@@ -500,7 +500,7 @@ export interface TaxesFile {
   trades: TaxTrade[];
 }
 
-// Mirror of data/revolut_transactions.json written by export_revolut.py
+// Mirror of data/revolut_transactions.json written by plout revolut
 // (write_transactions): the EUR current account's statement plus the Boosted
 // account's interest credits, one row per leg, newest first, with the monthly
 // aggregates precomputed so the pages only render.

@@ -97,7 +97,7 @@ const en = {
     sameMoneyIn: (symbol: string) => `Same money in ${symbol}`,
     difference: "difference",
     noPerformance:
-      "Not enough snapshots with deposit data yet — run export_deposits.py to fill in past days.",
+      "Not enough snapshots with deposit data yet — run plout deposits to fill in past days.",
   },
   kpis: {
     ariaLabel: "Portfolio key metrics",
@@ -382,7 +382,7 @@ const en = {
       avgBalance: "Avg. balance",
       effectiveRate: "Effective rate",
       days: "Days",
-      noInterest: "No interest rows found yet — run export_revolut.py again once the Boosted account has paid.",
+      noInterest: "No interest rows found yet — run plout revolut again once the Boosted account has paid.",
     },
   },
   correlation: {
@@ -446,7 +446,7 @@ const en = {
       `Volatility, diversification, bets and risk shares use correlations pulled ${lambda} toward their average (${target}) to filter out estimation noise (Ledoit–Wolf); the matrix and the graph show the observed ones.`,
     excluded: (list: string) => `Not enough price history in this window: ${list}.`,
     unresolved: (list: string) => `No prices found for: ${list}.`,
-    empty: "No price history yet. Run .venv/bin/python export_prices.py (the dev server also runs it on start).",
+    empty: "No price history yet. Run .venv/bin/plout prices (the dev server also runs it on start).",
     tooFew: "At least two holdings with price history are needed to correlate anything.",
     source: (s: string) => `Prices: ${s}.`,
   },

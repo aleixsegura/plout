@@ -99,7 +99,7 @@ const ca: Translations = {
     sameMoneyIn: (symbol: string) => `Mateixos diners a ${symbol}`,
     difference: "diferència",
     noPerformance:
-      "Encara no hi ha prou instantànies amb dades d'ingressos — executa export_deposits.py per completar els dies anteriors.",
+      "Encara no hi ha prou instantànies amb dades d'ingressos — executa plout deposits per completar els dies anteriors.",
   },
   kpis: {
     ariaLabel: "Mètriques clau de la cartera",
@@ -383,7 +383,7 @@ const ca: Translations = {
       avgBalance: "Saldo mitjà",
       effectiveRate: "Tipus efectiu",
       days: "Dies",
-      noInterest: "Encara no s'han trobat interessos — torna a executar export_revolut.py quan el compte Boosted hagi pagat.",
+      noInterest: "Encara no s'han trobat interessos — torna a executar plout revolut quan el compte Boosted hagi pagat.",
     },
   },
   correlation: {
@@ -447,7 +447,7 @@ const ca: Translations = {
       `Volatilitat, diversificació, apostes i contribucions fan servir correlacions contretes un ${lambda} cap a la seva mitjana (${target}) per filtrar soroll d'estimació (Ledoit-Wolf); la matriu i el graf mostren les observades.`,
     excluded: (list: string) => `Sense prou historial de preus en aquesta finestra: ${list}.`,
     unresolved: (list: string) => `No s'han trobat preus per a: ${list}.`,
-    empty: "Encara no hi ha historial de preus. Executa .venv/bin/python export_prices.py (el servidor de desenvolupament també ho fa en arrencar).",
+    empty: "Encara no hi ha historial de preus. Executa .venv/bin/plout prices (el servidor de desenvolupament també ho fa en arrencar).",
     tooFew: "Calen almenys dues posicions amb historial de preus per poder correlacionar res.",
     source: (s: string) => `Preus: ${s}.`,
   },

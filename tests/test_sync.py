@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the one-shot refresh (refresh.py): which exporters run, in what
+"""Tests for the one-shot refresh (plout sync): which exporters run, in what
 order, and that one failure never stops the rest — except DEGIRO steps after a
 failed DEGIRO login, which would each ask the phone again:
 
@@ -11,9 +11,9 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from refresh import run, select_steps
+from plout.sync import run, select_steps
 
 
 def names(steps):

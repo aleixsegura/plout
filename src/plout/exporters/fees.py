@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """
 Export DEGIRO fees and commissions to data/fees.json.
 
-Reuses export_degiro.py's login and export_dividends.py's cash-statement
+Reuses degiro.py's login and dividends.py's cash-statement
 fetch, then keeps only the *cost* movements — what DEGIRO actually charged the
 account, as opposed to the trades and dividends themselves.
 
@@ -13,7 +12,7 @@ Four categories are tracked (see FEE_CATEGORIES):
   other         — anything else DEGIRO books as a cost (custody, stamp duty…)
 
 Charges are negative (money out), matching the withholding-tax convention in
-export_dividends.py. Each carries its native amount plus an EUR figure
+dividends.py. Each carries its native amount plus an EUR figure
 converted at the charge date, so the web app can total everything in EUR.
 
 Note this deliberately does *not* read per-trade fees from the transactions
@@ -21,7 +20,7 @@ history: the cash statement is the ground truth for what left the account, and
 mixing the two sources would double-count the same commission.
 
 Usage:
-  .venv/bin/python export_fees.py [--from YYYY-MM-DD] [--output-dir .] [--debug]
+  plout fees [--from YYYY-MM-DD] [--output-dir DIR] [--debug]
 """
 
 import argparse
@@ -31,8 +30,9 @@ from collections import defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from export_degiro import connect, fetch_product_meta
-from export_dividends import fetch_cash_movements, to_eur
+from plout.config import PROJECT_ROOT
+from plout.exporters.degiro import connect, fetch_product_meta
+from plout.exporters.dividends import fetch_cash_movements, to_eur
 
 # DEGIRO localises cash-movement descriptions to the account language, so every
 # rule matches on keywords rather than exact strings. Keywords are lowercase and
@@ -194,8 +194,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
     )
     parser.add_argument(
         "--debug",
@@ -260,6 +260,6 @@ if __name__ == "__main__":
     except Exception as exc:
         sys.exit(
             f"DEGIRO fee export failed: {exc}\n"
-            f"  If login worked for export_degiro.py it should work here too;\n"
+            f"  If login worked for `plout degiro` it should work here too;\n"
             f"  DEGIRO may have changed their API — try updating degiro-connector."
         )

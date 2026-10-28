@@ -10,7 +10,7 @@ from pathlib import Path
 
 random.seed(42)
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "demo-data"
 OUT.mkdir(exist_ok=True)
 
@@ -552,7 +552,7 @@ w("symbols.json", dict(
 ))
 
 # ---------------------------------------------------------------------------
-# Price history (export_prices.py) — correlated random walks from a factor
+# Price history (prices.py) — correlated random walks from a factor
 # model: market + sector + idiosyncratic, so the Correlation page shows real
 # structure (a tech cluster, crypto apart, the REIT and the ETF in between).
 # Own RNG, so adding this didn't reshuffle the fixtures above.
@@ -624,7 +624,7 @@ for symbol, path in paths.items():
 ), ensure_ascii=False) + "\n")
 
 # ---------------------------------------------------------------------------
-# DEGIRO deposits (export_deposits.py) — the same schedule history.json's
+# DEGIRO deposits (deposits.py) — the same schedule history.json's
 # netDepositsEur follows: a lump sum a year before the history starts, then
 # 500 € at each month start, summing to the positions' 22,000 €.
 # ---------------------------------------------------------------------------

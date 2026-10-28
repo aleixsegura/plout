@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Daily portfolio-value history, appended by the broker exporters.
 
@@ -21,10 +20,13 @@ field existed are filled in by `backfill()` from the exports that hold the
 dated movements (deposits.json, revolut_trades.json, revolut_transactions.json).
 """
 
+import argparse
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+from plout.config import PROJECT_ROOT
 
 
 def _read_json(path: Path) -> dict | None:
@@ -56,7 +58,7 @@ def _local_date(raw: str | None) -> str | None:
 
 def degiro_net_deposits_at(deposits_file: dict | None, as_of: str | None) -> float | None:
     """Net EUR deposited into DEGIRO up to the instant `as_of`, from the
-    movements export_deposits.py wrote; None when they aren't available."""
+    movements deposits.py wrote; None when they aren't available."""
     if deposits_file is None or not isinstance(deposits_file.get("movements"), list):
         return None
     cutoff = _instant(as_of)
@@ -222,12 +224,22 @@ def record_snapshot(data_dir: Path) -> Path:
     return save_history(history, data_dir)
 
 
-if __name__ == "__main__":
-    # `python history.py` fills the running totals of past days in place,
-    # without recording a new snapshot.
-    root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent
-    data = root / "data"
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Fill the running totals of past days in history.json, without recording a new snapshot."
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
+    )
+    args = parser.parse_args()
+    data = Path(args.output_dir).resolve() / "data"
     hist = load_history(data)
     n = backfill(hist, data)
     save_history(hist, data)
     print(f"Filled {n} field(s) across {len(hist['days'])} day(s) in {data / 'history.json'}")
+
+
+if __name__ == "__main__":
+    main()

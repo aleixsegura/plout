@@ -2,8 +2,11 @@
 
 from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-ENV_FILE = SCRIPT_DIR / ".env"
+# src/plout/config.py → the repository root, which holds .env, data/, the
+# manual inputs and the broker sessions. The package is meant to be installed
+# editable (`pip install -e .`) so this keeps pointing at the checkout.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ENV_FILE = PROJECT_ROOT / ".env"
 
 
 def load_env_file(path: Path) -> dict[str, str]:

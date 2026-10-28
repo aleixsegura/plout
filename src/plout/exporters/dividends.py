@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """
 Export DEGIRO dividend history to data/dividends.json.
 
-Reuses export_degiro.py's login (connect) and product metadata lookup, then
+Reuses degiro.py's login (connect) and product metadata lookup, then
 pulls the account cash statement over a date range and keeps only the
 dividend movements. DEGIRO records a dividend as a positive "Dividend" cash
 movement plus (usually) a negative withholding-tax movement on the same
@@ -11,14 +10,14 @@ net figures.
 
 Each payment carries both its native amount (USD for US stocks, EUR for Xetra
 ETFs) and an EUR figure converted at the payment date via Coinbase's public
-USD-EUR spot (reused from export_revolut.py), so the web page can total in EUR.
+USD-EUR spot (reused from revolut.py), so the web page can total in EUR.
 
 Also pulls DEGIRO's own get_upcoming_payments (announced but not-yet-paid
 dividends/coupons) into `upcoming` — the next pay dates — best-effort so a
 failure there never loses the historical export.
 
 Usage:
-  .venv/bin/python export_dividends.py [--from YYYY-MM-DD] [--output-dir .] [--debug]
+  plout dividends [--from YYYY-MM-DD] [--output-dir DIR] [--debug]
 """
 
 import argparse
@@ -30,8 +29,9 @@ from pathlib import Path
 
 from degiro_connector.trading.models.account import OverviewRequest
 
-from export_degiro import connect, fetch_product_meta
-from export_revolut import crypto_price_eur, crypto_price_eur_at
+from plout.config import PROJECT_ROOT
+from plout.exporters.degiro import connect, fetch_product_meta
+from plout.exporters.revolut import crypto_price_eur, crypto_price_eur_at
 
 # DEGIRO localises cash-movement descriptions to the account language, so match
 # a dividend by keyword rather than by an exact string. Every dividend line
@@ -57,7 +57,7 @@ def classify(description: str | None) -> str | None:
 def to_eur(amount: float, currency: str, day: str) -> float:
     """Convert `amount` in `currency` to EUR at the payment date `day`.
 
-    Reuses export_revolut's Coinbase spot (which also quotes fiat pairs like
+    Reuses revolut.py's Coinbase spot (which also quotes fiat pairs like
     USD-EUR). Falls back to the current rate, then to the raw amount, so a
     pricing hiccup degrades gracefully instead of dropping the payment.
     """
@@ -185,8 +185,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
     )
     parser.add_argument(
         "--debug",
@@ -205,7 +205,7 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / "dividends.json"
 
-    # connect() also returns the vwd quote token, which only export_degiro needs.
+    # connect() also returns the vwd quote token, which only degiro.py needs.
     api, _user_token = connect()
     movements = fetch_cash_movements(api, from_date, to_date)
     if args.debug:
@@ -255,6 +255,6 @@ if __name__ == "__main__":
     except Exception as exc:
         sys.exit(
             f"DEGIRO dividend export failed: {exc}\n"
-            f"  If login worked for export_degiro.py it should work here too;\n"
+            f"  If login worked for `plout degiro` it should work here too;\n"
             f"  DEGIRO may have changed their API — try updating degiro-connector."
         )

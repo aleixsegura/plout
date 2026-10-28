@@ -14,9 +14,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from export_taxes import Asset, Lot, Sale, build_years, flag_two_month_rule, match_fifo
+from plout.exporters.taxes import Asset, Lot, Sale, build_years, flag_two_month_rule, match_fifo
 
 
 def asset_with(lots, sales, asset_type="stock"):

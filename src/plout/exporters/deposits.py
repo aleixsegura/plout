@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """
 Export DEGIRO deposits and withdrawals to data/deposits.json.
 
-Reuses export_degiro.py's login and export_dividends.py's cash-statement
+Reuses degiro.py's login and dividends.py's cash-statement
 fetch, then keeps only the money that crossed the account boundary — bank
 transfers in (from any bank) and withdrawals out. The Holdings page needs
 them dated: the account's return over a period is the change in value minus
@@ -20,7 +19,7 @@ written — and history.json's past days only backfilled from it — when the tw
 agree; otherwise the classified lines are printed so the rules can be fixed.
 
 Usage:
-  .venv/bin/python export_deposits.py [--from YYYY-MM-DD] [--output-dir .] [--debug] [--force]
+  plout deposits [--from YYYY-MM-DD] [--output-dir DIR] [--debug] [--force]
 """
 
 import argparse
@@ -29,9 +28,10 @@ import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from export_degiro import connect
-from export_dividends import fetch_cash_movements, to_eur
-from history import backfill, degiro_net_deposits_at, load_history, save_history
+from plout.config import PROJECT_ROOT
+from plout.exporters.degiro import connect
+from plout.exporters.dividends import fetch_cash_movements, to_eur
+from plout.history import backfill, degiro_net_deposits_at, load_history, save_history
 
 ACCENTS = str.maketrans("áàäâãéèëêíìïîóòöôõúùüûçñ", "aaaaaeeeeiiiiooooouuuucn")
 
@@ -109,8 +109,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
     )
     parser.add_argument(
         "--debug",
@@ -159,12 +159,12 @@ def main() -> None:
     for m in movements:
         print(f"  {m['date'][:10]}  {m['amountEur']:>11,.2f}  [{m['type']}] {m['description']}")
 
-    # The check: DEGIRO's own net-deposits figure, as of the last export_degiro run.
+    # The check: DEGIRO's own net-deposits figure, as of the last `plout degiro` run.
     positions_file = out_dir / "positions.json"
     positions = json.loads(positions_file.read_text()) if positions_file.exists() else None
     expected = ((positions or {}).get("summary") or {}).get("netDepositsEur")
     if expected is None:
-        print("\nNo net-deposits figure in positions.json to check against — run export_degiro.py first.")
+        print("\nNo net-deposits figure in positions.json to check against — run `plout degiro` first.")
         ok = False
     else:
         got = degiro_net_deposits_at(payload, positions.get("updatedAt"))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the Revolut account-history export (export_revolut.py).
+"""Tests for the Revolut account-history export (plout.exporters.revolut).
 
 They pin the classification rules that decide what counts as spending — a
 transfer to your own broker or savings account booked as an expense would
@@ -13,9 +13,9 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from export_revolut import (
+from plout.exporters.revolut import (
     Currencies,
     build_interest,
     build_months,

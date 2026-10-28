@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Export Revolut cash balances (current + savings) and crypto holdings to
 data/revolut.json.
@@ -8,7 +7,7 @@ Revolut has no personal API, so this drives the Revolut web app
 capturing the app's own internal retail JSON API responses off the network —
 no DOM scraping.
 
-  python3 export_revolut.py
+  plout revolut
 opens a headed browser on the persistent profile in .revolut-profile/
 (gitignored). Revolut's auth cookies expire 5 minutes after the app was last
 open, so a run within that window goes straight through; otherwise log in in
@@ -42,8 +41,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from common import ENV_FILE, load_env_file
-from history import record_snapshot
+from plout.config import ENV_FILE, PROJECT_ROOT, load_env_file
+from plout.history import record_snapshot
 
 try:
     from playwright.sync_api import Error as PlaywrightError
@@ -51,16 +50,15 @@ try:
 except ImportError:
     sys.exit(
         "playwright is not installed.\n"
-        "  .venv/bin/pip install -r requirements.txt\n"
+        "  .venv/bin/pip install -e .\n"
         "  .venv/bin/playwright install chromium"
     )
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-PROFILE_DIR = SCRIPT_DIR / ".revolut-profile"
-DEBUG_DIR = SCRIPT_DIR / ".revolut-debug"
+PROFILE_DIR = PROJECT_ROOT / ".revolut-profile"
+DEBUG_DIR = PROJECT_ROOT / ".revolut-debug"
 # Hand-maintained average buy prices per crypto symbol (Revolut exposes none,
 # and the Bybit purchase prices were lost on transfer). See the file's _comment.
-COST_BASIS_FILE = SCRIPT_DIR / "crypto_cost_basis.json"
+COST_BASIS_FILE = PROJECT_ROOT / "crypto_cost_basis.json"
 
 APP_URL = "https://app.revolut.com"
 API_PREFIX = "/api/retail/"
@@ -517,7 +515,7 @@ def spot_price(base: str, quote: str = "EUR") -> float | None:
 
 def crypto_price_eur(symbol: str) -> float | None:
     """Spot price of `symbol` in EUR. Kept as a named wrapper because
-    export_dividends.py imports it for its own FX conversions."""
+    dividends.py imports it for its own FX conversions."""
     return spot_price(symbol, "EUR")
 
 
@@ -732,7 +730,7 @@ def build_crypto_ledger(rows: list[dict], ccy: Currencies) -> dict:
                     "name": ccy.name(symbol),
                     "quantity": round(quantity, 10),
                     "currency": fiat["currency"],
-                    # Gross first, fee apart: export_taxes.py subtracts the fee
+                    # Gross first, fee apart: taxes.py subtracts the fee
                     # itself to reach the disposal value.
                     "grossAmount": round(gross, 2),
                     "feeAmount": round(fee, 2),
@@ -1363,8 +1361,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
     )
     parser.add_argument(
         "--login",

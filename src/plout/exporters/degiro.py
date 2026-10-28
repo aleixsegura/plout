@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """
 Export DEGIRO portfolio positions to data/positions.json.
 
-Uses the unofficial degiro-connector library (pip3 install -r requirements.txt)
+Uses the unofficial degiro-connector library (installed by `pip install -e .`)
 to log in with DEGIRO_USERNAME / DEGIRO_PASSWORD from .env (or environment),
 fetch the current portfolio and account totals, and write a single JSON file
 the web app serves at /positions.json.
@@ -47,8 +46,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from common import ENV_FILE, load_env_file
-from history import record_snapshot
+from plout.config import ENV_FILE, PROJECT_ROOT, load_env_file
+from plout.history import record_snapshot
 
 import requests
 
@@ -61,11 +60,10 @@ try:
 except ImportError:
     sys.exit(
         "degiro-connector is not installed.\n"
-        "  pip3 install -r requirements.txt\n"
-        "(or use a venv: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt)"
+        "  .venv/bin/pip install -e .\n"
+        "(create the venv first if needed: python3 -m venv .venv)"
     )
 
-SCRIPT_DIR = Path(__file__).resolve().parent
 
 # How long to wait for the in-app login approval when there's no terminal.
 APPROVAL_WAIT_SECONDS = 180
@@ -82,7 +80,7 @@ def get_env(name: str) -> str | None:
 # phone confirmation per script. The session id is shared instead: the first
 # script to log in leaves it here, the rest resume it, and DEGIRO itself expires
 # it after 30 minutes without a request. Gitignored — it grants account access.
-SESSION_FILE = SCRIPT_DIR / ".degiro-session.json"
+SESSION_FILE = PROJECT_ROOT / ".degiro-session.json"
 # Past this a saved session is certainly dead, so don't even spend a request on it.
 SESSION_MAX_AGE_SECONDS = 12 * 3600
 
@@ -207,7 +205,7 @@ def connect() -> tuple[TradingAPI, int | None]:
     """Log in to DEGIRO, resuming the session another exporter left when it is still alive.
 
     The session is deliberately not logged out afterwards (see SESSION_FILE);
-    `export_degiro.py --logout` ends it explicitly.
+    `plout degiro --logout` ends it explicitly.
     """
     username = get_env("DEGIRO_USERNAME")
     password = get_env("DEGIRO_PASSWORD")
@@ -517,7 +515,7 @@ def build_positions(
                 "id": row["id"],
                 "symbol": product.get("symbol") or row["id"],
                 "name": product.get("name") or "",
-                # What export_prices.py looks the price history up by.
+                # What prices.py looks the price history up by.
                 "isin": product.get("isin"),
                 # DEGIRO's own classification ("STOCK", "ETF", "FUND", …),
                 # which the web app turns into the row's type icon.
@@ -614,8 +612,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
     )
     parser.add_argument(
         "--no-quotes",

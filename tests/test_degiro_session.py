@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the DEGIRO session the exporters share (export_degiro.connect).
+"""Tests for the DEGIRO session the exporters share (degiro.connect).
 
 A session that is wrongly reused fails the export; one that is wrongly
 discarded costs a fresh login — a phone confirmation without a TOTP secret.
@@ -20,10 +20,10 @@ from contextlib import redirect_stderr
 from pathlib import Path
 from unittest import mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-import export_degiro
-from export_degiro import SESSION_MAX_AGE_SECONDS, load_session, save_session
+from plout.exporters import degiro
+from plout.exporters.degiro import SESSION_MAX_AGE_SECONDS, load_session, save_session
 
 
 class FakeAPI:
@@ -92,14 +92,14 @@ class ConnectTest(unittest.TestCase):
         FakeAPI.logins = 0
         env = {"DEGIRO_USERNAME": "jane", "DEGIRO_PASSWORD": "pw"}
         self.patches = [
-            mock.patch.object(export_degiro, "TradingAPI", FakeAPI),
-            mock.patch.object(export_degiro, "SESSION_FILE", self.path),
-            mock.patch.object(export_degiro, "get_env", env.get),
+            mock.patch.object(degiro, "TradingAPI", FakeAPI),
+            mock.patch.object(degiro, "SESSION_FILE", self.path),
+            mock.patch.object(degiro, "get_env", env.get),
             # load/save default their path at definition time, so route them
             # to the temp file explicitly.
-            mock.patch.object(export_degiro, "load_session",
+            mock.patch.object(degiro, "load_session",
                               lambda u: load_session(u, path=self.path)),
-            mock.patch.object(export_degiro, "save_session",
+            mock.patch.object(degiro, "save_session",
                               lambda *a: save_session(*a, path=self.path)),
             # connect() announces a reused session on stderr.
             redirect_stderr(io.StringIO()),
@@ -113,31 +113,31 @@ class ConnectTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_logs_in_and_saves_the_session(self):
-        api, token = export_degiro.connect()
+        api, token = degiro.connect()
         self.assertEqual(FakeAPI.logins, 1)
         self.assertEqual(token, 222)
         self.assertEqual(api.credentials.int_account, 111)
         self.assertEqual(load_session("jane", path=self.path)["session_id"], "fresh-session")
 
     def test_second_export_reuses_the_session(self):
-        export_degiro.connect()
-        api, token = export_degiro.connect()
+        degiro.connect()
+        api, token = degiro.connect()
         self.assertEqual(FakeAPI.logins, 1)
         self.assertEqual(token, 222)
         self.assertEqual(api.connection_storage.session_id, "fresh-session")
 
     def test_dead_session_falls_back_to_login(self):
         save_session("jane", "expired-session", 111, 222, path=self.path)
-        api, _ = export_degiro.connect()
+        api, _ = degiro.connect()
         self.assertEqual(FakeAPI.logins, 1)
         self.assertEqual(api.connection_storage.session_id, "fresh-session")
 
     def test_totp_secret_reaches_the_credentials(self):
         env = {"DEGIRO_USERNAME": "jane", "DEGIRO_PASSWORD": "pw",
                "DEGIRO_TOTP_SECRET": "JBSW Y3DP EHPK 3PXP"}
-        with mock.patch.object(export_degiro, "get_env", env.get), \
-                mock.patch.object(export_degiro, "_wait_for_fresh_totp_window"):
-            api, _ = export_degiro.connect()
+        with mock.patch.object(degiro, "get_env", env.get), \
+                mock.patch.object(degiro, "_wait_for_fresh_totp_window"):
+            api, _ = degiro.connect()
         self.assertEqual(api.credentials.totp_secret_key, "JBSWY3DPEHPK3PXP")
 
 

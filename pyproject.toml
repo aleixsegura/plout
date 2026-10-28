@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plout"
+version = "0.1.0"
+description = "A local dashboard for a personal portfolio across DEGIRO and Revolut"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = [
+    "degiro-connector>=3.0,<4",
+    "playwright>=1.45,<2",
+    "requests>=2.31,<3",
+]
+
+[project.scripts]
+plout = "plout.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -75,7 +75,7 @@ export default function TaxesPage() {
         <p className="max-w-prose text-secondary">
           {t.taxes.noDataIntro}{" "}
           <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">
-            .venv/bin/python export_taxes.py
+            .venv/bin/plout taxes
           </code>{" "}
           {t.taxes.noDataOutro}{" "}
           <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">

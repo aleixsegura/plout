@@ -19,11 +19,11 @@ const EXPORT_MAX_AGE_HOURS = 12;
  * server starts.
  *
  * These are the files with no broker behind them, and having to remember a
- * separate `python export_*.py` before opening the page defeats the point — so
+ * separate `plout <exporter>` before opening the page defeats the point — so
  * the dev server runs them, in the background (the server is up and serving
  * meanwhile) and reloads the page if the file changed.
  */
-function backgroundExport(name: string, script: string, outName: string): Plugin {
+function backgroundExport(name: string, command: string, outName: string): Plugin {
   return {
     name: `plout:${name.replace(/ /g, "-")}`,
     apply: "serve",
@@ -33,10 +33,19 @@ function backgroundExport(name: string, script: string, outName: string): Plugin
       const outFile = path.join(PROJECT_ROOT, "data", outName);
       const before = fs.statSync(outFile, { throwIfNoEntry: false })?.mtimeMs;
 
+      // `python -m plout` rather than the installed `plout` script, with src/ on
+      // the path, so this works whether or not the package is installed.
+      const pythonPath = [path.join(PROJECT_ROOT, "src"), process.env.PYTHONPATH]
+        .filter(Boolean)
+        .join(path.delimiter);
       const child = spawn(
         python,
-        [script, "--max-age-hours", String(EXPORT_MAX_AGE_HOURS)],
-        { cwd: PROJECT_ROOT, stdio: ["ignore", "pipe", "pipe"] },
+        ["-m", "plout", command, "--max-age-hours", String(EXPORT_MAX_AGE_HOURS)],
+        {
+          cwd: PROJECT_ROOT,
+          env: { ...process.env, PYTHONPATH: pythonPath },
+          stdio: ["ignore", "pipe", "pipe"],
+        },
       );
 
       const log = (data: Buffer) =>
@@ -67,8 +76,8 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    backgroundExport("market caps", "export_marketcaps.py", "marketcaps.json"),
-    backgroundExport("prices", "export_prices.py", "prices.json"),
+    backgroundExport("market caps", "marketcaps", "marketcaps.json"),
+    backgroundExport("prices", "prices", "prices.json"),
   ],
   publicDir: path.resolve(__dirname, "../data"),
 });

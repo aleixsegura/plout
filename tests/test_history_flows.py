@@ -4,8 +4,8 @@
 The Holdings page subtracts these totals from each day's value to separate
 investment return from money moved in, so a misclassified line shows up there
 as fake profit or loss: an FX leg read as a deposit, a staking reward read as
-money in, a sale read as a loss. Run them after touching history.py's
-*_at helpers or export_deposits.classify:
+money in, a sale read as a loss. Run them after touching plout.history's
+*_at helpers or plout.exporters.deposits.classify:
 
     .venv/bin/python -m unittest discover -s tests -v
 """
@@ -13,10 +13,10 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from export_deposits import build_movements, classify
-from history import (
+from plout.exporters.deposits import build_movements, classify
+from plout.history import (
     backfill,
     degiro_net_deposits_at,
     revolut_interest_at,

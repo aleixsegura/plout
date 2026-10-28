@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Export market capitalisations to data/marketcaps.json.
 
@@ -24,7 +23,7 @@ Normally nobody runs this by hand: the web app's dev server starts it (see the
 it exits before its first request unless the export is stale or a symbol is new.
 
 Usage:
-  .venv/bin/python export_marketcaps.py [--output-dir .] [--max-age-hours 12]
+  plout marketcaps [--output-dir DIR] [--max-age-hours 12]
 """
 
 import argparse
@@ -36,6 +35,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+
+from plout.config import PROJECT_ROOT
 
 OUT_NAME = "marketcaps.json"
 
@@ -370,8 +371,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory containing the data/ folder (default: current dir)",
+        default=str(PROJECT_ROOT),
+        help="Directory containing the data/ folder (default: the project root)",
     )
     parser.add_argument(
         "--max-age-hours",
@@ -392,7 +393,7 @@ def main() -> None:
     if not targets:
         raise SystemExit(
             f"No symbols found in {out_dir}/.\n"
-            "  Run export_degiro.py / export_revolut.py first."
+            "  Run `plout degiro` / `plout revolut` first."
         )
 
     previous = _read_json(out_file) or {}
