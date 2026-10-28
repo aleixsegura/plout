@@ -8,7 +8,14 @@ fetch the current portfolio and account totals, and write a single JSON file
 the web app serves at /positions.json.
 
 Optional .env keys:
-  DEGIRO_INT_ACCOUNT  — skips the client-details call when present.
+  DEGIRO_INT_ACCOUNT  — the account number; looked up when absent.
+  DEGIRO_TOTP_SECRET  — the authenticator-app secret, for a login that needs
+                        no phone (the account's 2FA must use an authenticator
+                        app rather than the in-app confirmation).
+
+The session is shared with the other DEGIRO exporters through
+.degiro-session.json (see SESSION_FILE), so a batch of exports logs in once.
+--logout ends it.
 
 All monetary values come straight from DEGIRO: per-position `value`, `plBase`
 and `todayPlBase` are in the account base currency (EUR), while `price` and
@@ -33,6 +40,7 @@ stale snapshot price per position when a quote is unavailable. Pass
 
 import argparse
 import json
+import logging
 import os
 import sys
 import time
@@ -60,34 +68,103 @@ except ImportError:
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 # How long to wait for the in-app login approval when there's no terminal.
-TOTP_WAIT_SECONDS = 180
-TOTP_POLL_SECONDS = 5
+APPROVAL_WAIT_SECONDS = 180
+APPROVAL_POLL_SECONDS = 5
 
 
 def get_env(name: str) -> str | None:
     return os.environ.get(name) or load_env_file(ENV_FILE).get(name) or None
 
 
-def connect() -> tuple[TradingAPI, int | None]:
-    username = get_env("DEGIRO_USERNAME")
-    password = get_env("DEGIRO_PASSWORD")
-    missing = [k for k, v in (("DEGIRO_USERNAME", username), ("DEGIRO_PASSWORD", password)) if not v]
-    if missing:
-        raise SystemExit(
-            f"Missing DEGIRO credentials: {', '.join(missing)}.\n"
-            f"  Add them to {ENV_FILE} (one KEY=value per line)."
-        )
+# ── session reuse ──────────────────────────────────────────────────────────────
 
-    int_account = get_env("DEGIRO_INT_ACCOUNT")
-    credentials = Credentials(
-        username=username,
-        password=password,
-        int_account=int(int_account) if int_account else None,
-    )
+# Every DEGIRO exporter used to log in (and out) on its own, which cost one
+# phone confirmation per script. The session id is shared instead: the first
+# script to log in leaves it here, the rest resume it, and DEGIRO itself expires
+# it after 30 minutes without a request. Gitignored — it grants account access.
+SESSION_FILE = SCRIPT_DIR / ".degiro-session.json"
+# Past this a saved session is certainly dead, so don't even spend a request on it.
+SESSION_MAX_AGE_SECONDS = 12 * 3600
+
+
+def load_session(username: str, path: Path = SESSION_FILE, now: float | None = None) -> dict | None:
+    """The saved session for `username`, or None when absent, foreign or stale."""
+    try:
+        session = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(session, dict) or session.get("username") != username:
+        return None
+    if not session.get("session_id") or not session.get("int_account"):
+        return None
+    age = (time.time() if now is None else now) - float(session.get("saved_at") or 0)
+    if age > SESSION_MAX_AGE_SECONDS:
+        return None
+    return session
+
+
+def save_session(
+    username: str,
+    session_id: str,
+    int_account: int,
+    user_token: int | None,
+    path: Path = SESSION_FILE,
+) -> None:
+    payload = {
+        "username": username,
+        "session_id": session_id,
+        "int_account": int_account,
+        "user_token": user_token,
+        "saved_at": time.time(),
+    }
+    # Created 0600 from the start rather than chmod-ed after the write.
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        json.dump(payload, f)
+
+
+def forget_session(path: Path = SESSION_FILE) -> None:
+    path.unlink(missing_ok=True)
+
+
+def _client_details(api: TradingAPI) -> dict | None:
+    """The client-details `data`, or None when the session is not (or no longer) valid."""
+    # degiro-connector logs every failed request at CRITICAL, which is just
+    # noise when probing a session that has expired.
+    logging.disable(logging.CRITICAL)
+    try:
+        details = api.get_client_details()
+    except Exception:
+        details = None
+    finally:
+        logging.disable(logging.NOTSET)
+    data = details.get("data") if isinstance(details, dict) else None
+    return data if isinstance(data, dict) and data.get("intAccount") else None
+
+
+def _resume(credentials: Credentials, session: dict) -> tuple[TradingAPI, dict] | None:
+    credentials.int_account = int(session["int_account"])
     api = TradingAPI(credentials=credentials)
+    api.connection_storage.session_id = session["session_id"]
+    data = _client_details(api)
+    return (api, data) if data else None
 
+
+def _wait_for_fresh_totp_window() -> None:
+    """Sleep past the tail of the current 30 s TOTP window, so the code
+    degiro-connector generates is not already expired by the time DEGIRO checks it."""
+    remaining = 30 - time.time() % 30
+    if remaining < 3:
+        time.sleep(remaining + 0.5)
+
+
+def _login(credentials: Credentials) -> TradingAPI:
+    api = TradingAPI(credentials=credentials)
+    if credentials.totp_secret_key:
+        _wait_for_fresh_totp_window()
     try:
         api.connect()
+        return api
     except DeGiroConnectionError as exc:
         # Status 12 = DEGIRO's in-app login confirmation: the failed attempt
         # returns an inAppToken and pushes a notification to the phone app;
@@ -98,7 +175,8 @@ def connect() -> tuple[TradingAPI, int | None]:
             raise
         print(
             "DEGIRO asks you to confirm this login in their app.\n"
-            f"  Open the DEGIRO app on your phone and tap 'Yes' (code: {token}).",
+            f"  Open the DEGIRO app on your phone and tap 'Yes' (code: {token}).\n"
+            "  (Set DEGIRO_TOTP_SECRET in .env to log in without the phone — see README.)",
             file=sys.stderr,
         )
         credentials.in_app_token = token
@@ -106,31 +184,95 @@ def connect() -> tuple[TradingAPI, int | None]:
             input("  Press Enter here once you have approved it... ")
             api = TradingAPI(credentials=credentials)
             api.connect()
-        else:
-            # No terminal to wait on (cron, an agent shell, a pipe): poll the
-            # login with the token instead — it only succeeds once the tap lands.
-            print(
-                f"  Waiting up to {TOTP_WAIT_SECONDS}s for the approval...",
-                file=sys.stderr,
-            )
-            deadline = time.monotonic() + TOTP_WAIT_SECONDS
-            while True:
-                api = TradingAPI(credentials=credentials)
-                try:
-                    api.connect()
-                    break
-                except DeGiroConnectionError:
-                    if time.monotonic() >= deadline:
-                        raise
-                    time.sleep(TOTP_POLL_SECONDS)
+            return api
+        # No terminal to wait on (cron, an agent shell, a pipe): poll the
+        # login with the token instead — it only succeeds once the tap lands.
+        print(
+            f"  Waiting up to {APPROVAL_WAIT_SECONDS}s for the approval...",
+            file=sys.stderr,
+        )
+        deadline = time.monotonic() + APPROVAL_WAIT_SECONDS
+        while True:
+            api = TradingAPI(credentials=credentials)
+            try:
+                api.connect()
+                return api
+            except DeGiroConnectionError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(APPROVAL_POLL_SECONDS)
 
-    # `id` doubles as the vwd "user token" the quote feed authenticates with.
-    details = api.get_client_details()
-    data = details.get("data", {}) if isinstance(details, dict) else {}
+
+def connect() -> tuple[TradingAPI, int | None]:
+    """Log in to DEGIRO, resuming the session another exporter left when it is still alive.
+
+    The session is deliberately not logged out afterwards (see SESSION_FILE);
+    `export_degiro.py --logout` ends it explicitly.
+    """
+    username = get_env("DEGIRO_USERNAME")
+    password = get_env("DEGIRO_PASSWORD")
+    missing = [k for k, v in (("DEGIRO_USERNAME", username), ("DEGIRO_PASSWORD", password)) if not v]
+    if missing:
+        raise SystemExit(
+            f"Missing DEGIRO credentials: {', '.join(missing)}.\n"
+            f"  Add them to {ENV_FILE} (one KEY=value per line)."
+        )
+
+    int_account = get_env("DEGIRO_INT_ACCOUNT")
+    # With the account's 2FA set to an authenticator app, degiro-connector
+    # derives the one-time code from this secret: no phone involved at all.
+    totp_secret = get_env("DEGIRO_TOTP_SECRET")
+    credentials = Credentials(
+        username=username,
+        password=password,
+        int_account=int(int_account) if int_account else None,
+        totp_secret_key=totp_secret.replace(" ", "") if totp_secret else None,
+    )
+
+    saved = load_session(username)
+    resumed = _resume(credentials, saved) if saved else None
+    if resumed:
+        api, data = resumed
+        print("Reusing the DEGIRO session from an earlier export.", file=sys.stderr)
+    else:
+        credentials.int_account = int(int_account) if int_account else None
+        api = _login(credentials)
+        # `id` doubles as the vwd "user token" the quote feed authenticates with.
+        data = _client_details(api) or {}
+
     if api.credentials.int_account is None:
         api.credentials.int_account = data["intAccount"]
     user_token = data.get("id")
-    return api, int(user_token) if user_token is not None else None
+    user_token = int(user_token) if user_token is not None else None
+    try:
+        save_session(
+            username,
+            api.connection_storage.session_id,
+            api.credentials.int_account,
+            user_token,
+        )
+    except OSError as exc:
+        print(f"  warning: could not save the DEGIRO session ({exc})", file=sys.stderr)
+    return api, user_token
+
+
+def logout() -> None:
+    """End the shared session on DEGIRO's side and forget it locally."""
+    username = get_env("DEGIRO_USERNAME")
+    password = get_env("DEGIRO_PASSWORD")
+    saved = load_session(username) if username else None
+    if saved and password:
+        credentials = Credentials(
+            username=username, password=password, int_account=int(saved["int_account"])
+        )
+        api = TradingAPI(credentials=credentials)
+        api.connection_storage.session_id = saved["session_id"]
+        try:
+            api.logout()
+        except Exception:
+            pass
+    forget_session()
+    print("Logged out of DEGIRO." if saved else "No DEGIRO session to end.")
 
 
 # ── raw-update parsing ─────────────────────────────────────────────────────────
@@ -480,22 +622,25 @@ def main() -> None:
         action="store_true",
         help="Skip the vwd quote refresh and keep DEGIRO's previous-close prices",
     )
+    parser.add_argument(
+        "--logout",
+        action="store_true",
+        help="End the DEGIRO session the exporters share, then exit",
+    )
     args = parser.parse_args()
+
+    if args.logout:
+        logout()
+        return
 
     out_dir = Path(args.output_dir).resolve() / "data"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / "positions.json"
 
     api, user_token = connect()
-    try:
-        raw_rows, cash_rows, total_portfolio = fetch_portfolio(api)
-        meta = fetch_product_meta(api, [row["id"] for row in raw_rows])
-        exchanges = fetch_exchange_names(api)
-    finally:
-        try:
-            api.logout()
-        except Exception:
-            pass
+    raw_rows, cash_rows, total_portfolio = fetch_portfolio(api)
+    meta = fetch_product_meta(api, [row["id"] for row in raw_rows])
+    exchanges = fetch_exchange_names(api)
 
     quotes: dict[str, dict] = {}
     if args.no_quotes:

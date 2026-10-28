@@ -215,27 +215,21 @@ def main() -> None:
     out_file = out_dir / "fees.json"
 
     api, _user_token = connect()
-    try:
-        movements = fetch_cash_movements(api, from_date, to_date)
-        if args.debug:
-            seen = sorted({(m.get("type"), m.get("description")) for m in movements})
-            print(f"{len(movements)} cash movements; distinct (type, description):")
-            for mtype, desc in seen:
-                print(f"  [{classify(desc) or '—':<12}] [{mtype}] {desc}")
-            return
-        fee_ids = sorted(
-            {
-                str(m["productId"])
-                for m in movements
-                if classify(m.get("description")) and m.get("productId") is not None
-            }
-        )
-        meta = fetch_product_meta(api, fee_ids)
-    finally:
-        try:
-            api.logout()
-        except Exception:
-            pass
+    movements = fetch_cash_movements(api, from_date, to_date)
+    if args.debug:
+        seen = sorted({(m.get("type"), m.get("description")) for m in movements})
+        print(f"{len(movements)} cash movements; distinct (type, description):")
+        for mtype, desc in seen:
+            print(f"  [{classify(desc) or '—':<12}] [{mtype}] {desc}")
+        return
+    fee_ids = sorted(
+        {
+            str(m["productId"])
+            for m in movements
+            if classify(m.get("description")) and m.get("productId") is not None
+        }
+    )
+    meta = fetch_product_meta(api, fee_ids)
 
     charges = build_charges(movements, meta)
     by_category, by_year = summarize(charges)

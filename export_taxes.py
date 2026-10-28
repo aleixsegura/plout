@@ -2308,21 +2308,16 @@ def main() -> None:
     degiro_trades: list[dict] = []
     if args.no_degiro:
         # Reuse the ledger from the last full run instead of dropping it: the
-        # DEGIRO login costs a confirmation on the phone, and this flag exists
+        # DEGIRO login can cost a confirmation on the phone (no TOTP secret and
+        # no live shared session), and this flag exists
         # to iterate on the crypto and manual side without paying it again.
         degiro_trades = previous_degiro_trades(out_dir)
         print(f"  DEGIRO: {len(degiro_trades)} operaciones reutilizadas de taxes.json")
     else:
         api, _user_token = connect()
-        try:
-            transactions = fetch_transactions(api, from_date, to_date)
-            product_ids = sorted({str(t["productId"]) for t in transactions if t.get("productId")})
-            meta = fetch_product_meta(api, product_ids)
-        finally:
-            try:
-                api.logout()
-            except Exception:
-                pass
+        transactions = fetch_transactions(api, from_date, to_date)
+        product_ids = sorted({str(t["productId"]) for t in transactions if t.get("productId")})
+        meta = fetch_product_meta(api, product_ids)
         degiro_trades = normalize_degiro(transactions, meta)
         print(f"  DEGIRO: {len(degiro_trades)} operaciones desde {from_date}")
 

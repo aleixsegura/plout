@@ -207,30 +207,24 @@ def main() -> None:
 
     # connect() also returns the vwd quote token, which only export_degiro needs.
     api, _user_token = connect()
-    try:
-        movements = fetch_cash_movements(api, from_date, to_date)
-        if args.debug:
-            seen = sorted({(m.get("type"), m.get("description")) for m in movements})
-            print(f"{len(movements)} cash movements; distinct (type, description):")
-            for mtype, desc in seen:
-                print(f"  [{mtype}] {desc}")
-            print("\nupcoming payments (raw):")
-            print(json.dumps(api.get_upcoming_payments(raw=True), indent=2, ensure_ascii=False, default=str))
-            return
-        dividend_ids = sorted(
-            {
-                str(m["productId"])
-                for m in movements
-                if classify(m.get("description")) and m.get("productId") is not None
-            }
-        )
-        meta = fetch_product_meta(api, dividend_ids)
-        upcoming = fetch_upcoming(api)
-    finally:
-        try:
-            api.logout()
-        except Exception:
-            pass
+    movements = fetch_cash_movements(api, from_date, to_date)
+    if args.debug:
+        seen = sorted({(m.get("type"), m.get("description")) for m in movements})
+        print(f"{len(movements)} cash movements; distinct (type, description):")
+        for mtype, desc in seen:
+            print(f"  [{mtype}] {desc}")
+        print("\nupcoming payments (raw):")
+        print(json.dumps(api.get_upcoming_payments(raw=True), indent=2, ensure_ascii=False, default=str))
+        return
+    dividend_ids = sorted(
+        {
+            str(m["productId"])
+            for m in movements
+            if classify(m.get("description")) and m.get("productId") is not None
+        }
+    )
+    meta = fetch_product_meta(api, dividend_ids)
+    upcoming = fetch_upcoming(api)
 
     payments = build_payments(movements, meta)
     payload = {

@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 /data
 .venv/
+.degiro-session.json
 .revolut-profile/
 .revolut-debug/
 crypto_cost_basis.json

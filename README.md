@@ -35,7 +35,9 @@ Real data never reaches the repository:
 
 | Exporter | Writes | Feeds |
 |---|---|---|
+| `refresh.py` | everything below except `taxes.json` (add `--taxes`) | — runs the others in one go |
 | `export_degiro.py` | `positions.json` | Holdings |
+| `export_deposits.py` | `deposits.json` | Holdings (net deposits) |
 | `export_revolut.py` | `revolut.json`, `revolut_trades.json`, `revolut_transactions.json` | Dashboard, Holdings, Transactions |
 | `export_dividends.py` | `dividends.json` | Dividends |
 | `export_fees.py` | `fees.json` | Tax return (the non-deductible-fees notice) |
@@ -43,6 +45,32 @@ Real data never reaches the repository:
 | `export_marketcaps.py` | `marketcaps.json` | The Market Cap column, everywhere (runs itself on `npm run dev`) |
 | `export_prices.py` | `prices.json` | Correlation (runs itself on `npm run dev`) |
 | `history.py` | `history.json` | The portfolio chart on Holdings |
+
+## Refresh everything in one step
+
+```bash
+python3 refresh.py            # Revolut, DEGIRO (positions, deposits, dividends, fees), prices, market caps
+python3 refresh.py --taxes    # …and the tax return
+python3 refresh.py --skip revolut
+python3 refresh.py --only degiro,dividends
+```
+
+Each exporter runs as its own process, one after the other; a failure doesn't stop the rest and
+the summary at the end says what failed. Revolut goes first because it is the only step that may
+need you (its login window); after that the batch runs unattended.
+
+The DEGIRO exporters share one session, saved in `.degiro-session.json` (gitignored, `0600`), so a
+batch — or exporters run by hand within half an hour of each other — logs in once. DEGIRO ends the
+session after 30 minutes without a request; `python3 export_degiro.py --logout` ends it right away.
+
+### DEGIRO without the phone
+
+By default each DEGIRO login waits for you to tap *Yes* in the DEGIRO app. To skip that, switch
+the account's two-factor authentication to an **authenticator app** (DEGIRO → Settings →
+Security), and when the QR code shows up copy the text secret under it into `.env` as
+`DEGIRO_TOTP_SECRET` — and scan the QR in your authenticator app too, so you can still log in by
+hand. degiro-connector then derives the one-time code itself. The secret is as sensitive as your
+password: anyone with both can log in.
 
 ## Broker exporters
 
@@ -55,7 +83,7 @@ Both exporters write into the same `data/` folder the web app serves, and read c
 python3 export_degiro.py
 ```
 
-Logs in with `DEGIRO_USERNAME`/`DEGIRO_PASSWORD` from `.env` (approve the in-app confirmation when prompted) and writes portfolio positions and account totals to `data/positions.json`.
+Logs in with `DEGIRO_USERNAME`/`DEGIRO_PASSWORD` from `.env` (approve the in-app confirmation when prompted, or set `DEGIRO_TOTP_SECRET` — see [DEGIRO without the phone](#degiro-without-the-phone)) and writes portfolio positions and account totals to `data/positions.json`.
 
 DEGIRO's portfolio endpoint prices every position at the *previous* close (today's P/L comes back as exactly 0), so positions are then re-priced from the same vwd quote feed the DEGIRO app itself uses — 15-minute delayed on exchanges the account has no real-time licence for. Each position records where its price came from in `lastPriceSource` (`vwd` or `degiro-snapshot`) and when in `lastPriceAt`. Pass `--no-quotes` to keep DEGIRO's raw previous-close snapshot.
 
@@ -97,6 +125,8 @@ python3 export_revolut.py
 A browser window opens automatically. **If your session is still active, it captures and closes on its own.** Otherwise, log in there (phone number, passcode, approve the push in the Revolut phone app) and it continues once you're in, writing `data/revolut.json`.
 
 Note: Revolut runs the web app behind Cloudflare and does not keep the session across browser restarts, so the window must be visible (headless is blocked) and you'll typically re-approve a login each run. This is as unattended as a personal Revolut account allows — there is no official API.
+
+The session itself does survive the restart — it lives in the `credentials` and `refresh-token` cookies of `app.revolut.com`, which the profile keeps — but Revolut gives them a **5-minute sliding expiry**: the open app keeps renewing them, and once the browser closes the clock runs. A run within 5 minutes of the previous one needs no login; anything later does. (Restoring session cookies and `sessionStorage` was tried and changes nothing: neither holds the auth.) `refresh.py` runs Revolut first, so a full refresh costs one approval at the start.
 
 | Flag | Description |
 |---|---|

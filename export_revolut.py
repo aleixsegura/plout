@@ -8,12 +8,12 @@ Revolut has no personal API, so this drives the Revolut web app
 capturing the app's own internal retail JSON API responses off the network —
 no DOM scraping.
 
-First run (or whenever the session expires):
-  python3 export_revolut.py --login
-opens a headed browser; log in with your phone number + passcode and approve
-the push notification in the Revolut phone app. The session persists in
-.revolut-profile/ (gitignored), so later runs work headlessly:
   python3 export_revolut.py
+opens a headed browser on the persistent profile in .revolut-profile/
+(gitignored). Revolut's auth cookies expire 5 minutes after the app was last
+open, so a run within that window goes straight through; otherwise log in in
+the window (phone number + passcode, then approve the push notification in
+the Revolut phone app) and the export continues on its own.
 
 Besides balances, the EUR current account's full transaction history and the
 Boosted (savings) account's daily interest are exported to

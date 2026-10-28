@@ -135,13 +135,7 @@ def main() -> None:
     out_file = out_dir / "deposits.json"
 
     api, _user_token = connect()
-    try:
-        raw = fetch_cash_movements(api, from_date, to_date)
-    finally:
-        try:
-            api.logout()
-        except Exception:
-            pass
+    raw = fetch_cash_movements(api, from_date, to_date)
 
     if args.debug:
         seen = sorted({(m.get("type") or "", m.get("description") or "") for m in raw})
