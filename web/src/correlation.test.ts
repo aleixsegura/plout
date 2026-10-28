@@ -9,6 +9,7 @@ import {
   marketGraph,
   maximumIndependentSet,
   riskContributions,
+  shrinkCorrelation,
   type PriceSeriesInput,
   type ReturnsPanel,
 } from "./correlation";
@@ -92,11 +93,72 @@ describe("computeStats", () => {
     expect(overlap[0][1]).toBe(200);
   });
 
+  it("builds the covariance on the shrunk correlation, leaving corr as observed", () => {
+    const stats = computeStats(panelOf([a, b, a.map((x, t) => x + b[t])]), "daily");
+    const { corr: shrunk, intensity } = stats.shrinkage;
+    expect(intensity).toBeGreaterThan(0);
+    expect(stats.corr[0][2]).not.toBeCloseTo(shrunk[0][2], 6);
+    expect(stats.cov[0][2]).toBeCloseTo(shrunk[0][2] * stats.sigma[0] * stats.sigma[2]);
+    expect(stats.cov[1][1]).toBeCloseTo(stats.sigma[1] ** 2);
+  });
+
   it("annualizes volatility with √252", () => {
     const { sigma } = computeStats(panelOf([a]), "daily");
     const mean = a.reduce((s, x) => s + x, 0) / a.length;
     const sd = Math.sqrt(a.reduce((s, x) => s + (x - mean) ** 2, 0) / (a.length - 1));
     expect(sigma[0]).toBeCloseTo(sd * Math.sqrt(252));
+  });
+});
+
+describe("shrinkCorrelation", () => {
+  const quadratic = (m: number[][], w: number[]) =>
+    w.reduce((s, wi, i) => s + w.reduce((t, wj, j) => t + wi * m[i][j] * wj, 0), 0);
+
+  it("shrinks noisy correlations hard and well-measured ones barely", () => {
+    // Ten unrelated assets, 60 returns: every sample correlation is noise.
+    const short = computeStats(panelOf(Array.from({ length: 10 }, (_, k) => noise(k + 1, 60))), "weekly");
+    expect(short.shrinkage.intensity).toBeGreaterThan(0.7);
+    // Two tight blocks over 3,000 returns: the structure is real.
+    const [f, g] = [noise(11, 3000), noise(12, 3000)];
+    const blocks = [f, f, g, g].map((base, k) => {
+      const own = noise(20 + k, 3000);
+      return base.map((x, t) => x + 0.3 * own[t]);
+    });
+    expect(computeStats(panelOf(blocks), "daily").shrinkage.intensity).toBeLessThan(0.05);
+  });
+
+  it("moves every pair toward the average and fills missing ones with it", () => {
+    const corr = [
+      [1, 0.8, NaN],
+      [0.8, 1, 0.2],
+      [NaN, 0.2, 1],
+    ];
+    const v = corr.map((row) => row.map(() => 0.01));
+    const { target, intensity, corr: shrunk } = shrinkCorrelation(corr, v);
+    expect(target).toBeCloseTo(0.5);
+    expect(intensity).toBeCloseTo(0.02 / 0.18);
+    expect(shrunk[0][1]).toBeCloseTo(0.8 - intensity * 0.3);
+    expect(shrunk[0][2]).toBe(target);
+    expect(shrunk[1][1]).toBe(1);
+  });
+
+  it("raises λ until an inconsistent matrix becomes valid", () => {
+    // 0 and 2 both track 1 closely yet move opposite each other: impossible.
+    const corr = [
+      [1, 0.9, -0.9],
+      [0.9, 1, 0.9],
+      [-0.9, 0.9, 1],
+    ];
+    const zero = corr.map((row) => row.map(() => 0));
+    const w = [1, -1, 1];
+    expect(quadratic(corr, w)).toBeLessThan(0);
+    const { target, intensity, corr: shrunk } = shrinkCorrelation(corr, zero);
+    expect(intensity).toBeGreaterThan(0);
+    expect(quadratic(shrunk, w)).toBeGreaterThanOrEqual(-1e-6);
+    // …and no further than needed: just below it the matrix is still invalid.
+    const lambda = intensity - 0.01;
+    const less = corr.map((row, i) => row.map((r, j) => (i === j ? 1 : (1 - lambda) * r + lambda * target)));
+    expect(quadratic(less, w)).toBeLessThan(0);
   });
 });
 
@@ -199,7 +261,13 @@ describe("risk", () => {
   const statsFor = (rho: number) => {
     const corr = sigma.map((_, i) => sigma.map((_, j) => (i === j ? 1 : rho)));
     const cov = corr.map((row, i) => row.map((r, j) => r * sigma[i] * sigma[j]));
-    return { sigma, corr, cov, overlap: corr.map((row) => row.map(() => 100)) };
+    return {
+      sigma,
+      corr,
+      cov,
+      overlap: corr.map((row) => row.map(() => 100)),
+      shrinkage: { target: rho, intensity: 0, corr },
+    };
   };
 
   it("risk contributions sum to 100%", () => {

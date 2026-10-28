@@ -436,6 +436,8 @@ const es: Translations = {
     reference: (ew: string, ivw: string) =>
       `Con las mismas posiciones, pesos iguales darían una volatilidad del ${ew} y pesos por inversa de la volatilidad, del ${ivw}.`,
     scope: "Los pesos cubren las posiciones con historial de precios; el efectivo queda fuera.",
+    shrinkage: (lambda: string, target: string) =>
+      `Volatilidad, diversificación, apuestas y contribuciones usan correlaciones contraídas un ${lambda} hacia su media (${target}) para filtrar ruido de estimación (Ledoit-Wolf); la matriz y el grafo muestran las observadas.`,
     excluded: (list: string) => `Sin historial de precios suficiente en esta ventana: ${list}.`,
     unresolved: (list: string) => `No se han encontrado precios para: ${list}.`,
     empty: "Todavía no hay historial de precios. Ejecuta .venv/bin/python export_prices.py (el servidor de desarrollo también lo hace al arrancar).",

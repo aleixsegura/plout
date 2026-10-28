@@ -8,6 +8,8 @@
 // (IEEE Access, 2023): log returns (Eq. 3), Pearson correlation over the
 // look-back window (Eq. 5), an edge between two assets when C_ij ≥ θ, and the
 // MIS of that graph as the largest set of mutually uncorrelated holdings.
+// The risk figures use a shrunk covariance instead (shrinkCorrelation): with a
+// year of weekly returns, raw correlations carry ±0.13 of estimation noise.
 
 export type Frequency = "daily" | "weekly";
 
@@ -111,11 +113,29 @@ export interface Stats {
   corr: number[][];
   /** Number of returns each pair's correlation was computed over. */
   overlap: number[][];
-  /** Annualized covariance, ρ_ij·σ_i·σ_j (0 where ρ is undefined). */
+  /** Annualized covariance built on the shrunk correlation, ρ̃_ij·σ_i·σ_j.
+   * Every risk figure reads this; the heatmap and market graph show `corr`. */
   cov: number[][];
+  shrinkage: Shrinkage;
 }
 
-function pearson(a: (number | null)[], b: (number | null)[]): { rho: number; n: number } {
+/** Sample correlation pulled toward a constant one, ρ̃ = (1−λ)·ρ + λ·ρ̄. */
+export interface Shrinkage {
+  /** ρ̄: the mean off-diagonal sample correlation, floored at 0. */
+  target: number;
+  /** λ, 0–1: how far the sample was pulled toward the target. */
+  intensity: number;
+  corr: number[][];
+}
+
+interface PairMoments {
+  rho: number;
+  n: number;
+  /** Estimated sampling variance of ρ (Schäfer & Strimmer, 2005). */
+  variance: number;
+}
+
+function pearson(a: (number | null)[], b: (number | null)[]): PairMoments {
   let n = 0;
   let sa = 0;
   let sb = 0;
@@ -127,7 +147,7 @@ function pearson(a: (number | null)[], b: (number | null)[]): { rho: number; n: 
     sa += x;
     sb += y;
   }
-  if (n < 3) return { rho: NaN, n };
+  if (n < 3) return { rho: NaN, n, variance: NaN };
   const ma = sa / n;
   const mb = sb / n;
   let num = 0;
@@ -141,8 +161,90 @@ function pearson(a: (number | null)[], b: (number | null)[]): { rho: number; n: 
     da += (x - ma) ** 2;
     db += (y - mb) ** 2;
   }
-  if (da === 0 || db === 0) return { rho: NaN, n };
-  return { rho: Math.max(-1, Math.min(1, num / Math.sqrt(da * db))), n };
+  if (da === 0 || db === 0) return { rho: NaN, n, variance: NaN };
+  // ρ is the mean of the standardized cross products w_t (times n/(n−1)), so
+  // its variance follows from how much those products scatter.
+  const scale = Math.sqrt((da / (n - 1)) * (db / (n - 1)));
+  const wMean = num / scale / n;
+  let scatter = 0;
+  for (let t = 0; t < a.length; t++) {
+    const x = a[t];
+    const y = b[t];
+    if (x === null || y === null) continue;
+    scatter += (((x - ma) * (y - mb)) / scale - wMean) ** 2;
+  }
+  return {
+    rho: Math.max(-1, Math.min(1, num / Math.sqrt(da * db))),
+    n,
+    variance: (n / (n - 1) ** 3) * scatter,
+  };
+}
+
+/** Cholesky with a hair of diagonal jitter, so a singular but valid matrix
+ * (all ones, say) still passes. */
+function isPositiveSemidefinite(m: number[][]): boolean {
+  const n = m.length;
+  const L = Array.from({ length: n }, () => new Array<number>(n).fill(0));
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j <= i; j++) {
+      let s = m[i][j] + (i === j ? 1e-9 : 0);
+      for (let k = 0; k < j; k++) s -= L[i][k] * L[j][k];
+      if (i === j) {
+        if (s <= 0) return false;
+        L[i][i] = Math.sqrt(s);
+      } else {
+        L[i][j] = s / L[j][j];
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Shrinks the correlation matrix toward constant correlation, the
+ * Ledoit & Wolf ("Honey, I Shrunk the Sample Covariance Matrix", 2004) target,
+ * with the intensity estimated as in Schäfer & Strimmer (2005):
+ * λ = Σ Var(ρ_ij) / Σ (ρ_ij − ρ̄)². That estimate works pair by pair, so it
+ * suits the pairwise-complete matrix here; it treats ρ̄ as known, which errs
+ * slightly toward more shrinkage. A pair with no correlation takes ρ̄.
+ *
+ * A pairwise-complete matrix need not be positive semi-definite. The target
+ * is, and the valid matrices form a convex set, so if the sample-optimal λ
+ * leaves the matrix invalid it is raised to the smallest λ that doesn't.
+ */
+export function shrinkCorrelation(corr: number[][], variance: number[][]): Shrinkage {
+  const n = corr.length;
+  const pairs: { rho: number; variance: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (Number.isFinite(corr[i][j])) pairs.push({ rho: corr[i][j], variance: variance[i][j] });
+    }
+  }
+  // A negative average across a whole portfolio is implausible, and ρ̄ ≥ 0
+  // keeps the target positive definite.
+  const target = Math.max(0, pairs.reduce((s, p) => s + p.rho, 0) / (pairs.length || 1));
+  const noise = pairs.reduce((s, p) => s + (Number.isFinite(p.variance) ? p.variance : 0), 0);
+  const spread = pairs.reduce((s, p) => s + (p.rho - target) ** 2, 0);
+
+  const blend = (lambda: number) =>
+    corr.map((row, i) =>
+      row.map((rho, j) =>
+        i === j ? 1 : Number.isFinite(rho) ? (1 - lambda) * rho + lambda * target : target,
+      ),
+    );
+
+  let intensity = spread > 0 ? Math.min(1, noise / spread) : 0;
+  if (!isPositiveSemidefinite(blend(intensity))) {
+    let lo = intensity;
+    let hi = 1;
+    for (let k = 0; k < 40; k++) {
+      const mid = (lo + hi) / 2;
+      if (isPositiveSemidefinite(blend(mid))) hi = mid;
+      else lo = mid;
+    }
+    intensity = hi;
+  }
+  return { target, intensity, corr: blend(intensity) };
 }
 
 function stdev(xs: (number | null)[]): number {
@@ -157,17 +259,18 @@ export function computeStats(panel: ReturnsPanel, frequency: Frequency): Stats {
   const sigma = panel.returns.map((r) => stdev(r) * Math.sqrt(PERIODS_PER_YEAR[frequency]));
   const corr = Array.from({ length: n }, () => new Array<number>(n).fill(NaN));
   const overlap = Array.from({ length: n }, () => new Array<number>(n).fill(0));
+  const variance = Array.from({ length: n }, () => new Array<number>(n).fill(0));
   for (let i = 0; i < n; i++) {
     for (let j = i; j < n; j++) {
-      const { rho, n: count } = pearson(panel.returns[i], panel.returns[j]);
-      corr[i][j] = corr[j][i] = i === j ? 1 : rho;
-      overlap[i][j] = overlap[j][i] = count;
+      const pair = pearson(panel.returns[i], panel.returns[j]);
+      corr[i][j] = corr[j][i] = i === j ? 1 : pair.rho;
+      overlap[i][j] = overlap[j][i] = pair.n;
+      variance[i][j] = variance[j][i] = i === j ? 0 : pair.variance;
     }
   }
-  const cov = corr.map((row, i) =>
-    row.map((rho, j) => (Number.isFinite(rho) ? rho * sigma[i] * sigma[j] : 0)),
-  );
-  return { sigma, corr, overlap, cov };
+  const shrinkage = shrinkCorrelation(corr, variance);
+  const cov = shrinkage.corr.map((row, i) => row.map((rho, j) => rho * sigma[i] * sigma[j]));
+  return { sigma, corr, overlap, cov, shrinkage };
 }
 
 /**
@@ -347,8 +450,8 @@ export function inverseVolatilityWeights(sigma: number[]): number[] {
   return normalize(sigma.map((s) => (s > 0 && Number.isFinite(s) ? 1 / s : 0)));
 }
 
-/** σ_p = √(wᵀΣw). Clamped at zero: a pairwise-complete Σ need not be exactly
- * positive semi-definite. */
+/** σ_p = √(wᵀΣw). Clamped at zero against rounding: the shrunk Σ is positive
+ * semi-definite, but only up to the jitter its check allows. */
 export function portfolioVolatility(w: number[], cov: number[][]): number {
   let variance = 0;
   for (let i = 0; i < w.length; i++) for (let j = 0; j < w.length; j++) variance += w[i] * w[j] * cov[i][j];

@@ -324,6 +324,7 @@ export default function CorrelationPage() {
 
       <div className="mt-6 flex flex-col gap-1 text-xs text-muted">
         <p>{t.correlation.scope}</p>
+        <p>{t.correlation.shrinkage(pct(stats.shrinkage.intensity), rho(stats.shrinkage.target))}</p>
         {panel.excluded.length > 0 && <p>{t.correlation.excluded(panel.excluded.join(", "))}</p>}
         {prices.unresolved.length > 0 && <p>{t.correlation.unresolved(prices.unresolved.join(", "))}</p>}
         <p>{t.correlation.source(prices.source)}</p>

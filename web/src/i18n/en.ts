@@ -437,6 +437,8 @@ const en = {
     reference: (ew: string, ivw: string) =>
       `With the same holdings, equal weights would run at ${ew} volatility and inverse-volatility weights at ${ivw}.`,
     scope: "Weights cover the holdings with price history; cash is left out.",
+    shrinkage: (lambda: string, target: string) =>
+      `Volatility, diversification, bets and risk shares use correlations pulled ${lambda} toward their average (${target}) to filter out estimation noise (Ledoit–Wolf); the matrix and the graph show the observed ones.`,
     excluded: (list: string) => `Not enough price history in this window: ${list}.`,
     unresolved: (list: string) => `No prices found for: ${list}.`,
     empty: "No price history yet. Run .venv/bin/python export_prices.py (the dev server also runs it on start).",

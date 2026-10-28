@@ -438,6 +438,8 @@ const ca: Translations = {
     reference: (ew: string, ivw: string) =>
       `Amb les mateixes posicions, pesos iguals donarien una volatilitat del ${ew} i pesos per inversa de la volatilitat, del ${ivw}.`,
     scope: "Els pesos cobreixen les posicions amb historial de preus; l'efectiu queda fora.",
+    shrinkage: (lambda: string, target: string) =>
+      `Volatilitat, diversificació, apostes i contribucions fan servir correlacions contretes un ${lambda} cap a la seva mitjana (${target}) per filtrar soroll d'estimació (Ledoit-Wolf); la matriu i el graf mostren les observades.`,
     excluded: (list: string) => `Sense prou historial de preus en aquesta finestra: ${list}.`,
     unresolved: (list: string) => `No s'han trobat preus per a: ${list}.`,
     empty: "Encara no hi ha historial de preus. Executa .venv/bin/python export_prices.py (el servidor de desenvolupament també ho fa en arrencar).",
