@@ -387,8 +387,6 @@ const ca: Translations = {
     },
   },
   correlation: {
-    intro:
-      "Fins a quin punt les teves posicions es diversifiquen de debò, a partir dels seus rendiments en euros (moviments de divisa inclosos).",
     window: "Finestra",
     years: (n: number) => `${n} a`,
     returns: "Rendiments",
@@ -425,6 +423,13 @@ const ca: Translations = {
     inCoreLinked: "Al conjunt independent, en representació de les enllaçades",
     outsideCore: "Fora del conjunt",
     weightOf: (w: string) => `${w} de la cartera`,
+    concentrated: "Risc concentrat",
+    block: "Es mou en bloc",
+    clusterRisk: (risk: string) => `${risk} del risc`,
+    riskOf: (risk: string) => `${risk} del risc`,
+    movesWith: (list: string) => `Es mou en bloc amb ${list}`,
+    concentrationNote: (share: string, outsized: string, ratio: string, rho: string, member: string) =>
+      `En vermell, el risc concentrat: posicions amb ≥ ${share} del risc, o ≥ ${outsized} i ${ratio} vegades el seu pes; blocs amb ρ mitjana ≥ ${rho}, cada membre ≥ ${member} amb la resta.`,
     risk: "Contribució al risc",
     riskHint:
       "Part de la variància de la cartera de la qual és responsable cada posició. Una diferència en vermell vol dir que aporta més risc que pes.",

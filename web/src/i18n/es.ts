@@ -385,8 +385,6 @@ const es: Translations = {
     },
   },
   correlation: {
-    intro:
-      "Hasta qué punto tus posiciones se diversifican de verdad, a partir de sus rentabilidades en euros (movimientos de divisa incluidos).",
     window: "Ventana",
     years: (n: number) => `${n} a`,
     returns: "Rentabilidades",
@@ -423,6 +421,13 @@ const es: Translations = {
     inCoreLinked: "En el conjunto independiente, en representación de sus enlazadas",
     outsideCore: "Fuera del conjunto",
     weightOf: (w: string) => `${w} de la cartera`,
+    concentrated: "Riesgo concentrado",
+    block: "Se mueve en bloque",
+    clusterRisk: (risk: string) => `${risk} del riesgo`,
+    riskOf: (risk: string) => `${risk} del riesgo`,
+    movesWith: (list: string) => `Se mueve en bloque con ${list}`,
+    concentrationNote: (share: string, outsized: string, ratio: string, rho: string, member: string) =>
+      `En rojo, el riesgo concentrado: posiciones con ≥ ${share} del riesgo, o ≥ ${outsized} y ${ratio} veces su peso; bloques con ρ medio ≥ ${rho}, cada miembro ≥ ${member} con el resto.`,
     risk: "Contribución al riesgo",
     riskHint:
       "Parte de la varianza de la cartera de la que es responsable cada posición. Una diferencia en rojo significa que aporta más riesgo que peso.",

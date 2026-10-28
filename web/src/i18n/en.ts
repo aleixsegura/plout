@@ -386,8 +386,6 @@ const en = {
     },
   },
   correlation: {
-    intro:
-      "How much your holdings really diversify each other, from their returns in euros (currency moves included).",
     window: "Window",
     years: (n: number) => `${n}Y`,
     returns: "Returns",
@@ -424,6 +422,13 @@ const en = {
     inCoreLinked: "In the independent set, standing in for its linked holdings",
     outsideCore: "Outside the set",
     weightOf: (w: string) => `${w} of the portfolio`,
+    concentrated: "Concentrated risk",
+    block: "Moves as a block",
+    clusterRisk: (risk: string) => `${risk} of risk`,
+    riskOf: (risk: string) => `${risk} of the risk`,
+    movesWith: (list: string) => `Moves as a block with ${list}`,
+    concentrationNote: (share: string, outsized: string, ratio: string, rho: string, member: string) =>
+      `Madder marks concentrated risk: holdings with ≥ ${share} of the risk, or ≥ ${outsized} and ${ratio}× their weight; blocks whose mean ρ is ≥ ${rho}, each member ≥ ${member} with the rest.`,
     risk: "Risk contribution",
     riskHint:
       "Share of the portfolio's variance each holding is responsible for. A red gap means it adds more risk than its weight.",

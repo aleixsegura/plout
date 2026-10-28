@@ -10,6 +10,9 @@ interface Props {
   order: number[];
   /** Indices whose axis label is drawn in the accent (e.g. the MIS). */
   highlight?: Set<number>;
+  /** Index groups outlined in madder where they sit contiguously in `order`
+   * (concentrated clusters, see contiguousOrder). */
+  groups?: number[][];
   tooltip: (i: number, j: number) => ReactNode;
   legend: { negative: string; positive: string };
   ariaLabel: string;
@@ -32,7 +35,7 @@ export function correlationFill(rho: number): string {
 
 /** Correlation matrix as a diverging heatmap with a per-cell hover tooltip.
  * The diagonal (always 1) is drawn blank so it doesn't dominate the scale. */
-export default function Heatmap({ labels, matrix, order, highlight, tooltip, legend, ariaLabel }: Props) {
+export default function Heatmap({ labels, matrix, order, highlight, groups = [], tooltip, legend, ariaLabel }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const width = useContainerWidth(wrapRef);
   const [hover, setHover] = useState<{ i: number; j: number } | null>(null);
@@ -94,6 +97,25 @@ export default function Heatmap({ labels, matrix, order, highlight, tooltip, leg
             })}
           </g>
         ))}
+        {groups.map((group) => {
+          const at = group.map((i) => order.indexOf(i));
+          const first = Math.min(...at);
+          if (at.includes(-1) || Math.max(...at) - first + 1 !== group.length) return null;
+          return (
+            <rect
+              key={group.join("-")}
+              x={LABEL_W + first * cell - 1}
+              y={first * cell - 1}
+              width={group.length * cell + 2}
+              height={group.length * cell + 2}
+              rx={6}
+              fill="none"
+              stroke="var(--loss)"
+              strokeWidth={2}
+              pointerEvents="none"
+            />
+          );
+        })}
         {order.map((col, c) => (
           <text
             key={col}

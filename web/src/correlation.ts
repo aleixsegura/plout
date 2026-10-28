@@ -301,6 +301,24 @@ export function clusterOrder(corr: number[][]): number[] {
   return clusters[0] ?? [];
 }
 
+/** `order` with each group's members pulled together at the first one's
+ * place, keeping their relative order, so the heatmap can outline the group as
+ * one block. Indices in no group keep their place. */
+export function contiguousOrder(order: number[], groups: number[][]): number[] {
+  const groupOf = new Map<number, number[]>();
+  for (const group of groups) for (const i of group) groupOf.set(i, group);
+  const out: number[] = [];
+  const placed = new Set<number>();
+  for (const i of order) {
+    if (placed.has(i)) continue;
+    const members = groupOf.get(i);
+    const block = members ? order.filter((j) => members.includes(j)) : [i];
+    for (const j of block) placed.add(j);
+    out.push(...block);
+  }
+  return out;
+}
+
 // ── Market graph ──────────────────────────────────────────────────────────────
 
 export interface Edge {
@@ -512,4 +530,138 @@ export function riskContributions(weights: number[], cov: number[][]): number[] 
   const marginal = w.map((_, i) => w.reduce((s, wj, j) => s + cov[i][j] * wj, 0));
   const variance = w.reduce((s, wi, i) => s + wi * marginal[i], 0);
   return w.map((wi, i) => (variance > 0 ? (wi * marginal[i]) / variance : 0));
+}
+
+// ── Concentration ─────────────────────────────────────────────────────────────
+
+/** When a holding or a group of them is flagged as concentrating risk. */
+export const CONCENTRATION = {
+  /** A holding carrying this share of the variance, whatever its weight… */
+  riskShare: 0.2,
+  /** …or this share when it is also this many times its weight. */
+  outsizedRiskShare: 0.1,
+  outsizedRatio: 1.5,
+  /** A cluster's mean pairwise ρ stays at or above this, with no member
+   * averaging less than clusterMemberCorrelation with the rest… */
+  clusterCorrelation: 0.4,
+  clusterMemberCorrelation: 0.3,
+  /** …and it is flagged once it holds this much weight or variance. */
+  clusterWeight: 0.15,
+  clusterRisk: 0.2,
+} as const;
+
+export interface ConcentratedHolding {
+  index: number;
+  weight: number;
+  /** Share of the portfolio variance (riskContributions). */
+  risk: number;
+}
+
+export interface CorrelatedCluster {
+  /** Heaviest first. */
+  members: number[];
+  /** Mean observed ρ over the pairs inside the cluster. */
+  correlation: number;
+  weight: number;
+  risk: number;
+  /** The cluster's own diversification ratio², as in Diversification.effectiveBets. */
+  bets: number;
+}
+
+export interface Concentration {
+  holdings: ConcentratedHolding[];
+  clusters: CorrelatedCluster[];
+}
+
+/**
+ * Groups of holdings that move together: agglomerative clustering that merges
+ * whichever two clusters leave the highest mean pairwise ρ inside the merged
+ * one, as long as that mean stays at or above `minCorrelation` and every
+ * member averages at least `minMemberCorrelation` with the rest. The second
+ * bar keeps a tight core from dragging in holdings it barely moves with, and
+ * unlike linking every pair over a threshold, one holding correlated with two
+ * unrelated ones can't chain them into a block. Singletons are left out; a
+ * pair with no correlation counts as ρ = 0.
+ */
+export function correlatedClusters(
+  corr: number[][],
+  minCorrelation: number,
+  minMemberCorrelation: number,
+): number[][] {
+  const rhoOf = (i: number, j: number) => (Number.isFinite(corr[i][j]) ? corr[i][j] : 0);
+  /** Mean pairwise ρ of the group, or null when it misses either bar. */
+  const cohesion = (members: number[]): number | null => {
+    let total = 0;
+    for (const i of members) {
+      let own = 0;
+      for (const j of members) if (j !== i) own += rhoOf(i, j);
+      if (own / (members.length - 1) < minMemberCorrelation) return null;
+      total += own;
+    }
+    const mean = total / (members.length * (members.length - 1));
+    return mean >= minCorrelation ? mean : null;
+  };
+  let clusters = corr.map((_, i) => [i]);
+  for (;;) {
+    let best: { a: number; b: number; mean: number } | null = null;
+    for (let a = 0; a < clusters.length; a++) {
+      for (let b = a + 1; b < clusters.length; b++) {
+        const mean = cohesion([...clusters[a], ...clusters[b]]);
+        if (mean !== null && (!best || mean > best.mean)) best = { a, b, mean };
+      }
+    }
+    if (!best) break;
+    const { a, b } = best;
+    const merged = [...clusters[a], ...clusters[b]];
+    clusters = clusters.filter((_, k) => k !== a && k !== b);
+    clusters.push(merged);
+  }
+  return clusters.filter((c) => c.length > 1);
+}
+
+/**
+ * Holdings and correlated clusters that carry an outsized share of the risk,
+ * per CONCENTRATION; each list sorted by risk share, largest first. Clusters
+ * come from the observed correlations, like the heatmap; risk shares and bets
+ * from the shrunk covariance, like the rest of the risk figures.
+ */
+export function concentration(weights: number[], stats: Stats): Concentration {
+  const w = normalize(weights);
+  const risk = riskContributions(w, stats.cov);
+  const holdings = w
+    .map((weight, index) => ({ index, weight, risk: risk[index] }))
+    .filter(
+      (h) =>
+        h.risk >= CONCENTRATION.riskShare ||
+        (h.risk >= CONCENTRATION.outsizedRiskShare && h.risk >= CONCENTRATION.outsizedRatio * h.weight),
+    )
+    .sort((a, b) => b.risk - a.risk);
+
+  const clusters = correlatedClusters(stats.corr, CONCENTRATION.clusterCorrelation, CONCENTRATION.clusterMemberCorrelation)
+    .map((group) => {
+      const members = [...group].sort((a, b) => w[b] - w[a]);
+      let sum = 0;
+      for (let a = 0; a < members.length; a++)
+        for (let b = a + 1; b < members.length; b++) {
+          const rho = stats.corr[members[a]][members[b]];
+          sum += Number.isFinite(rho) ? rho : 0;
+        }
+      const inside = normalize(members.map((i) => w[i]));
+      const weighted = inside.reduce((s, x, k) => s + x * stats.sigma[members[k]], 0);
+      const volatility = portfolioVolatility(
+        inside,
+        members.map((i) => members.map((j) => stats.cov[i][j])),
+      );
+      return {
+        members,
+        correlation: sum / ((members.length * (members.length - 1)) / 2),
+        weight: members.reduce((s, i) => s + w[i], 0),
+        risk: members.reduce((s, i) => s + risk[i], 0),
+        bets: volatility > 0 ? (weighted / volatility) ** 2 : 1,
+      };
+    })
+    .filter((c) => c.weight >= CONCENTRATION.clusterWeight || c.risk >= CONCENTRATION.clusterRisk)
+    .sort((a, b) => b.risk - a.risk);
+
+  return { holdings, clusters };
 }

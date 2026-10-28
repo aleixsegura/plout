@@ -8,6 +8,9 @@ import {
   alignReturns,
   clusterOrder,
   computeStats,
+  concentration,
+  CONCENTRATION,
+  contiguousOrder,
   diversification,
   inverseVolatilityWeights,
   marketGraph,
@@ -38,6 +41,7 @@ const chipClass = (active: boolean) =>
 const pct = (fraction: number) => (Number.isFinite(fraction) ? `${pct1.format(fraction * 100)}%` : "—");
 const ratio2 = (v: number) =>
   Number.isFinite(v) ? v.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
+const times = (v: number) => v.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const points = (fraction: number) =>
   `${fraction >= 0 ? "+" : "−"}${(Math.abs(fraction) * 100).toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} pp`;
 
@@ -68,7 +72,7 @@ export default function CorrelationPage() {
     [graph, stats, weights],
   );
 
-  const title = <h1 className="mb-2 font-display text-[26px] font-semibold tracking-tight">{t.nav.correlation}</h1>;
+  const title = <h1 className="mb-4 font-display text-[26px] font-semibold tracking-tight">{t.nav.correlation}</h1>;
 
   if (!prices) {
     return (
@@ -90,6 +94,15 @@ export default function CorrelationPage() {
   const n = panel.symbols.length;
   const div = diversification(weights, stats);
   const contributions = riskContributions(weights, stats.cov);
+  const flags = concentration(weights, stats);
+  const flagged = new Set(flags.holdings.map((h) => h.index));
+  const clusterOf = new Map(flags.clusters.flatMap((c) => c.members.map((i) => [i, c] as const)));
+  const movesWith = (i: number) =>
+    clusterOf
+      .get(i)
+      ?.members.filter((j) => j !== i)
+      .map((j) => panel.symbols[j])
+      .join(", ");
   const ivw = inverseVolatilityWeights(stats.sigma);
   const coreWeight = [...core].reduce((s, i) => s + weights[i], 0);
   const locale = LOCALE[lang];
@@ -104,8 +117,6 @@ export default function CorrelationPage() {
   return (
     <>
       {title}
-      <p className="mb-4 max-w-3xl text-sm text-secondary">{t.correlation.intro}</p>
-
       <div className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-2">
         <div className="flex items-center gap-1.5">
           <span className="mr-1 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{t.correlation.window}</span>
@@ -168,8 +179,12 @@ export default function CorrelationPage() {
           <Heatmap
             labels={panel.symbols}
             matrix={stats.corr}
-            order={order}
+            order={contiguousOrder(
+              order,
+              flags.clusters.map((c) => c.members),
+            )}
             highlight={core}
+            groups={flags.clusters.map((c) => c.members)}
             legend={{ negative: t.correlation.legendNegative, positive: t.correlation.legendPositive }}
             ariaLabel={t.correlation.matrixAria}
             tooltip={(i, j) => (
@@ -208,7 +223,9 @@ export default function CorrelationPage() {
               weight: weights[i],
               highlighted: core.has(i),
               linked: core.has(i) && graph.degree[i] > 0,
+              flagged: flagged.has(i),
             }))}
+            groups={flags.clusters.map((c) => ({ members: c.members, label: t.correlation.clusterRisk(pct(c.risk)) }))}
             edges={graph.edges}
             corr={stats.corr}
             theta={theta}
@@ -227,6 +244,10 @@ export default function CorrelationPage() {
                 <div className="tabular-nums text-secondary">
                   {t.correlation.weightOf(pct(weights[i]))} · {t.correlation.links(graph.degree[i])}
                 </div>
+                {flagged.has(i) && (
+                  <div className="tabular-nums text-loss">{t.correlation.riskOf(pct(contributions[i]))}</div>
+                )}
+                {clusterOf.has(i) && <div className="max-w-[200px] text-loss">{t.correlation.movesWith(movesWith(i) ?? "")}</div>}
               </>
             )}
           />
@@ -278,20 +299,29 @@ export default function CorrelationPage() {
               <tbody>
                 {riskRows.map(({ symbol, i }) => {
                   const gap = contributions[i] - weights[i];
+                  const cluster = clusterOf.get(i);
                   return (
-                    <tr key={symbol} className="hover:bg-hover">
+                    <tr key={symbol} className={flagged.has(i) ? "bg-loss-subtle" : "hover:bg-hover"}>
                       <td className={TD}>
                         <span className={`font-semibold ${core.has(i) ? "text-accent" : ""}`}>{symbol}</span>
+                        {cluster && (
+                          <span
+                            className="ml-1.5 inline-flex align-[-1px] text-loss"
+                            title={t.correlation.movesWith(movesWith(i) ?? "")}
+                          >
+                            <ClusterGlyph />
+                          </span>
+                        )}
                         <span className="ml-2 inline-block max-w-[220px] truncate align-bottom text-xs text-muted">
                           {nameBySymbol.get(symbol)}
                         </span>
                       </td>
                       <td className={`${TD} ${NUM}`}>{pct(weights[i])}</td>
-                      <td className={`${TD} ${NUM} font-semibold`}>{pct(contributions[i])}</td>
+                      <td className={`${TD} ${NUM} font-semibold ${flagged.has(i) ? "text-loss" : ""}`}>{pct(contributions[i])}</td>
                       <td className={TD}>
                         <div className="flex flex-col gap-1">
                           <HBar fraction={weights[i] / maxShare} color="var(--text-muted)" />
-                          <HBar fraction={contributions[i] / maxShare} color="var(--accent)" />
+                          <HBar fraction={contributions[i] / maxShare} color={flagged.has(i) ? "var(--loss)" : "var(--accent)"} />
                         </div>
                       </td>
                       <td className={`${TD} ${NUM} ${gap > 0.005 ? "text-loss" : gap < -0.005 ? "text-gain" : "text-secondary"}`}>
@@ -315,6 +345,20 @@ export default function CorrelationPage() {
               <span className="inline-block h-1.5 w-4 rounded-full bg-accent" aria-hidden />
               {t.correlation.contribution}
             </span>
+            {flags.holdings.length > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-1.5 w-4 rounded-full bg-loss" aria-hidden />
+                {t.correlation.concentrated}
+              </span>
+            )}
+            {flags.clusters.length > 0 && (
+              <span className="flex items-center gap-1.5 text-secondary">
+                <span className="inline-flex text-loss">
+                  <ClusterGlyph />
+                </span>
+                {t.correlation.block}
+              </span>
+            )}
           </div>
           <p className="mt-3 text-xs text-secondary">
             {t.correlation.reference(pct(div.equalWeightVolatility), pct(div.inverseVolatilityVolatility))}
@@ -324,6 +368,15 @@ export default function CorrelationPage() {
 
       <div className="mt-6 flex flex-col gap-1 text-xs text-muted">
         <p>{t.correlation.scope}</p>
+        <p>
+          {t.correlation.concentrationNote(
+            pct(CONCENTRATION.riskShare),
+            pct(CONCENTRATION.outsizedRiskShare),
+            times(CONCENTRATION.outsizedRatio),
+            rho(CONCENTRATION.clusterCorrelation),
+            rho(CONCENTRATION.clusterMemberCorrelation),
+          )}
+        </p>
         <p>{t.correlation.shrinkage(pct(stats.shrinkage.intensity), rho(stats.shrinkage.target))}</p>
         {panel.excluded.length > 0 && <p>{t.correlation.excluded(panel.excluded.join(", "))}</p>}
         {prices.unresolved.length > 0 && <p>{t.correlation.unresolved(prices.unresolved.join(", "))}</p>}
@@ -336,5 +389,16 @@ export default function CorrelationPage() {
         </p>
       </div>
     </>
+  );
+}
+
+/** Three touching dots: "moves as a block" next to a holding's symbol. */
+function ClusterGlyph() {
+  return (
+    <svg width="13" height="11" viewBox="0 0 13 11" aria-hidden>
+      <circle cx="3.5" cy="7.5" r="3" fill="currentColor" opacity={0.85} />
+      <circle cx="9.5" cy="7.5" r="3" fill="currentColor" opacity={0.85} />
+      <circle cx="6.5" cy="3" r="3" fill="currentColor" />
+    </svg>
   );
 }
