@@ -84,6 +84,9 @@ const en = {
   holdings: {
     sectorDistribution: "Sector distribution",
     totalValue: "Total value",
+    performance: "Investment return",
+    sinceOpening: (month: string) => `DEGIRO since ${month}:`,
+    sameDepositsIn: (symbol: string) => `same deposits in ${symbol}:`,
     sourceDegiro: "DEGIRO",
     sourceDegiroRevolut: "DEGIRO + Revolut",
   },
@@ -91,6 +94,10 @@ const en = {
     noHistory: "No history yet — run the export scripts to start recording snapshots.",
     onDate: (date: string) => `on ${date} — history builds with each export`,
     sinceStart: (date: string) => `since ${date}`,
+    sameMoneyIn: (symbol: string) => `Same money in ${symbol}`,
+    difference: "difference",
+    noPerformance:
+      "Not enough snapshots with deposit data yet — run export_deposits.py to fill in past days.",
   },
   kpis: {
     ariaLabel: "Portfolio key metrics",

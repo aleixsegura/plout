@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type {
+  DepositsFile,
   DividendsFile,
   HistoryFile,
   MarketCapsFile,
@@ -26,6 +27,7 @@ interface AppData {
   marketCaps: MarketCapsFile | null;
   transactions: RevolutTransactionsFile | null;
   prices: PricesFile | null;
+  deposits: DepositsFile | null;
 }
 
 const AppDataContext = createContext<AppData | null>(null);
@@ -39,6 +41,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [marketCaps, setMarketCaps] = useState<MarketCapsFile | null>(null);
   const [transactions, setTransactions] = useState<RevolutTransactionsFile | null>(null);
   const [prices, setPrices] = useState<PricesFile | null>(null);
+  const [deposits, setDeposits] = useState<DepositsFile | null>(null);
 
   useEffect(() => {
     // Written by export_degiro.py; degrade silently when it doesn't exist.
@@ -134,6 +137,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .catch(() => setPrices(null));
   }, []);
 
+  useEffect(() => {
+    // Written by export_deposits.py; same silent degrade — the Holdings page
+    // just leaves out the since-opening comparison with the index.
+    fetch("/deposits.json")
+      .then((res) => {
+        const isJson = res.headers.get("content-type")?.includes("application/json");
+        return res.ok && isJson ? res.json() : null;
+      })
+      .then((data: DepositsFile | null) => setDeposits(data))
+      .catch(() => setDeposits(null));
+  }, []);
+
   return (
     <AppDataContext.Provider
       value={{
@@ -145,6 +160,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         marketCaps,
         transactions,
         prices,
+        deposits,
       }}
     >
       {children}

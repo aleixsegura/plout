@@ -1325,6 +1325,11 @@ def write_crypto_ledger(context, headers, captured, ccy: Currencies, out_dir: Pa
 
     rows = fetch_pocket_transactions(context, headers, pockets)
     ledger = build_crypto_ledger(rows, ccy)
+    # Coins sent in from another wallet are money in, not return: history.py
+    # counts them at what they were worth on arrival.
+    for d in ledger["deposits"]:
+        price = crypto_price_eur_at(d["symbol"], d["date"][:10])
+        d["valueEur"] = round(d["quantity"] * price, 2) if price is not None else None
     payload = {
         "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "Revolut retail API (per-pocket transaction history)",

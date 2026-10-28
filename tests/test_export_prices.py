@@ -22,6 +22,7 @@ from export_prices import (
     parse_coinbase,
     parse_onvista_eod,
     pick_notation,
+    splice,
     to_eur,
 )
 
@@ -137,6 +138,7 @@ class FreshTests(unittest.TestCase):
             "updatedAt": updated.isoformat(),
             "series": {s: {} for s in symbols},
             "unresolved": list(unresolved),
+            "benchmark": {"dates": []},
         }
 
     def targets(self, *symbols):
@@ -150,6 +152,27 @@ class FreshTests(unittest.TestCase):
 
     def test_new_holding_forces_refresh(self):
         self.assertFalse(is_fresh(self.previous(1, ["A"]), self.targets("A", "B"), 12))
+
+    def test_missing_benchmark_forces_refresh(self):
+        previous = self.previous(1, ["A"])
+        del previous["benchmark"]
+        self.assertFalse(is_fresh(previous, self.targets("A"), 12))
+
+
+class SpliceTests(unittest.TestCase):
+    def test_target_continues_proxy_returns(self):
+        dates, closes = splice(
+            ["2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21"], [100.0, 102.0, 104.0, 999.0],
+            ["2026-08-20", "2026-08-21"], [4.0, 4.4],
+        )
+        self.assertEqual(dates, ["2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21"])
+        # From the 20th it's the target rescaled to the proxy's level: +10 %.
+        self.assertEqual(closes, [100.0, 102.0, 104.0, 114.4])
+
+    def test_target_listing_on_a_proxy_holiday(self):
+        dates, closes = splice(["2026-08-18", "2026-08-19"], [100.0, 102.0], ["2026-08-20"], [4.0])
+        self.assertEqual(dates, ["2026-08-18", "2026-08-19", "2026-08-20"])
+        self.assertEqual(closes, [100.0, 102.0, 102.0])
 
 
 if __name__ == "__main__":

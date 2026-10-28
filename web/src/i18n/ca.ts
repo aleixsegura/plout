@@ -83,6 +83,11 @@ const ca: Translations = {
   holdings: {
     sectorDistribution: "Distribució per sectors",
     totalValue: "Valor total",
+    performance: "Rendiment",
+    // "des d'abril", "des d'octubre": elided before a vowel.
+    sinceOpening: (month: string) =>
+      /^[aeiouàèéíòóú]/i.test(month) ? `DEGIRO des d'${month}:` : `DEGIRO des de ${month}:`,
+    sameDepositsIn: (symbol: string) => `mateixos ingressos a ${symbol}:`,
     sourceDegiro: "DEGIRO",
     sourceDegiroRevolut: "DEGIRO + Revolut",
   },
@@ -91,6 +96,10 @@ const ca: Translations = {
       "Encara no hi ha historial — executa els scripts d'exportació per començar a registrar instantànies.",
     onDate: (date: string) => `el ${date} — l'historial es construeix amb cada exportació`,
     sinceStart: (date: string) => `des del ${date}`,
+    sameMoneyIn: (symbol: string) => `Mateixos diners a ${symbol}`,
+    difference: "diferència",
+    noPerformance:
+      "Encara no hi ha prou instantànies amb dades d'ingressos — executa export_deposits.py per completar els dies anteriors.",
   },
   kpis: {
     ariaLabel: "Mètriques clau de la cartera",

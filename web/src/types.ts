@@ -56,6 +56,39 @@ export interface PricesFile {
   /** Holdings no source had prices for. */
   unresolved: string[];
   series: Record<string, PriceSeries>;
+  /** The Holdings return chart's yardstick: an accumulating world ETF's EUR
+   * closes, a proxy's chain-linked before `splicedAt`. Absent in older
+   * exports, null when it couldn't be fetched. */
+  benchmark?: BenchmarkSeries | null;
+}
+
+export interface BenchmarkSeries {
+  symbol: string;
+  name: string;
+  isin: string;
+  proxy: { symbol: string; name: string; isin: string };
+  /** First date priced off the benchmark itself rather than the proxy. */
+  splicedAt: string;
+  dates: string[];
+  closesEur: number[];
+}
+
+// Mirror of data/deposits.json written by export_deposits.py: every transfer
+// into (positive) or out of (negative) the DEGIRO account, oldest first.
+export interface DepositMovement {
+  /** ISO timestamp of the booking. */
+  date: string;
+  kind: "deposit" | "withdrawal";
+  description: string;
+  currency: string;
+  amount: number;
+  amountEur: number;
+}
+
+export interface DepositsFile {
+  updatedAt: string;
+  totalEur: number;
+  movements: DepositMovement[];
 }
 
 // Mirror of data/positions.json written by export_degiro.py. Monetary
@@ -185,13 +218,25 @@ export interface HistoryDay {
   /** "YYYY-MM-DD" local date of the snapshot. */
   date: string;
   /** null when positions.json didn't exist at snapshot time. */
-  degiro: { updatedAt: string; valueEur: number; cashEur: number | null } | null;
+  degiro: {
+    updatedAt: string;
+    valueEur: number;
+    cashEur: number | null;
+    /** Net EUR deposited into DEGIRO so far. Absent or null on days recorded
+     * before it existed and not yet backfilled by export_deposits.py. */
+    netDepositsEur?: number | null;
+  } | null;
   /** null when revolut.json didn't exist at snapshot time. */
   revolut: {
     updatedAt: string;
     cryptoValueEur: number;
     cashCurrentEur: number;
     cashSavingsEur: number;
+    /** Running total of EUR put into Revolut positions (buys − sells + coins
+     * sent in). Only differences between days mean anything. */
+    netInvestedEur?: number | null;
+    /** Boosted interest credited so far (running total). */
+    interestEur?: number | null;
   } | null;
   portfolioValueEur: number;
   cashEur: number;

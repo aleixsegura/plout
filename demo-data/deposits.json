@@ -1,0 +1,73 @@
+{
+  "updatedAt": "2026-09-15T09:30:00",
+  "source": "DEGIRO via degiro-connector",
+  "baseCurrency": "EUR",
+  "fromDate": "2015-01-01",
+  "toDate": "2026-09-15",
+  "totalEur": 22000.0,
+  "movements": [
+    {
+      "date": "2025-03-20T10:00:00",
+      "kind": "deposit",
+      "description": "flatex Deposit",
+      "type": "CASH_TRANSACTION",
+      "currency": "EUR",
+      "amount": 19000.0,
+      "amountEur": 19000.0
+    },
+    {
+      "date": "2026-04-01T10:00:00",
+      "kind": "deposit",
+      "description": "flatex Deposit",
+      "type": "CASH_TRANSACTION",
+      "currency": "EUR",
+      "amount": 500.0,
+      "amountEur": 500.0
+    },
+    {
+      "date": "2026-05-01T10:00:00",
+      "kind": "deposit",
+      "description": "flatex Deposit",
+      "type": "CASH_TRANSACTION",
+      "currency": "EUR",
+      "amount": 500.0,
+      "amountEur": 500.0
+    },
+    {
+      "date": "2026-06-01T10:00:00",
+      "kind": "deposit",
+      "description": "flatex Deposit",
+      "type": "CASH_TRANSACTION",
+      "currency": "EUR",
+      "amount": 500.0,
+      "amountEur": 500.0
+    },
+    {
+      "date": "2026-07-01T10:00:00",
+      "kind": "deposit",
+      "description": "flatex Deposit",
+      "type": "CASH_TRANSACTION",
+      "currency": "EUR",
+      "amount": 500.0,
+      "amountEur": 500.0
+    },
+    {
+      "date": "2026-08-01T10:00:00",
+      "kind": "deposit",
+      "description": "flatex Deposit",
+      "type": "CASH_TRANSACTION",
+      "currency": "EUR",
+      "amount": 500.0,
+      "amountEur": 500.0
+    },
+    {
+      "date": "2026-09-01T10:00:00",
+      "kind": "deposit",
+      "description": "flatex Deposit",
+      "type": "CASH_TRANSACTION",
+      "currency": "EUR",
+      "amount": 500.0,
+      "amountEur": 500.0
+    }
+  ]
+}

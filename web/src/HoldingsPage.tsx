@@ -7,10 +7,13 @@ import SectorDonut from "./SectorDonut";
 import StocksTable from "./StocksTable";
 import { sectorBreakdown, sectorVar, type Sector } from "./sectors";
 import { useHoldings } from "./useHoldings";
-import { shortDate } from "./format";
+import { eurSigned, gainLoss, shortDate } from "./format";
+import { depositsInBenchmark } from "./performance";
+import type { BenchmarkSeries, DepositsFile, PositionsFile } from "./types";
 
 export default function HoldingsPage() {
-  const { history } = useAppData();
+  const { history, prices, deposits } = useAppData();
+  const benchmark = prices?.benchmark ?? null;
   const {
     positions,
     revolut,
@@ -64,10 +67,15 @@ export default function HoldingsPage() {
           />
         </div>
         <div className="flex min-w-[320px] flex-1 flex-col">
-          <h2 className="mb-3 text-base font-semibold">{t.holdings.totalValue}</h2>
+          <h2 className="mb-3 text-base font-semibold">{t.holdings.performance}</h2>
           <div className="flex-1">
-            <PortfolioChart history={history} />
+            {/* Return, not value: the Dashboard already charts net worth, and
+                here salary moving into savings would read as profit. */}
+            <PortfolioChart history={history} mode="performance" benchmark={benchmark} />
           </div>
+          {positions && deposits && benchmark && (
+            <SinceOpeningNote positions={positions} deposits={deposits} benchmark={benchmark} />
+          )}
         </div>
       </div>
       <StocksTable
@@ -81,6 +89,35 @@ export default function HoldingsPage() {
       />
       {showPositions && positions && <UpdatedNote updatedAt={positions.updatedAt} />}
     </>
+  );
+}
+
+/** DEGIRO since the first deposit against the same deposits in the index —
+ * the long view the snapshot-based chart can't give, since snapshots only
+ * started recently while deposits.json goes back to the account's opening. */
+function SinceOpeningNote({
+  positions,
+  deposits,
+  benchmark,
+}: {
+  positions: PositionsFile;
+  deposits: DepositsFile;
+  benchmark: BenchmarkSeries;
+}) {
+  const { t, lang } = useTranslation();
+  const locale = { en: "en-GB", ca: "ca-ES", es: "es-ES" }[lang];
+  const actual = positions.summary.accountPlEur;
+  const first = deposits.movements[0];
+  const index = depositsInBenchmark(deposits.movements, benchmark, positions.updatedAt);
+  if (actual == null || !first || !index) return null;
+  return (
+    <p className="mt-2 text-xs tabular-nums text-muted">
+      {t.holdings.sinceOpening(new Date(first.date).toLocaleDateString(locale, { month: "long", year: "numeric" }))}{" "}
+      <span className={`font-medium ${gainLoss(actual)}`}>{eurSigned.format(actual)}</span>
+      {" · "}
+      {t.holdings.sameDepositsIn(benchmark.symbol)}{" "}
+      <span className={`font-medium ${gainLoss(index.plEur)}`}>{eurSigned.format(index.plEur)}</span>
+    </p>
   );
 }
 

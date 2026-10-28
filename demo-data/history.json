@@ -6,13 +6,16 @@
       "degiro": {
         "updatedAt": "2026-03-20T18:00:00",
         "valueEur": 23755.19,
-        "cashEur": 1155.28
+        "cashEur": 1155.28,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-20T18:05:00",
         "cryptoValueEur": 7549.29,
         "cashCurrentEur": 5262.36,
-        "cashSavingsEur": 5600.0
+        "cashSavingsEur": 5600.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 0.38
       },
       "portfolioValueEur": 31304.48,
       "cashEur": 13745.91,
@@ -23,13 +26,16 @@
       "degiro": {
         "updatedAt": "2026-03-21T18:00:00",
         "valueEur": 23862.8,
-        "cashEur": 1158.03
+        "cashEur": 1158.03,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-21T18:05:00",
         "cryptoValueEur": 7570.41,
         "cashCurrentEur": 5269.67,
-        "cashSavingsEur": 5613.33
+        "cashSavingsEur": 5613.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 0.77
       },
       "portfolioValueEur": 31433.21,
       "cashEur": 13762.81,
@@ -40,13 +46,16 @@
       "degiro": {
         "updatedAt": "2026-03-22T18:00:00",
         "valueEur": 23939.08,
-        "cashEur": 1160.78
+        "cashEur": 1160.78,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-22T18:05:00",
         "cryptoValueEur": 7697.24,
         "cashCurrentEur": 5276.98,
-        "cashSavingsEur": 5626.67
+        "cashSavingsEur": 5626.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 1.15
       },
       "portfolioValueEur": 31636.32,
       "cashEur": 13742.02,
@@ -57,13 +66,16 @@
       "degiro": {
         "updatedAt": "2026-03-23T18:00:00",
         "valueEur": 24129.7,
-        "cashEur": 1163.53
+        "cashEur": 1163.53,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-23T18:05:00",
         "cryptoValueEur": 7780.99,
         "cashCurrentEur": 5284.29,
-        "cashSavingsEur": 5640.0
+        "cashSavingsEur": 5640.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 1.54
       },
       "portfolioValueEur": 31910.69,
       "cashEur": 13808.87,
@@ -74,13 +86,16 @@
       "degiro": {
         "updatedAt": "2026-03-24T18:00:00",
         "valueEur": 23976.44,
-        "cashEur": 1166.28
+        "cashEur": 1166.28,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-24T18:05:00",
         "cryptoValueEur": 7972.02,
         "cashCurrentEur": 5291.6,
-        "cashSavingsEur": 5653.33
+        "cashSavingsEur": 5653.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 1.93
       },
       "portfolioValueEur": 31948.46,
       "cashEur": 13821.73,
@@ -91,13 +106,16 @@
       "degiro": {
         "updatedAt": "2026-03-25T18:00:00",
         "valueEur": 23791.04,
-        "cashEur": 1169.03
+        "cashEur": 1169.03,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-25T18:05:00",
         "cryptoValueEur": 7805.81,
         "cashCurrentEur": 5298.9,
-        "cashSavingsEur": 5666.67
+        "cashSavingsEur": 5666.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 2.32
       },
       "portfolioValueEur": 31596.85,
       "cashEur": 13916.9,
@@ -108,13 +126,16 @@
       "degiro": {
         "updatedAt": "2026-03-26T18:00:00",
         "valueEur": 23874.65,
-        "cashEur": 1171.78
+        "cashEur": 1171.78,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-26T18:05:00",
         "cryptoValueEur": 7935.63,
         "cashCurrentEur": 5306.21,
-        "cashSavingsEur": 5680.0
+        "cashSavingsEur": 5680.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 2.7
       },
       "portfolioValueEur": 31810.28,
       "cashEur": 13911.51,
@@ -125,13 +146,16 @@
       "degiro": {
         "updatedAt": "2026-03-27T18:00:00",
         "valueEur": 23923.09,
-        "cashEur": 1174.53
+        "cashEur": 1174.53,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-27T18:05:00",
         "cryptoValueEur": 8137.1,
         "cashCurrentEur": 5313.52,
-        "cashSavingsEur": 5693.33
+        "cashSavingsEur": 5693.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 3.09
       },
       "portfolioValueEur": 32060.19,
       "cashEur": 13868.76,
@@ -142,13 +166,16 @@
       "degiro": {
         "updatedAt": "2026-03-28T18:00:00",
         "valueEur": 23979.96,
-        "cashEur": 1177.29
+        "cashEur": 1177.29,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-28T18:05:00",
         "cryptoValueEur": 8282.0,
         "cashCurrentEur": 5320.83,
-        "cashSavingsEur": 5706.67
+        "cashSavingsEur": 5706.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 3.48
       },
       "portfolioValueEur": 32261.96,
       "cashEur": 13920.6,
@@ -159,13 +186,16 @@
       "degiro": {
         "updatedAt": "2026-03-29T18:00:00",
         "valueEur": 24200.4,
-        "cashEur": 1180.04
+        "cashEur": 1180.04,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-29T18:05:00",
         "cryptoValueEur": 8319.34,
         "cashCurrentEur": 5328.14,
-        "cashSavingsEur": 5720.0
+        "cashSavingsEur": 5720.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 3.88
       },
       "portfolioValueEur": 32519.74,
       "cashEur": 13947.81,
@@ -176,13 +206,16 @@
       "degiro": {
         "updatedAt": "2026-03-30T18:00:00",
         "valueEur": 23988.28,
-        "cashEur": 1182.79
+        "cashEur": 1182.79,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-30T18:05:00",
         "cryptoValueEur": 8203.46,
         "cashCurrentEur": 5335.45,
-        "cashSavingsEur": 5733.33
+        "cashSavingsEur": 5733.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 4.27
       },
       "portfolioValueEur": 32191.74,
       "cashEur": 13894.83,
@@ -193,13 +226,16 @@
       "degiro": {
         "updatedAt": "2026-03-31T18:00:00",
         "valueEur": 23795.95,
-        "cashEur": 1185.54
+        "cashEur": 1185.54,
+        "netDepositsEur": 19000.0
       },
       "revolut": {
         "updatedAt": "2026-03-31T18:05:00",
         "cryptoValueEur": 8091.32,
         "cashCurrentEur": 5342.76,
-        "cashSavingsEur": 5746.67
+        "cashSavingsEur": 5746.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 4.66
       },
       "portfolioValueEur": 31887.27,
       "cashEur": 13878.13,
@@ -210,13 +246,16 @@
       "degiro": {
         "updatedAt": "2026-04-01T18:00:00",
         "valueEur": 23708.97,
-        "cashEur": 1188.29
+        "cashEur": 1188.29,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-01T18:05:00",
         "cryptoValueEur": 8152.7,
         "cashCurrentEur": 5350.07,
-        "cashSavingsEur": 5760.0
+        "cashSavingsEur": 5760.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 5.06
       },
       "portfolioValueEur": 31861.67,
       "cashEur": 13933.77,
@@ -227,13 +266,16 @@
       "degiro": {
         "updatedAt": "2026-04-02T18:00:00",
         "valueEur": 23670.42,
-        "cashEur": 1191.04
+        "cashEur": 1191.04,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-02T18:05:00",
         "cryptoValueEur": 8031.24,
         "cashCurrentEur": 5357.37,
-        "cashSavingsEur": 5773.33
+        "cashSavingsEur": 5773.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 5.45
       },
       "portfolioValueEur": 31701.66,
       "cashEur": 13931.56,
@@ -244,13 +286,16 @@
       "degiro": {
         "updatedAt": "2026-04-03T18:00:00",
         "valueEur": 23927.06,
-        "cashEur": 1193.79
+        "cashEur": 1193.79,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-03T18:05:00",
         "cryptoValueEur": 8097.4,
         "cashCurrentEur": 5364.68,
-        "cashSavingsEur": 5786.67
+        "cashSavingsEur": 5786.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 5.85
       },
       "portfolioValueEur": 32024.46,
       "cashEur": 13999.75,
@@ -261,13 +306,16 @@
       "degiro": {
         "updatedAt": "2026-04-04T18:00:00",
         "valueEur": 23783.33,
-        "cashEur": 1196.54
+        "cashEur": 1196.54,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-04T18:05:00",
         "cryptoValueEur": 8198.75,
         "cashCurrentEur": 5371.99,
-        "cashSavingsEur": 5800.0
+        "cashSavingsEur": 5800.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 6.25
       },
       "portfolioValueEur": 31982.08,
       "cashEur": 13941.88,
@@ -278,13 +326,16 @@
       "degiro": {
         "updatedAt": "2026-04-05T18:00:00",
         "valueEur": 23749.52,
-        "cashEur": 1199.29
+        "cashEur": 1199.29,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-05T18:05:00",
         "cryptoValueEur": 8414.0,
         "cashCurrentEur": 5379.3,
-        "cashSavingsEur": 5813.33
+        "cashSavingsEur": 5813.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 6.64
       },
       "portfolioValueEur": 32163.52,
       "cashEur": 14031.57,
@@ -295,13 +346,16 @@
       "degiro": {
         "updatedAt": "2026-04-06T18:00:00",
         "valueEur": 23808.53,
-        "cashEur": 1202.04
+        "cashEur": 1202.04,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-06T18:05:00",
         "cryptoValueEur": 8499.56,
         "cashCurrentEur": 5386.61,
-        "cashSavingsEur": 5826.67
+        "cashSavingsEur": 5826.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 7.04
       },
       "portfolioValueEur": 32308.09,
       "cashEur": 14077.46,
@@ -312,13 +366,16 @@
       "degiro": {
         "updatedAt": "2026-04-07T18:00:00",
         "valueEur": 23982.49,
-        "cashEur": 1204.79
+        "cashEur": 1204.79,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-07T18:05:00",
         "cryptoValueEur": 8381.69,
         "cashCurrentEur": 5393.92,
-        "cashSavingsEur": 5840.0
+        "cashSavingsEur": 5840.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 7.44
       },
       "portfolioValueEur": 32364.18,
       "cashEur": 13961.19,
@@ -329,13 +386,16 @@
       "degiro": {
         "updatedAt": "2026-04-08T18:00:00",
         "valueEur": 23914.6,
-        "cashEur": 1207.54
+        "cashEur": 1207.54,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-08T18:05:00",
         "cryptoValueEur": 8282.56,
         "cashCurrentEur": 5401.23,
-        "cashSavingsEur": 5853.33
+        "cashSavingsEur": 5853.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 7.84
       },
       "portfolioValueEur": 32197.16,
       "cashEur": 14003.25,
@@ -346,13 +406,16 @@
       "degiro": {
         "updatedAt": "2026-04-09T18:00:00",
         "valueEur": 24177.19,
-        "cashEur": 1210.29
+        "cashEur": 1210.29,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-09T18:05:00",
         "cryptoValueEur": 8450.57,
         "cashCurrentEur": 5408.54,
-        "cashSavingsEur": 5866.67
+        "cashSavingsEur": 5866.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 8.25
       },
       "portfolioValueEur": 32627.76,
       "cashEur": 14033.28,
@@ -363,13 +426,16 @@
       "degiro": {
         "updatedAt": "2026-04-10T18:00:00",
         "valueEur": 24289.69,
-        "cashEur": 1213.04
+        "cashEur": 1213.04,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-10T18:05:00",
         "cryptoValueEur": 8407.65,
         "cashCurrentEur": 5415.85,
-        "cashSavingsEur": 5880.0
+        "cashSavingsEur": 5880.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 8.65
       },
       "portfolioValueEur": 32697.34,
       "cashEur": 14142.69,
@@ -380,13 +446,16 @@
       "degiro": {
         "updatedAt": "2026-04-11T18:00:00",
         "valueEur": 24297.59,
-        "cashEur": 1215.79
+        "cashEur": 1215.79,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-11T18:05:00",
         "cryptoValueEur": 8306.95,
         "cashCurrentEur": 5423.15,
-        "cashSavingsEur": 5893.33
+        "cashSavingsEur": 5893.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 9.05
       },
       "portfolioValueEur": 32604.54,
       "cashEur": 14049.28,
@@ -397,13 +466,16 @@
       "degiro": {
         "updatedAt": "2026-04-12T18:00:00",
         "valueEur": 24360.34,
-        "cashEur": 1218.55
+        "cashEur": 1218.55,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-12T18:05:00",
         "cryptoValueEur": 8206.51,
         "cashCurrentEur": 5430.46,
-        "cashSavingsEur": 5906.67
+        "cashSavingsEur": 5906.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 9.46
       },
       "portfolioValueEur": 32566.85,
       "cashEur": 14116.77,
@@ -414,13 +486,16 @@
       "degiro": {
         "updatedAt": "2026-04-13T18:00:00",
         "valueEur": 24603.64,
-        "cashEur": 1221.3
+        "cashEur": 1221.3,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-13T18:05:00",
         "cryptoValueEur": 8166.47,
         "cashCurrentEur": 5437.77,
-        "cashSavingsEur": 5920.0
+        "cashSavingsEur": 5920.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 9.86
       },
       "portfolioValueEur": 32770.11,
       "cashEur": 14071.79,
@@ -431,13 +506,16 @@
       "degiro": {
         "updatedAt": "2026-04-14T18:00:00",
         "valueEur": 24903.38,
-        "cashEur": 1224.05
+        "cashEur": 1224.05,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-14T18:05:00",
         "cryptoValueEur": 8174.07,
         "cashCurrentEur": 5445.08,
-        "cashSavingsEur": 5933.33
+        "cashSavingsEur": 5933.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 10.27
       },
       "portfolioValueEur": 33077.45,
       "cashEur": 14064.68,
@@ -448,13 +526,16 @@
       "degiro": {
         "updatedAt": "2026-04-15T18:00:00",
         "valueEur": 24685.8,
-        "cashEur": 1226.8
+        "cashEur": 1226.8,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-15T18:05:00",
         "cryptoValueEur": 8009.22,
         "cashCurrentEur": 5452.39,
-        "cashSavingsEur": 5946.67
+        "cashSavingsEur": 5946.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 10.68
       },
       "portfolioValueEur": 32695.02,
       "cashEur": 14163.95,
@@ -465,13 +546,16 @@
       "degiro": {
         "updatedAt": "2026-04-16T18:00:00",
         "valueEur": 24874.9,
-        "cashEur": 1229.55
+        "cashEur": 1229.55,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-16T18:05:00",
         "cryptoValueEur": 7979.75,
         "cashCurrentEur": 5459.7,
-        "cashSavingsEur": 5960.0
+        "cashSavingsEur": 5960.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 11.08
       },
       "portfolioValueEur": 32854.65,
       "cashEur": 14087.18,
@@ -482,13 +566,16 @@
       "degiro": {
         "updatedAt": "2026-04-17T18:00:00",
         "valueEur": 24840.72,
-        "cashEur": 1232.3
+        "cashEur": 1232.3,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-17T18:05:00",
         "cryptoValueEur": 8192.03,
         "cashCurrentEur": 5467.01,
-        "cashSavingsEur": 5973.33
+        "cashSavingsEur": 5973.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 11.49
       },
       "portfolioValueEur": 33032.75,
       "cashEur": 14175.1,
@@ -499,13 +586,16 @@
       "degiro": {
         "updatedAt": "2026-04-18T18:00:00",
         "valueEur": 25128.88,
-        "cashEur": 1235.05
+        "cashEur": 1235.05,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-18T18:05:00",
         "cryptoValueEur": 8351.47,
         "cashCurrentEur": 5474.32,
-        "cashSavingsEur": 5986.67
+        "cashSavingsEur": 5986.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 11.9
       },
       "portfolioValueEur": 33480.35,
       "cashEur": 14105.73,
@@ -516,13 +606,16 @@
       "degiro": {
         "updatedAt": "2026-04-19T18:00:00",
         "valueEur": 25281.91,
-        "cashEur": 1237.8
+        "cashEur": 1237.8,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-19T18:05:00",
         "cryptoValueEur": 8435.1,
         "cashCurrentEur": 5481.62,
-        "cashSavingsEur": 6000.0
+        "cashSavingsEur": 6000.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 12.32
       },
       "portfolioValueEur": 33717.01,
       "cashEur": 14203.23,
@@ -533,13 +626,16 @@
       "degiro": {
         "updatedAt": "2026-04-20T18:00:00",
         "valueEur": 25183.28,
-        "cashEur": 1240.55
+        "cashEur": 1240.55,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-20T18:05:00",
         "cryptoValueEur": 8501.44,
         "cashCurrentEur": 5488.93,
-        "cashSavingsEur": 6013.33
+        "cashSavingsEur": 6013.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 12.73
       },
       "portfolioValueEur": 33684.72,
       "cashEur": 14148.62,
@@ -550,13 +646,16 @@
       "degiro": {
         "updatedAt": "2026-04-21T18:00:00",
         "valueEur": 25178.13,
-        "cashEur": 1243.3
+        "cashEur": 1243.3,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-21T18:05:00",
         "cryptoValueEur": 8484.32,
         "cashCurrentEur": 5496.24,
-        "cashSavingsEur": 6026.67
+        "cashSavingsEur": 6026.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 13.14
       },
       "portfolioValueEur": 33662.45,
       "cashEur": 14296.79,
@@ -567,13 +666,16 @@
       "degiro": {
         "updatedAt": "2026-04-22T18:00:00",
         "valueEur": 25417.43,
-        "cashEur": 1246.05
+        "cashEur": 1246.05,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-22T18:05:00",
         "cryptoValueEur": 8382.03,
         "cashCurrentEur": 5503.55,
-        "cashSavingsEur": 6040.0
+        "cashSavingsEur": 6040.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 13.55
       },
       "portfolioValueEur": 33799.46,
       "cashEur": 14237.73,
@@ -584,13 +686,16 @@
       "degiro": {
         "updatedAt": "2026-04-23T18:00:00",
         "valueEur": 25268.96,
-        "cashEur": 1248.8
+        "cashEur": 1248.8,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-23T18:05:00",
         "cryptoValueEur": 8568.1,
         "cashCurrentEur": 5510.86,
-        "cashSavingsEur": 6053.33
+        "cashSavingsEur": 6053.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 13.97
       },
       "portfolioValueEur": 33837.06,
       "cashEur": 14310.34,
@@ -601,13 +706,16 @@
       "degiro": {
         "updatedAt": "2026-04-24T18:00:00",
         "valueEur": 25187.98,
-        "cashEur": 1251.55
+        "cashEur": 1251.55,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-24T18:05:00",
         "cryptoValueEur": 8634.57,
         "cashCurrentEur": 5518.17,
-        "cashSavingsEur": 6066.67
+        "cashSavingsEur": 6066.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 14.38
       },
       "portfolioValueEur": 33822.55,
       "cashEur": 14281.94,
@@ -618,13 +726,16 @@
       "degiro": {
         "updatedAt": "2026-04-25T18:00:00",
         "valueEur": 25026.53,
-        "cashEur": 1254.3
+        "cashEur": 1254.3,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-25T18:05:00",
         "cryptoValueEur": 8757.85,
         "cashCurrentEur": 5525.48,
-        "cashSavingsEur": 6080.0
+        "cashSavingsEur": 6080.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 14.8
       },
       "portfolioValueEur": 33784.38,
       "cashEur": 14284.25,
@@ -635,13 +746,16 @@
       "degiro": {
         "updatedAt": "2026-04-26T18:00:00",
         "valueEur": 25210.83,
-        "cashEur": 1257.05
+        "cashEur": 1257.05,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-26T18:05:00",
         "cryptoValueEur": 8775.62,
         "cashCurrentEur": 5532.79,
-        "cashSavingsEur": 6093.33
+        "cashSavingsEur": 6093.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 15.22
       },
       "portfolioValueEur": 33986.45,
       "cashEur": 14211.49,
@@ -652,13 +766,16 @@
       "degiro": {
         "updatedAt": "2026-04-27T18:00:00",
         "valueEur": 25144.3,
-        "cashEur": 1259.81
+        "cashEur": 1259.81,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-27T18:05:00",
         "cryptoValueEur": 8556.89,
         "cashCurrentEur": 5540.1,
-        "cashSavingsEur": 6106.67
+        "cashSavingsEur": 6106.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 15.64
       },
       "portfolioValueEur": 33701.19,
       "cashEur": 14373.46,
@@ -669,13 +786,16 @@
       "degiro": {
         "updatedAt": "2026-04-28T18:00:00",
         "valueEur": 25384.86,
-        "cashEur": 1262.56
+        "cashEur": 1262.56,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-28T18:05:00",
         "cryptoValueEur": 8710.28,
         "cashCurrentEur": 5547.4,
-        "cashSavingsEur": 6120.0
+        "cashSavingsEur": 6120.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 16.05
       },
       "portfolioValueEur": 34095.14,
       "cashEur": 14287.47,
@@ -686,13 +806,16 @@
       "degiro": {
         "updatedAt": "2026-04-29T18:00:00",
         "valueEur": 25169.12,
-        "cashEur": 1265.31
+        "cashEur": 1265.31,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-29T18:05:00",
         "cryptoValueEur": 8887.72,
         "cashCurrentEur": 5554.71,
-        "cashSavingsEur": 6133.33
+        "cashSavingsEur": 6133.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 16.47
       },
       "portfolioValueEur": 34056.84,
       "cashEur": 14403.19,
@@ -703,13 +826,16 @@
       "degiro": {
         "updatedAt": "2026-04-30T18:00:00",
         "valueEur": 24970.57,
-        "cashEur": 1268.06
+        "cashEur": 1268.06,
+        "netDepositsEur": 19500.0
       },
       "revolut": {
         "updatedAt": "2026-04-30T18:05:00",
         "cryptoValueEur": 8884.95,
         "cashCurrentEur": 5562.02,
-        "cashSavingsEur": 6146.67
+        "cashSavingsEur": 6146.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 16.9
       },
       "portfolioValueEur": 33855.52,
       "cashEur": 14276.22,
@@ -720,13 +846,16 @@
       "degiro": {
         "updatedAt": "2026-05-01T18:00:00",
         "valueEur": 25144.55,
-        "cashEur": 1270.81
+        "cashEur": 1270.81,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-01T18:05:00",
         "cryptoValueEur": 9013.36,
         "cashCurrentEur": 5569.33,
-        "cashSavingsEur": 6160.0
+        "cashSavingsEur": 6160.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 17.32
       },
       "portfolioValueEur": 34157.91,
       "cashEur": 14299.12,
@@ -737,13 +866,16 @@
       "degiro": {
         "updatedAt": "2026-05-02T18:00:00",
         "valueEur": 25161.83,
-        "cashEur": 1273.56
+        "cashEur": 1273.56,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-02T18:05:00",
         "cryptoValueEur": 9040.9,
         "cashCurrentEur": 5576.64,
-        "cashSavingsEur": 6173.33
+        "cashSavingsEur": 6173.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 17.74
       },
       "portfolioValueEur": 34202.73,
       "cashEur": 14334.42,
@@ -754,13 +886,16 @@
       "degiro": {
         "updatedAt": "2026-05-03T18:00:00",
         "valueEur": 25399.08,
-        "cashEur": 1276.31
+        "cashEur": 1276.31,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-03T18:05:00",
         "cryptoValueEur": 9008.11,
         "cashCurrentEur": 5583.95,
-        "cashSavingsEur": 6186.67
+        "cashSavingsEur": 6186.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 18.16
       },
       "portfolioValueEur": 34407.19,
       "cashEur": 14339.34,
@@ -771,13 +906,16 @@
       "degiro": {
         "updatedAt": "2026-05-04T18:00:00",
         "valueEur": 25452.33,
-        "cashEur": 1279.06
+        "cashEur": 1279.06,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-04T18:05:00",
         "cryptoValueEur": 9121.23,
         "cashCurrentEur": 5591.26,
-        "cashSavingsEur": 6200.0
+        "cashSavingsEur": 6200.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 18.59
       },
       "portfolioValueEur": 34573.56,
       "cashEur": 14351.07,
@@ -788,13 +926,16 @@
       "degiro": {
         "updatedAt": "2026-05-05T18:00:00",
         "valueEur": 25378.2,
-        "cashEur": 1281.81
+        "cashEur": 1281.81,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-05T18:05:00",
         "cryptoValueEur": 9363.41,
         "cashCurrentEur": 5598.57,
-        "cashSavingsEur": 6213.33
+        "cashSavingsEur": 6213.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 19.01
       },
       "portfolioValueEur": 34741.61,
       "cashEur": 14436.28,
@@ -805,13 +946,16 @@
       "degiro": {
         "updatedAt": "2026-05-06T18:00:00",
         "valueEur": 25374.87,
-        "cashEur": 1284.56
+        "cashEur": 1284.56,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-06T18:05:00",
         "cryptoValueEur": 9376.1,
         "cashCurrentEur": 5605.88,
-        "cashSavingsEur": 6226.67
+        "cashSavingsEur": 6226.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 19.44
       },
       "portfolioValueEur": 34750.97,
       "cashEur": 14365.13,
@@ -822,13 +966,16 @@
       "degiro": {
         "updatedAt": "2026-05-07T18:00:00",
         "valueEur": 25252.36,
-        "cashEur": 1287.31
+        "cashEur": 1287.31,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-07T18:05:00",
         "cryptoValueEur": 9300.02,
         "cashCurrentEur": 5613.18,
-        "cashSavingsEur": 6240.0
+        "cashSavingsEur": 6240.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 19.87
       },
       "portfolioValueEur": 34552.38,
       "cashEur": 14453.31,
@@ -839,13 +986,16 @@
       "degiro": {
         "updatedAt": "2026-05-08T18:00:00",
         "valueEur": 25133.45,
-        "cashEur": 1290.06
+        "cashEur": 1290.06,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-08T18:05:00",
         "cryptoValueEur": 9166.71,
         "cashCurrentEur": 5620.49,
-        "cashSavingsEur": 6253.33
+        "cashSavingsEur": 6253.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 20.3
       },
       "portfolioValueEur": 34300.16,
       "cashEur": 14383.99,
@@ -856,13 +1006,16 @@
       "degiro": {
         "updatedAt": "2026-05-09T18:00:00",
         "valueEur": 25236.92,
-        "cashEur": 1292.81
+        "cashEur": 1292.81,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-09T18:05:00",
         "cryptoValueEur": 9039.54,
         "cashCurrentEur": 5627.8,
-        "cashSavingsEur": 6266.67
+        "cashSavingsEur": 6266.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 20.73
       },
       "portfolioValueEur": 34276.46,
       "cashEur": 14530.91,
@@ -873,13 +1026,16 @@
       "degiro": {
         "updatedAt": "2026-05-10T18:00:00",
         "valueEur": 25467.77,
-        "cashEur": 1295.56
+        "cashEur": 1295.56,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-10T18:05:00",
         "cryptoValueEur": 8838.73,
         "cashCurrentEur": 5635.11,
-        "cashSavingsEur": 6280.0
+        "cashSavingsEur": 6280.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 21.16
       },
       "portfolioValueEur": 34306.5,
       "cashEur": 14437.58,
@@ -890,13 +1046,16 @@
       "degiro": {
         "updatedAt": "2026-05-11T18:00:00",
         "valueEur": 25593.86,
-        "cashEur": 1298.31
+        "cashEur": 1298.31,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-11T18:05:00",
         "cryptoValueEur": 8709.26,
         "cashCurrentEur": 5642.42,
-        "cashSavingsEur": 6293.33
+        "cashSavingsEur": 6293.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 21.59
       },
       "portfolioValueEur": 34303.12,
       "cashEur": 14434.12,
@@ -907,13 +1066,16 @@
       "degiro": {
         "updatedAt": "2026-05-12T18:00:00",
         "valueEur": 25870.72,
-        "cashEur": 1301.07
+        "cashEur": 1301.07,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-12T18:05:00",
         "cryptoValueEur": 8745.63,
         "cashCurrentEur": 5649.73,
-        "cashSavingsEur": 6306.67
+        "cashSavingsEur": 6306.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 22.02
       },
       "portfolioValueEur": 34616.35,
       "cashEur": 14501.99,
@@ -924,13 +1086,16 @@
       "degiro": {
         "updatedAt": "2026-05-13T18:00:00",
         "valueEur": 26064.65,
-        "cashEur": 1303.82
+        "cashEur": 1303.82,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-13T18:05:00",
         "cryptoValueEur": 8891.25,
         "cashCurrentEur": 5657.04,
-        "cashSavingsEur": 6320.0
+        "cashSavingsEur": 6320.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 22.45
       },
       "portfolioValueEur": 34955.9,
       "cashEur": 14470.28,
@@ -941,13 +1106,16 @@
       "degiro": {
         "updatedAt": "2026-05-14T18:00:00",
         "valueEur": 25865.5,
-        "cashEur": 1306.57
+        "cashEur": 1306.57,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-14T18:05:00",
         "cryptoValueEur": 8862.71,
         "cashCurrentEur": 5664.35,
-        "cashSavingsEur": 6333.33
+        "cashSavingsEur": 6333.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 22.89
       },
       "portfolioValueEur": 34728.21,
       "cashEur": 14521.01,
@@ -958,13 +1126,16 @@
       "degiro": {
         "updatedAt": "2026-05-15T18:00:00",
         "valueEur": 25878.58,
-        "cashEur": 1309.32
+        "cashEur": 1309.32,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-15T18:05:00",
         "cryptoValueEur": 8973.61,
         "cashCurrentEur": 5671.65,
-        "cashSavingsEur": 6346.67
+        "cashSavingsEur": 6346.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 23.32
       },
       "portfolioValueEur": 34852.19,
       "cashEur": 14574.39,
@@ -975,13 +1146,16 @@
       "degiro": {
         "updatedAt": "2026-05-16T18:00:00",
         "valueEur": 26186.24,
-        "cashEur": 1312.07
+        "cashEur": 1312.07,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-16T18:05:00",
         "cryptoValueEur": 8787.32,
         "cashCurrentEur": 5678.96,
-        "cashSavingsEur": 6360.0
+        "cashSavingsEur": 6360.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 23.76
       },
       "portfolioValueEur": 34973.56,
       "cashEur": 14544.52,
@@ -992,13 +1166,16 @@
       "degiro": {
         "updatedAt": "2026-05-17T18:00:00",
         "valueEur": 26125.86,
-        "cashEur": 1314.82
+        "cashEur": 1314.82,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-17T18:05:00",
         "cryptoValueEur": 8958.76,
         "cashCurrentEur": 5686.27,
-        "cashSavingsEur": 6373.33
+        "cashSavingsEur": 6373.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 24.19
       },
       "portfolioValueEur": 35084.62,
       "cashEur": 14533.33,
@@ -1009,13 +1186,16 @@
       "degiro": {
         "updatedAt": "2026-05-18T18:00:00",
         "valueEur": 25979.89,
-        "cashEur": 1317.57
+        "cashEur": 1317.57,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-18T18:05:00",
         "cryptoValueEur": 8938.29,
         "cashCurrentEur": 5693.58,
-        "cashSavingsEur": 6386.67
+        "cashSavingsEur": 6386.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 24.63
       },
       "portfolioValueEur": 34918.18,
       "cashEur": 14574.47,
@@ -1026,13 +1206,16 @@
       "degiro": {
         "updatedAt": "2026-05-19T18:00:00",
         "valueEur": 25885.25,
-        "cashEur": 1320.32
+        "cashEur": 1320.32,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-19T18:05:00",
         "cryptoValueEur": 8824.13,
         "cashCurrentEur": 5700.89,
-        "cashSavingsEur": 6400.0
+        "cashSavingsEur": 6400.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 25.07
       },
       "portfolioValueEur": 34709.38,
       "cashEur": 14668.1,
@@ -1043,13 +1226,16 @@
       "degiro": {
         "updatedAt": "2026-05-20T18:00:00",
         "valueEur": 25884.72,
-        "cashEur": 1323.07
+        "cashEur": 1323.07,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-20T18:05:00",
         "cryptoValueEur": 8996.14,
         "cashCurrentEur": 5708.2,
-        "cashSavingsEur": 6413.33
+        "cashSavingsEur": 6413.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 25.51
       },
       "portfolioValueEur": 34880.86,
       "cashEur": 14621.88,
@@ -1060,13 +1246,16 @@
       "degiro": {
         "updatedAt": "2026-05-21T18:00:00",
         "valueEur": 25660.55,
-        "cashEur": 1325.82
+        "cashEur": 1325.82,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-21T18:05:00",
         "cryptoValueEur": 9236.95,
         "cashCurrentEur": 5715.51,
-        "cashSavingsEur": 6426.67
+        "cashSavingsEur": 6426.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 25.95
       },
       "portfolioValueEur": 34897.5,
       "cashEur": 14681.01,
@@ -1077,13 +1266,16 @@
       "degiro": {
         "updatedAt": "2026-05-22T18:00:00",
         "valueEur": 25957.05,
-        "cashEur": 1328.57
+        "cashEur": 1328.57,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-22T18:05:00",
         "cryptoValueEur": 9448.69,
         "cashCurrentEur": 5722.82,
-        "cashSavingsEur": 6440.0
+        "cashSavingsEur": 6440.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 26.39
       },
       "portfolioValueEur": 35405.74,
       "cashEur": 14696.47,
@@ -1094,13 +1286,16 @@
       "degiro": {
         "updatedAt": "2026-05-23T18:00:00",
         "valueEur": 25798.37,
-        "cashEur": 1331.32
+        "cashEur": 1331.32,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-23T18:05:00",
         "cryptoValueEur": 9445.57,
         "cashCurrentEur": 5730.13,
-        "cashSavingsEur": 6453.33
+        "cashSavingsEur": 6453.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 26.83
       },
       "portfolioValueEur": 35243.94,
       "cashEur": 14608.35,
@@ -1111,13 +1306,16 @@
       "degiro": {
         "updatedAt": "2026-05-24T18:00:00",
         "valueEur": 25773.93,
-        "cashEur": 1334.07
+        "cashEur": 1334.07,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-24T18:05:00",
         "cryptoValueEur": 9229.65,
         "cashCurrentEur": 5737.43,
-        "cashSavingsEur": 6466.67
+        "cashSavingsEur": 6466.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 27.27
       },
       "portfolioValueEur": 35003.58,
       "cashEur": 14648.21,
@@ -1128,13 +1326,16 @@
       "degiro": {
         "updatedAt": "2026-05-25T18:00:00",
         "valueEur": 26080.99,
-        "cashEur": 1336.82
+        "cashEur": 1336.82,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-25T18:05:00",
         "cryptoValueEur": 9119.27,
         "cashCurrentEur": 5744.74,
-        "cashSavingsEur": 6480.0
+        "cashSavingsEur": 6480.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 27.72
       },
       "portfolioValueEur": 35200.26,
       "cashEur": 14726.43,
@@ -1145,13 +1346,16 @@
       "degiro": {
         "updatedAt": "2026-05-26T18:00:00",
         "valueEur": 26087.28,
-        "cashEur": 1339.57
+        "cashEur": 1339.57,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-26T18:05:00",
         "cryptoValueEur": 9086.12,
         "cashCurrentEur": 5752.05,
-        "cashSavingsEur": 6493.33
+        "cashSavingsEur": 6493.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 28.16
       },
       "portfolioValueEur": 35173.4,
       "cashEur": 14767.57,
@@ -1162,13 +1366,16 @@
       "degiro": {
         "updatedAt": "2026-05-27T18:00:00",
         "valueEur": 26403.87,
-        "cashEur": 1342.33
+        "cashEur": 1342.33,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-27T18:05:00",
         "cryptoValueEur": 9116.74,
         "cashCurrentEur": 5759.36,
-        "cashSavingsEur": 6506.67
+        "cashSavingsEur": 6506.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 28.61
       },
       "portfolioValueEur": 35520.61,
       "cashEur": 14742.8,
@@ -1179,13 +1386,16 @@
       "degiro": {
         "updatedAt": "2026-05-28T18:00:00",
         "valueEur": 26235.78,
-        "cashEur": 1345.08
+        "cashEur": 1345.08,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-28T18:05:00",
         "cryptoValueEur": 9022.86,
         "cashCurrentEur": 5766.67,
-        "cashSavingsEur": 6520.0
+        "cashSavingsEur": 6520.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 29.05
       },
       "portfolioValueEur": 35258.64,
       "cashEur": 14796.26,
@@ -1196,13 +1406,16 @@
       "degiro": {
         "updatedAt": "2026-05-29T18:00:00",
         "valueEur": 26313.8,
-        "cashEur": 1347.83
+        "cashEur": 1347.83,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-29T18:05:00",
         "cryptoValueEur": 9046.8,
         "cashCurrentEur": 5773.98,
-        "cashSavingsEur": 6533.33
+        "cashSavingsEur": 6533.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 29.5
       },
       "portfolioValueEur": 35360.6,
       "cashEur": 14774.39,
@@ -1213,13 +1426,16 @@
       "degiro": {
         "updatedAt": "2026-05-30T18:00:00",
         "valueEur": 26089.72,
-        "cashEur": 1350.58
+        "cashEur": 1350.58,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-30T18:05:00",
         "cryptoValueEur": 9090.85,
         "cashCurrentEur": 5781.29,
-        "cashSavingsEur": 6546.67
+        "cashSavingsEur": 6546.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 29.95
       },
       "portfolioValueEur": 35180.57,
       "cashEur": 14748.61,
@@ -1230,13 +1446,16 @@
       "degiro": {
         "updatedAt": "2026-05-31T18:00:00",
         "valueEur": 26324.41,
-        "cashEur": 1353.33
+        "cashEur": 1353.33,
+        "netDepositsEur": 20000.0
       },
       "revolut": {
         "updatedAt": "2026-05-31T18:05:00",
         "cryptoValueEur": 8930.43,
         "cashCurrentEur": 5788.6,
-        "cashSavingsEur": 6560.0
+        "cashSavingsEur": 6560.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 30.4
       },
       "portfolioValueEur": 35254.84,
       "cashEur": 14835.28,
@@ -1247,13 +1466,16 @@
       "degiro": {
         "updatedAt": "2026-06-01T18:00:00",
         "valueEur": 26113.54,
-        "cashEur": 1356.08
+        "cashEur": 1356.08,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-01T18:05:00",
         "cryptoValueEur": 8786.22,
         "cashCurrentEur": 5795.9,
-        "cashSavingsEur": 6573.33
+        "cashSavingsEur": 6573.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 30.85
       },
       "portfolioValueEur": 34899.76,
       "cashEur": 14790.22,
@@ -1264,13 +1486,16 @@
       "degiro": {
         "updatedAt": "2026-06-02T18:00:00",
         "valueEur": 26246.4,
-        "cashEur": 1358.83
+        "cashEur": 1358.83,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-02T18:05:00",
         "cryptoValueEur": 8667.24,
         "cashCurrentEur": 5803.21,
-        "cashSavingsEur": 6586.67
+        "cashSavingsEur": 6586.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 31.3
       },
       "portfolioValueEur": 34913.64,
       "cashEur": 14727.67,
@@ -1281,13 +1506,16 @@
       "degiro": {
         "updatedAt": "2026-06-03T18:00:00",
         "valueEur": 26504.19,
-        "cashEur": 1361.58
+        "cashEur": 1361.58,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-03T18:05:00",
         "cryptoValueEur": 8554.89,
         "cashCurrentEur": 5810.52,
-        "cashSavingsEur": 6600.0
+        "cashSavingsEur": 6600.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 31.75
       },
       "portfolioValueEur": 35059.08,
       "cashEur": 14817.0,
@@ -1298,13 +1526,16 @@
       "degiro": {
         "updatedAt": "2026-06-04T18:00:00",
         "valueEur": 26606.47,
-        "cashEur": 1364.33
+        "cashEur": 1364.33,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-04T18:05:00",
         "cryptoValueEur": 8522.09,
         "cashCurrentEur": 5817.83,
-        "cashSavingsEur": 6613.33
+        "cashSavingsEur": 6613.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 32.21
       },
       "portfolioValueEur": 35128.56,
       "cashEur": 14828.7,
@@ -1315,13 +1546,16 @@
       "degiro": {
         "updatedAt": "2026-06-05T18:00:00",
         "valueEur": 26652.58,
-        "cashEur": 1367.08
+        "cashEur": 1367.08,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-05T18:05:00",
         "cryptoValueEur": 8721.18,
         "cashCurrentEur": 5825.14,
-        "cashSavingsEur": 6626.67
+        "cashSavingsEur": 6626.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 32.66
       },
       "portfolioValueEur": 35373.76,
       "cashEur": 14781.45,
@@ -1332,13 +1566,16 @@
       "degiro": {
         "updatedAt": "2026-06-06T18:00:00",
         "valueEur": 26812.23,
-        "cashEur": 1369.83
+        "cashEur": 1369.83,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-06T18:05:00",
         "cryptoValueEur": 8604.68,
         "cashCurrentEur": 5832.45,
-        "cashSavingsEur": 6640.0
+        "cashSavingsEur": 6640.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 33.12
       },
       "portfolioValueEur": 35416.91,
       "cashEur": 14825.52,
@@ -1349,13 +1586,16 @@
       "degiro": {
         "updatedAt": "2026-06-07T18:00:00",
         "valueEur": 26946.57,
-        "cashEur": 1372.58
+        "cashEur": 1372.58,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-07T18:05:00",
         "cryptoValueEur": 8517.56,
         "cashCurrentEur": 5839.76,
-        "cashSavingsEur": 6653.33
+        "cashSavingsEur": 6653.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 33.57
       },
       "portfolioValueEur": 35464.13,
       "cashEur": 14826.21,
@@ -1366,13 +1606,16 @@
       "degiro": {
         "updatedAt": "2026-06-08T18:00:00",
         "valueEur": 27129.13,
-        "cashEur": 1375.33
+        "cashEur": 1375.33,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-08T18:05:00",
         "cryptoValueEur": 8329.11,
         "cashCurrentEur": 5847.07,
-        "cashSavingsEur": 6666.67
+        "cashSavingsEur": 6666.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 34.03
       },
       "portfolioValueEur": 35458.24,
       "cashEur": 14862.37,
@@ -1383,13 +1626,16 @@
       "degiro": {
         "updatedAt": "2026-06-09T18:00:00",
         "valueEur": 27460.18,
-        "cashEur": 1378.08
+        "cashEur": 1378.08,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-09T18:05:00",
         "cryptoValueEur": 8550.67,
         "cashCurrentEur": 5854.38,
-        "cashSavingsEur": 6680.0
+        "cashSavingsEur": 6680.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 34.48
       },
       "portfolioValueEur": 36010.85,
       "cashEur": 14814.22,
@@ -1400,13 +1646,16 @@
       "degiro": {
         "updatedAt": "2026-06-10T18:00:00",
         "valueEur": 27320.63,
-        "cashEur": 1380.83
+        "cashEur": 1380.83,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-10T18:05:00",
         "cryptoValueEur": 8448.41,
         "cashCurrentEur": 5861.68,
-        "cashSavingsEur": 6693.33
+        "cashSavingsEur": 6693.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 34.94
       },
       "portfolioValueEur": 35769.04,
       "cashEur": 14965.19,
@@ -1417,13 +1666,16 @@
       "degiro": {
         "updatedAt": "2026-06-11T18:00:00",
         "valueEur": 27583.31,
-        "cashEur": 1383.59
+        "cashEur": 1383.59,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-11T18:05:00",
         "cryptoValueEur": 8621.08,
         "cashCurrentEur": 5868.99,
-        "cashSavingsEur": 6706.67
+        "cashSavingsEur": 6706.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 35.4
       },
       "portfolioValueEur": 36204.39,
       "cashEur": 14888.46,
@@ -1434,13 +1686,16 @@
       "degiro": {
         "updatedAt": "2026-06-12T18:00:00",
         "valueEur": 27409.48,
-        "cashEur": 1386.34
+        "cashEur": 1386.34,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-12T18:05:00",
         "cryptoValueEur": 8776.56,
         "cashCurrentEur": 5876.3,
-        "cashSavingsEur": 6720.0
+        "cashSavingsEur": 6720.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 35.86
       },
       "portfolioValueEur": 36186.04,
       "cashEur": 14955.31,
@@ -1451,13 +1706,16 @@
       "degiro": {
         "updatedAt": "2026-06-13T18:00:00",
         "valueEur": 27510.61,
-        "cashEur": 1389.09
+        "cashEur": 1389.09,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-13T18:05:00",
         "cryptoValueEur": 9005.92,
         "cashCurrentEur": 5883.61,
-        "cashSavingsEur": 6733.33
+        "cashSavingsEur": 6733.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 36.32
       },
       "portfolioValueEur": 36516.53,
       "cashEur": 14960.81,
@@ -1468,13 +1726,16 @@
       "degiro": {
         "updatedAt": "2026-06-14T18:00:00",
         "valueEur": 27246.46,
-        "cashEur": 1391.84
+        "cashEur": 1391.84,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-14T18:05:00",
         "cryptoValueEur": 9160.44,
         "cashCurrentEur": 5890.92,
-        "cashSavingsEur": 6746.67
+        "cashSavingsEur": 6746.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 36.79
       },
       "portfolioValueEur": 36406.9,
       "cashEur": 14917.54,
@@ -1485,13 +1746,16 @@
       "degiro": {
         "updatedAt": "2026-06-15T18:00:00",
         "valueEur": 27378.01,
-        "cashEur": 1394.59
+        "cashEur": 1394.59,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-15T18:05:00",
         "cryptoValueEur": 9376.49,
         "cashCurrentEur": 5898.23,
-        "cashSavingsEur": 6760.0
+        "cashSavingsEur": 6760.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 37.25
       },
       "portfolioValueEur": 36754.5,
       "cashEur": 14904.57,
@@ -1502,13 +1766,16 @@
       "degiro": {
         "updatedAt": "2026-06-16T18:00:00",
         "valueEur": 27179.97,
-        "cashEur": 1397.34
+        "cashEur": 1397.34,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-16T18:05:00",
         "cryptoValueEur": 9186.11,
         "cashCurrentEur": 5905.54,
-        "cashSavingsEur": 6773.33
+        "cashSavingsEur": 6773.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 37.71
       },
       "portfolioValueEur": 36366.08,
       "cashEur": 14984.99,
@@ -1519,13 +1786,16 @@
       "degiro": {
         "updatedAt": "2026-06-17T18:00:00",
         "valueEur": 27077.25,
-        "cashEur": 1400.09
+        "cashEur": 1400.09,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-17T18:05:00",
         "cryptoValueEur": 9240.84,
         "cashCurrentEur": 5912.85,
-        "cashSavingsEur": 6786.67
+        "cashSavingsEur": 6786.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 38.18
       },
       "portfolioValueEur": 36318.09,
       "cashEur": 15024.71,
@@ -1536,13 +1806,16 @@
       "degiro": {
         "updatedAt": "2026-06-18T18:00:00",
         "valueEur": 26933.94,
-        "cashEur": 1402.84
+        "cashEur": 1402.84,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-18T18:05:00",
         "cryptoValueEur": 9310.24,
         "cashCurrentEur": 5920.15,
-        "cashSavingsEur": 6800.0
+        "cashSavingsEur": 6800.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 38.64
       },
       "portfolioValueEur": 36244.18,
       "cashEur": 14965.59,
@@ -1553,13 +1826,16 @@
       "degiro": {
         "updatedAt": "2026-06-19T18:00:00",
         "valueEur": 26960.31,
-        "cashEur": 1405.59
+        "cashEur": 1405.59,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-19T18:05:00",
         "cryptoValueEur": 9513.32,
         "cashCurrentEur": 5927.46,
-        "cashSavingsEur": 6813.33
+        "cashSavingsEur": 6813.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 39.11
       },
       "portfolioValueEur": 36473.63,
       "cashEur": 15072.11,
@@ -1570,13 +1846,16 @@
       "degiro": {
         "updatedAt": "2026-06-20T18:00:00",
         "valueEur": 26751.58,
-        "cashEur": 1408.34
+        "cashEur": 1408.34,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-20T18:05:00",
         "cryptoValueEur": 9479.02,
         "cashCurrentEur": 5934.77,
-        "cashSavingsEur": 6826.67
+        "cashSavingsEur": 6826.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 39.58
       },
       "portfolioValueEur": 36230.6,
       "cashEur": 14994.48,
@@ -1587,13 +1866,16 @@
       "degiro": {
         "updatedAt": "2026-06-21T18:00:00",
         "valueEur": 26492.2,
-        "cashEur": 1411.09
+        "cashEur": 1411.09,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-21T18:05:00",
         "cryptoValueEur": 9618.68,
         "cashCurrentEur": 5942.08,
-        "cashSavingsEur": 6840.0
+        "cashSavingsEur": 6840.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 40.05
       },
       "portfolioValueEur": 36110.88,
       "cashEur": 15065.55,
@@ -1604,13 +1886,16 @@
       "degiro": {
         "updatedAt": "2026-06-22T18:00:00",
         "valueEur": 26386.02,
-        "cashEur": 1413.84
+        "cashEur": 1413.84,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-22T18:05:00",
         "cryptoValueEur": 9745.21,
         "cashCurrentEur": 5949.39,
-        "cashSavingsEur": 6853.33
+        "cashSavingsEur": 6853.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 40.52
       },
       "portfolioValueEur": 36131.23,
       "cashEur": 15065.32,
@@ -1621,13 +1906,16 @@
       "degiro": {
         "updatedAt": "2026-06-23T18:00:00",
         "valueEur": 26376.51,
-        "cashEur": 1416.59
+        "cashEur": 1416.59,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-23T18:05:00",
         "cryptoValueEur": 9497.27,
         "cashCurrentEur": 5956.7,
-        "cashSavingsEur": 6866.67
+        "cashSavingsEur": 6866.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 40.99
       },
       "portfolioValueEur": 35873.78,
       "cashEur": 15002.56,
@@ -1638,13 +1926,16 @@
       "degiro": {
         "updatedAt": "2026-06-24T18:00:00",
         "valueEur": 26631.41,
-        "cashEur": 1419.34
+        "cashEur": 1419.34,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-24T18:05:00",
         "cryptoValueEur": 9703.72,
         "cashCurrentEur": 5964.01,
-        "cashSavingsEur": 6880.0
+        "cashSavingsEur": 6880.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 41.46
       },
       "portfolioValueEur": 36335.13,
       "cashEur": 15091.2,
@@ -1655,13 +1946,16 @@
       "degiro": {
         "updatedAt": "2026-06-25T18:00:00",
         "valueEur": 26860.34,
-        "cashEur": 1422.09
+        "cashEur": 1422.09,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-25T18:05:00",
         "cryptoValueEur": 9750.11,
         "cashCurrentEur": 5971.32,
-        "cashSavingsEur": 6893.33
+        "cashSavingsEur": 6893.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 41.93
       },
       "portfolioValueEur": 36610.45,
       "cashEur": 15041.06,
@@ -1672,13 +1966,16 @@
       "degiro": {
         "updatedAt": "2026-06-26T18:00:00",
         "valueEur": 26673.16,
-        "cashEur": 1424.85
+        "cashEur": 1424.85,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-26T18:05:00",
         "cryptoValueEur": 9655.65,
         "cashCurrentEur": 5978.63,
-        "cashSavingsEur": 6906.67
+        "cashSavingsEur": 6906.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 42.4
       },
       "portfolioValueEur": 36328.81,
       "cashEur": 15174.56,
@@ -1689,13 +1986,16 @@
       "degiro": {
         "updatedAt": "2026-06-27T18:00:00",
         "valueEur": 26879.86,
-        "cashEur": 1427.6
+        "cashEur": 1427.6,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-27T18:05:00",
         "cryptoValueEur": 9843.52,
         "cashCurrentEur": 5985.93,
-        "cashSavingsEur": 6920.0
+        "cashSavingsEur": 6920.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 42.88
       },
       "portfolioValueEur": 36723.38,
       "cashEur": 15187.98,
@@ -1706,13 +2006,16 @@
       "degiro": {
         "updatedAt": "2026-06-28T18:00:00",
         "valueEur": 26741.42,
-        "cashEur": 1430.35
+        "cashEur": 1430.35,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-28T18:05:00",
         "cryptoValueEur": 9717.66,
         "cashCurrentEur": 5993.24,
-        "cashSavingsEur": 6933.33
+        "cashSavingsEur": 6933.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 43.35
       },
       "portfolioValueEur": 36459.08,
       "cashEur": 15074.11,
@@ -1723,13 +2026,16 @@
       "degiro": {
         "updatedAt": "2026-06-29T18:00:00",
         "valueEur": 26939.23,
-        "cashEur": 1433.1
+        "cashEur": 1433.1,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-29T18:05:00",
         "cryptoValueEur": 9918.76,
         "cashCurrentEur": 6000.55,
-        "cashSavingsEur": 6946.67
+        "cashSavingsEur": 6946.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 43.83
       },
       "portfolioValueEur": 36857.99,
       "cashEur": 15136.07,
@@ -1740,13 +2046,16 @@
       "degiro": {
         "updatedAt": "2026-06-30T18:00:00",
         "valueEur": 27043.95,
-        "cashEur": 1435.85
+        "cashEur": 1435.85,
+        "netDepositsEur": 20500.0
       },
       "revolut": {
         "updatedAt": "2026-06-30T18:05:00",
         "cryptoValueEur": 9742.22,
         "cashCurrentEur": 6007.86,
-        "cashSavingsEur": 6960.0
+        "cashSavingsEur": 6960.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 44.3
       },
       "portfolioValueEur": 36786.17,
       "cashEur": 15233.21,
@@ -1757,13 +2066,16 @@
       "degiro": {
         "updatedAt": "2026-07-01T18:00:00",
         "valueEur": 27294.3,
-        "cashEur": 1438.6
+        "cashEur": 1438.6,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-01T18:05:00",
         "cryptoValueEur": 9991.16,
         "cashCurrentEur": 6015.17,
-        "cashSavingsEur": 6973.33
+        "cashSavingsEur": 6973.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 44.78
       },
       "portfolioValueEur": 37285.46,
       "cashEur": 15227.59,
@@ -1774,13 +2086,16 @@
       "degiro": {
         "updatedAt": "2026-07-02T18:00:00",
         "valueEur": 27557.05,
-        "cashEur": 1441.35
+        "cashEur": 1441.35,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-02T18:05:00",
         "cryptoValueEur": 9744.93,
         "cashCurrentEur": 6022.48,
-        "cashSavingsEur": 6986.67
+        "cashSavingsEur": 6986.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 45.26
       },
       "portfolioValueEur": 37301.98,
       "cashEur": 15229.15,
@@ -1791,13 +2106,16 @@
       "degiro": {
         "updatedAt": "2026-07-03T18:00:00",
         "valueEur": 27489.19,
-        "cashEur": 1444.1
+        "cashEur": 1444.1,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-03T18:05:00",
         "cryptoValueEur": 9970.59,
         "cashCurrentEur": 6029.79,
-        "cashSavingsEur": 7000.0
+        "cashSavingsEur": 7000.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 45.74
       },
       "portfolioValueEur": 37459.78,
       "cashEur": 15253.09,
@@ -1808,13 +2126,16 @@
       "degiro": {
         "updatedAt": "2026-07-04T18:00:00",
         "valueEur": 27743.32,
-        "cashEur": 1446.85
+        "cashEur": 1446.85,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-04T18:05:00",
         "cryptoValueEur": 10138.32,
         "cashCurrentEur": 6037.1,
-        "cashSavingsEur": 7013.33
+        "cashSavingsEur": 7013.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 46.22
       },
       "portfolioValueEur": 37881.64,
       "cashEur": 15180.89,
@@ -1825,13 +2146,16 @@
       "degiro": {
         "updatedAt": "2026-07-05T18:00:00",
         "valueEur": 27952.97,
-        "cashEur": 1449.6
+        "cashEur": 1449.6,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-05T18:05:00",
         "cryptoValueEur": 9933.03,
         "cashCurrentEur": 6044.41,
-        "cashSavingsEur": 7026.67
+        "cashSavingsEur": 7026.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 46.7
       },
       "portfolioValueEur": 37886.0,
       "cashEur": 15291.11,
@@ -1842,13 +2166,16 @@
       "degiro": {
         "updatedAt": "2026-07-06T18:00:00",
         "valueEur": 28208.02,
-        "cashEur": 1452.35
+        "cashEur": 1452.35,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-06T18:05:00",
         "cryptoValueEur": 9791.82,
         "cashCurrentEur": 6051.71,
-        "cashSavingsEur": 7040.0
+        "cashSavingsEur": 7040.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 47.18
       },
       "portfolioValueEur": 37999.84,
       "cashEur": 15295.65,
@@ -1859,13 +2186,16 @@
       "degiro": {
         "updatedAt": "2026-07-07T18:00:00",
         "valueEur": 28218.11,
-        "cashEur": 1455.1
+        "cashEur": 1455.1,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-07T18:05:00",
         "cryptoValueEur": 9695.36,
         "cashCurrentEur": 6059.02,
-        "cashSavingsEur": 7053.33
+        "cashSavingsEur": 7053.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 47.67
       },
       "portfolioValueEur": 37913.47,
       "cashEur": 15305.69,
@@ -1876,13 +2206,16 @@
       "degiro": {
         "updatedAt": "2026-07-08T18:00:00",
         "valueEur": 28083.67,
-        "cashEur": 1457.85
+        "cashEur": 1457.85,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-08T18:05:00",
         "cryptoValueEur": 9455.85,
         "cashCurrentEur": 6066.33,
-        "cashSavingsEur": 7066.67
+        "cashSavingsEur": 7066.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 48.15
       },
       "portfolioValueEur": 37539.52,
       "cashEur": 15222.82,
@@ -1893,13 +2226,16 @@
       "degiro": {
         "updatedAt": "2026-07-09T18:00:00",
         "valueEur": 28012.1,
-        "cashEur": 1460.6
+        "cashEur": 1460.6,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-09T18:05:00",
         "cryptoValueEur": 9641.67,
         "cashCurrentEur": 6073.64,
-        "cashSavingsEur": 7080.0
+        "cashSavingsEur": 7080.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 48.64
       },
       "portfolioValueEur": 37653.77,
       "cashEur": 15359.96,
@@ -1910,13 +2246,16 @@
       "degiro": {
         "updatedAt": "2026-07-10T18:00:00",
         "valueEur": 27910.41,
-        "cashEur": 1463.35
+        "cashEur": 1463.35,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-10T18:05:00",
         "cryptoValueEur": 9717.77,
         "cashCurrentEur": 6080.95,
-        "cashSavingsEur": 7093.33
+        "cashSavingsEur": 7093.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 49.12
       },
       "portfolioValueEur": 37628.18,
       "cashEur": 15282.69,
@@ -1927,13 +2266,16 @@
       "degiro": {
         "updatedAt": "2026-07-11T18:00:00",
         "valueEur": 28240.36,
-        "cashEur": 1466.11
+        "cashEur": 1466.11,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-11T18:05:00",
         "cryptoValueEur": 9740.48,
         "cashCurrentEur": 6088.26,
-        "cashSavingsEur": 7106.67
+        "cashSavingsEur": 7106.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 49.61
       },
       "portfolioValueEur": 37980.84,
       "cashEur": 15382.4,
@@ -1944,13 +2286,16 @@
       "degiro": {
         "updatedAt": "2026-07-12T18:00:00",
         "valueEur": 28036.04,
-        "cashEur": 1468.86
+        "cashEur": 1468.86,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-12T18:05:00",
         "cryptoValueEur": 9986.39,
         "cashCurrentEur": 6095.57,
-        "cashSavingsEur": 7120.0
+        "cashSavingsEur": 7120.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 50.1
       },
       "portfolioValueEur": 38022.43,
       "cashEur": 15274.19,
@@ -1961,13 +2306,16 @@
       "degiro": {
         "updatedAt": "2026-07-13T18:00:00",
         "valueEur": 28355.99,
-        "cashEur": 1471.61
+        "cashEur": 1471.61,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-13T18:05:00",
         "cryptoValueEur": 9867.09,
         "cashCurrentEur": 6102.88,
-        "cashSavingsEur": 7133.33
+        "cashSavingsEur": 7133.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 50.58
       },
       "portfolioValueEur": 38223.08,
       "cashEur": 15276.4,
@@ -1978,13 +2326,16 @@
       "degiro": {
         "updatedAt": "2026-07-14T18:00:00",
         "valueEur": 28350.07,
-        "cashEur": 1474.36
+        "cashEur": 1474.36,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-14T18:05:00",
         "cryptoValueEur": 9990.28,
         "cashCurrentEur": 6110.18,
-        "cashSavingsEur": 7146.67
+        "cashSavingsEur": 7146.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 51.07
       },
       "portfolioValueEur": 38340.35,
       "cashEur": 15322.65,
@@ -1995,13 +2346,16 @@
       "degiro": {
         "updatedAt": "2026-07-15T18:00:00",
         "valueEur": 28451.26,
-        "cashEur": 1477.11
+        "cashEur": 1477.11,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-15T18:05:00",
         "cryptoValueEur": 10000.57,
         "cashCurrentEur": 6117.49,
-        "cashSavingsEur": 7160.0
+        "cashSavingsEur": 7160.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 51.56
       },
       "portfolioValueEur": 38451.83,
       "cashEur": 15347.5,
@@ -2012,13 +2366,16 @@
       "degiro": {
         "updatedAt": "2026-07-16T18:00:00",
         "valueEur": 28534.26,
-        "cashEur": 1479.86
+        "cashEur": 1479.86,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-16T18:05:00",
         "cryptoValueEur": 9875.43,
         "cashCurrentEur": 6124.8,
-        "cashSavingsEur": 7173.33
+        "cashSavingsEur": 7173.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 52.06
       },
       "portfolioValueEur": 38409.69,
       "cashEur": 15412.67,
@@ -2029,13 +2386,16 @@
       "degiro": {
         "updatedAt": "2026-07-17T18:00:00",
         "valueEur": 28256.43,
-        "cashEur": 1482.61
+        "cashEur": 1482.61,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-17T18:05:00",
         "cryptoValueEur": 10101.4,
         "cashCurrentEur": 6132.11,
-        "cashSavingsEur": 7186.67
+        "cashSavingsEur": 7186.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 52.55
       },
       "portfolioValueEur": 38357.83,
       "cashEur": 15398.86,
@@ -2046,13 +2406,16 @@
       "degiro": {
         "updatedAt": "2026-07-18T18:00:00",
         "valueEur": 28427.7,
-        "cashEur": 1485.36
+        "cashEur": 1485.36,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-18T18:05:00",
         "cryptoValueEur": 10234.66,
         "cashCurrentEur": 6139.42,
-        "cashSavingsEur": 7200.0
+        "cashSavingsEur": 7200.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 53.04
       },
       "portfolioValueEur": 38662.36,
       "cashEur": 15433.41,
@@ -2063,13 +2426,16 @@
       "degiro": {
         "updatedAt": "2026-07-19T18:00:00",
         "valueEur": 28377.75,
-        "cashEur": 1488.11
+        "cashEur": 1488.11,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-19T18:05:00",
         "cryptoValueEur": 10006.83,
         "cashCurrentEur": 6146.73,
-        "cashSavingsEur": 7213.33
+        "cashSavingsEur": 7213.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 53.54
       },
       "portfolioValueEur": 38384.58,
       "cashEur": 15445.81,
@@ -2080,13 +2446,16 @@
       "degiro": {
         "updatedAt": "2026-07-20T18:00:00",
         "valueEur": 28306.64,
-        "cashEur": 1490.86
+        "cashEur": 1490.86,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-20T18:05:00",
         "cryptoValueEur": 9912.86,
         "cashCurrentEur": 6154.04,
-        "cashSavingsEur": 7226.67
+        "cashSavingsEur": 7226.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 54.03
       },
       "portfolioValueEur": 38219.5,
       "cashEur": 15488.62,
@@ -2097,13 +2466,16 @@
       "degiro": {
         "updatedAt": "2026-07-21T18:00:00",
         "valueEur": 28478.41,
-        "cashEur": 1493.61
+        "cashEur": 1493.61,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-21T18:05:00",
         "cryptoValueEur": 9812.67,
         "cashCurrentEur": 6161.35,
-        "cashSavingsEur": 7240.0
+        "cashSavingsEur": 7240.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 54.53
       },
       "portfolioValueEur": 38291.08,
       "cashEur": 15415.91,
@@ -2114,13 +2486,16 @@
       "degiro": {
         "updatedAt": "2026-07-22T18:00:00",
         "valueEur": 28456.06,
-        "cashEur": 1496.36
+        "cashEur": 1496.36,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-22T18:05:00",
         "cryptoValueEur": 9766.34,
         "cashCurrentEur": 6168.66,
-        "cashSavingsEur": 7253.33
+        "cashSavingsEur": 7253.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 55.02
       },
       "portfolioValueEur": 38222.4,
       "cashEur": 15427.16,
@@ -2131,13 +2506,16 @@
       "degiro": {
         "updatedAt": "2026-07-23T18:00:00",
         "valueEur": 28257.66,
-        "cashEur": 1499.11
+        "cashEur": 1499.11,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-23T18:05:00",
         "cryptoValueEur": 9729.52,
         "cashCurrentEur": 6175.96,
-        "cashSavingsEur": 7266.67
+        "cashSavingsEur": 7266.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 55.52
       },
       "portfolioValueEur": 37987.18,
       "cashEur": 15543.66,
@@ -2148,13 +2526,16 @@
       "degiro": {
         "updatedAt": "2026-07-24T18:00:00",
         "valueEur": 28402.75,
-        "cashEur": 1501.86
+        "cashEur": 1501.86,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-24T18:05:00",
         "cryptoValueEur": 9940.46,
         "cashCurrentEur": 6183.27,
-        "cashSavingsEur": 7280.0
+        "cashSavingsEur": 7280.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 56.02
       },
       "portfolioValueEur": 38343.21,
       "cashEur": 15505.15,
@@ -2165,13 +2546,16 @@
       "degiro": {
         "updatedAt": "2026-07-25T18:00:00",
         "valueEur": 28313.28,
-        "cashEur": 1504.61
+        "cashEur": 1504.61,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-25T18:05:00",
         "cryptoValueEur": 9969.84,
         "cashCurrentEur": 6190.58,
-        "cashSavingsEur": 7293.33
+        "cashSavingsEur": 7293.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 56.52
       },
       "portfolioValueEur": 38283.12,
       "cashEur": 15420.22,
@@ -2182,13 +2566,16 @@
       "degiro": {
         "updatedAt": "2026-07-26T18:00:00",
         "valueEur": 28215.35,
-        "cashEur": 1507.37
+        "cashEur": 1507.37,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-26T18:05:00",
         "cryptoValueEur": 9937.23,
         "cashCurrentEur": 6197.89,
-        "cashSavingsEur": 7306.67
+        "cashSavingsEur": 7306.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 57.02
       },
       "portfolioValueEur": 38152.58,
       "cashEur": 15526.31,
@@ -2199,13 +2586,16 @@
       "degiro": {
         "updatedAt": "2026-07-27T18:00:00",
         "valueEur": 28346.18,
-        "cashEur": 1510.12
+        "cashEur": 1510.12,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-27T18:05:00",
         "cryptoValueEur": 9923.13,
         "cashCurrentEur": 6205.2,
-        "cashSavingsEur": 7320.0
+        "cashSavingsEur": 7320.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 57.52
       },
       "portfolioValueEur": 38269.31,
       "cashEur": 15517.7,
@@ -2216,13 +2606,16 @@
       "degiro": {
         "updatedAt": "2026-07-28T18:00:00",
         "valueEur": 28202.46,
-        "cashEur": 1512.87
+        "cashEur": 1512.87,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-28T18:05:00",
         "cryptoValueEur": 9913.33,
         "cashCurrentEur": 6212.51,
-        "cashSavingsEur": 7333.33
+        "cashSavingsEur": 7333.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 58.02
       },
       "portfolioValueEur": 38115.79,
       "cashEur": 15604.51,
@@ -2233,13 +2626,16 @@
       "degiro": {
         "updatedAt": "2026-07-29T18:00:00",
         "valueEur": 28420.95,
-        "cashEur": 1515.62
+        "cashEur": 1515.62,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-29T18:05:00",
         "cryptoValueEur": 9744.81,
         "cashCurrentEur": 6219.82,
-        "cashSavingsEur": 7346.67
+        "cashSavingsEur": 7346.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 58.53
       },
       "portfolioValueEur": 38165.76,
       "cashEur": 15487.41,
@@ -2250,13 +2646,16 @@
       "degiro": {
         "updatedAt": "2026-07-30T18:00:00",
         "valueEur": 28465.61,
-        "cashEur": 1518.37
+        "cashEur": 1518.37,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-30T18:05:00",
         "cryptoValueEur": 9817.32,
         "cashCurrentEur": 6227.13,
-        "cashSavingsEur": 7360.0
+        "cashSavingsEur": 7360.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 59.03
       },
       "portfolioValueEur": 38282.93,
       "cashEur": 15540.87,
@@ -2267,13 +2666,16 @@
       "degiro": {
         "updatedAt": "2026-07-31T18:00:00",
         "valueEur": 28700.17,
-        "cashEur": 1521.12
+        "cashEur": 1521.12,
+        "netDepositsEur": 21000.0
       },
       "revolut": {
         "updatedAt": "2026-07-31T18:05:00",
         "cryptoValueEur": 9951.6,
         "cashCurrentEur": 6234.43,
-        "cashSavingsEur": 7373.33
+        "cashSavingsEur": 7373.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 59.54
       },
       "portfolioValueEur": 38651.77,
       "cashEur": 15608.26,
@@ -2284,13 +2686,16 @@
       "degiro": {
         "updatedAt": "2026-08-01T18:00:00",
         "valueEur": 28561.57,
-        "cashEur": 1523.87
+        "cashEur": 1523.87,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-01T18:05:00",
         "cryptoValueEur": 9797.89,
         "cashCurrentEur": 6241.74,
-        "cashSavingsEur": 7386.67
+        "cashSavingsEur": 7386.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 60.04
       },
       "portfolioValueEur": 38359.46,
       "cashEur": 15518.02,
@@ -2301,13 +2706,16 @@
       "degiro": {
         "updatedAt": "2026-08-02T18:00:00",
         "valueEur": 28436.34,
-        "cashEur": 1526.62
+        "cashEur": 1526.62,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-02T18:05:00",
         "cryptoValueEur": 9789.22,
         "cashCurrentEur": 6249.05,
-        "cashSavingsEur": 7400.0
+        "cashSavingsEur": 7400.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 60.55
       },
       "portfolioValueEur": 38225.56,
       "cashEur": 15663.39,
@@ -2318,13 +2726,16 @@
       "degiro": {
         "updatedAt": "2026-08-03T18:00:00",
         "valueEur": 28203.99,
-        "cashEur": 1529.37
+        "cashEur": 1529.37,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-03T18:05:00",
         "cryptoValueEur": 9749.22,
         "cashCurrentEur": 6256.36,
-        "cashSavingsEur": 7413.33
+        "cashSavingsEur": 7413.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 61.06
       },
       "portfolioValueEur": 37953.21,
       "cashEur": 15641.64,
@@ -2335,13 +2746,16 @@
       "degiro": {
         "updatedAt": "2026-08-04T18:00:00",
         "valueEur": 28049.04,
-        "cashEur": 1532.12
+        "cashEur": 1532.12,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-04T18:05:00",
         "cryptoValueEur": 9854.39,
         "cashCurrentEur": 6263.67,
-        "cashSavingsEur": 7426.67
+        "cashSavingsEur": 7426.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 61.56
       },
       "portfolioValueEur": 37903.43,
       "cashEur": 15633.42,
@@ -2352,13 +2766,16 @@
       "degiro": {
         "updatedAt": "2026-08-05T18:00:00",
         "valueEur": 27925.51,
-        "cashEur": 1534.87
+        "cashEur": 1534.87,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-05T18:05:00",
         "cryptoValueEur": 9939.73,
         "cashCurrentEur": 6270.98,
-        "cashSavingsEur": 7440.0
+        "cashSavingsEur": 7440.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 62.07
       },
       "portfolioValueEur": 37865.24,
       "cashEur": 15568.69,
@@ -2369,13 +2786,16 @@
       "degiro": {
         "updatedAt": "2026-08-06T18:00:00",
         "valueEur": 28114.16,
-        "cashEur": 1537.62
+        "cashEur": 1537.62,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-06T18:05:00",
         "cryptoValueEur": 10085.6,
         "cashCurrentEur": 6278.29,
-        "cashSavingsEur": 7453.33
+        "cashSavingsEur": 7453.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 62.58
       },
       "portfolioValueEur": 38199.76,
       "cashEur": 15598.28,
@@ -2386,13 +2806,16 @@
       "degiro": {
         "updatedAt": "2026-08-07T18:00:00",
         "valueEur": 28102.46,
-        "cashEur": 1540.37
+        "cashEur": 1540.37,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-07T18:05:00",
         "cryptoValueEur": 9917.45,
         "cashCurrentEur": 6285.6,
-        "cashSavingsEur": 7466.67
+        "cashSavingsEur": 7466.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 63.1
       },
       "portfolioValueEur": 38019.91,
       "cashEur": 15747.8,
@@ -2403,13 +2826,16 @@
       "degiro": {
         "updatedAt": "2026-08-08T18:00:00",
         "valueEur": 28148.18,
-        "cashEur": 1543.12
+        "cashEur": 1543.12,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-08T18:05:00",
         "cryptoValueEur": 9686.35,
         "cashCurrentEur": 6292.91,
-        "cashSavingsEur": 7480.0
+        "cashSavingsEur": 7480.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 63.61
       },
       "portfolioValueEur": 37834.53,
       "cashEur": 15647.91,
@@ -2420,13 +2846,16 @@
       "degiro": {
         "updatedAt": "2026-08-09T18:00:00",
         "valueEur": 28398.66,
-        "cashEur": 1545.87
+        "cashEur": 1545.87,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-09T18:05:00",
         "cryptoValueEur": 9668.24,
         "cashCurrentEur": 6300.21,
-        "cashSavingsEur": 7493.33
+        "cashSavingsEur": 7493.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 64.12
       },
       "portfolioValueEur": 38066.9,
       "cashEur": 15749.62,
@@ -2437,13 +2866,16 @@
       "degiro": {
         "updatedAt": "2026-08-10T18:00:00",
         "valueEur": 28538.38,
-        "cashEur": 1548.63
+        "cashEur": 1548.63,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-10T18:05:00",
         "cryptoValueEur": 9921.24,
         "cashCurrentEur": 6307.52,
-        "cashSavingsEur": 7506.67
+        "cashSavingsEur": 7506.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 64.64
       },
       "portfolioValueEur": 38459.62,
       "cashEur": 15730.11,
@@ -2454,13 +2886,16 @@
       "degiro": {
         "updatedAt": "2026-08-11T18:00:00",
         "valueEur": 28856.21,
-        "cashEur": 1551.38
+        "cashEur": 1551.38,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-11T18:05:00",
         "cryptoValueEur": 10130.37,
         "cashCurrentEur": 6314.83,
-        "cashSavingsEur": 7520.0
+        "cashSavingsEur": 7520.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 65.15
       },
       "portfolioValueEur": 38986.58,
       "cashEur": 15746.28,
@@ -2471,13 +2906,16 @@
       "degiro": {
         "updatedAt": "2026-08-12T18:00:00",
         "valueEur": 29031.01,
-        "cashEur": 1554.13
+        "cashEur": 1554.13,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-12T18:05:00",
         "cryptoValueEur": 10137.25,
         "cashCurrentEur": 6322.14,
-        "cashSavingsEur": 7533.33
+        "cashSavingsEur": 7533.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 65.67
       },
       "portfolioValueEur": 39168.26,
       "cashEur": 15794.53,
@@ -2488,13 +2926,16 @@
       "degiro": {
         "updatedAt": "2026-08-13T18:00:00",
         "valueEur": 29097.36,
-        "cashEur": 1556.88
+        "cashEur": 1556.88,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-13T18:05:00",
         "cryptoValueEur": 10354.03,
         "cashCurrentEur": 6329.45,
-        "cashSavingsEur": 7546.67
+        "cashSavingsEur": 7546.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 66.18
       },
       "portfolioValueEur": 39451.39,
       "cashEur": 15794.06,
@@ -2505,13 +2946,16 @@
       "degiro": {
         "updatedAt": "2026-08-14T18:00:00",
         "valueEur": 29116.97,
-        "cashEur": 1559.63
+        "cashEur": 1559.63,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-14T18:05:00",
         "cryptoValueEur": 10226.91,
         "cashCurrentEur": 6336.76,
-        "cashSavingsEur": 7560.0
+        "cashSavingsEur": 7560.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 66.7
       },
       "portfolioValueEur": 39343.88,
       "cashEur": 15728.12,
@@ -2522,13 +2966,16 @@
       "degiro": {
         "updatedAt": "2026-08-15T18:00:00",
         "valueEur": 29241.05,
-        "cashEur": 1562.38
+        "cashEur": 1562.38,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-15T18:05:00",
         "cryptoValueEur": 10374.71,
         "cashCurrentEur": 6344.07,
-        "cashSavingsEur": 7573.33
+        "cashSavingsEur": 7573.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 67.22
       },
       "portfolioValueEur": 39615.76,
       "cashEur": 15785.35,
@@ -2539,13 +2986,16 @@
       "degiro": {
         "updatedAt": "2026-08-16T18:00:00",
         "valueEur": 29358.64,
-        "cashEur": 1565.13
+        "cashEur": 1565.13,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-16T18:05:00",
         "cryptoValueEur": 10255.77,
         "cashCurrentEur": 6351.38,
-        "cashSavingsEur": 7586.67
+        "cashSavingsEur": 7586.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 67.74
       },
       "portfolioValueEur": 39614.41,
       "cashEur": 15727.82,
@@ -2556,13 +3006,16 @@
       "degiro": {
         "updatedAt": "2026-08-17T18:00:00",
         "valueEur": 29256.33,
-        "cashEur": 1567.88
+        "cashEur": 1567.88,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-17T18:05:00",
         "cryptoValueEur": 10136.63,
         "cashCurrentEur": 6358.68,
-        "cashSavingsEur": 7600.0
+        "cashSavingsEur": 7600.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 68.26
       },
       "portfolioValueEur": 39392.96,
       "cashEur": 15779.96,
@@ -2573,13 +3026,16 @@
       "degiro": {
         "updatedAt": "2026-08-18T18:00:00",
         "valueEur": 29318.21,
-        "cashEur": 1570.63
+        "cashEur": 1570.63,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-18T18:05:00",
         "cryptoValueEur": 9947.57,
         "cashCurrentEur": 6365.99,
-        "cashSavingsEur": 7613.33
+        "cashSavingsEur": 7613.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 68.78
       },
       "portfolioValueEur": 39265.78,
       "cashEur": 15779.25,
@@ -2590,13 +3046,16 @@
       "degiro": {
         "updatedAt": "2026-08-19T18:00:00",
         "valueEur": 29479.47,
-        "cashEur": 1573.38
+        "cashEur": 1573.38,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-19T18:05:00",
         "cryptoValueEur": 10060.15,
         "cashCurrentEur": 6373.3,
-        "cashSavingsEur": 7626.67
+        "cashSavingsEur": 7626.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 69.3
       },
       "portfolioValueEur": 39539.62,
       "cashEur": 15765.97,
@@ -2607,13 +3066,16 @@
       "degiro": {
         "updatedAt": "2026-08-20T18:00:00",
         "valueEur": 29455.82,
-        "cashEur": 1576.13
+        "cashEur": 1576.13,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-20T18:05:00",
         "cryptoValueEur": 10087.07,
         "cashCurrentEur": 6380.61,
-        "cashSavingsEur": 7640.0
+        "cashSavingsEur": 7640.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 69.83
       },
       "portfolioValueEur": 39542.89,
       "cashEur": 15835.59,
@@ -2624,13 +3086,16 @@
       "degiro": {
         "updatedAt": "2026-08-21T18:00:00",
         "valueEur": 29302.02,
-        "cashEur": 1578.88
+        "cashEur": 1578.88,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-21T18:05:00",
         "cryptoValueEur": 10048.89,
         "cashCurrentEur": 6387.92,
-        "cashSavingsEur": 7653.33
+        "cashSavingsEur": 7653.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 70.35
       },
       "portfolioValueEur": 39350.91,
       "cashEur": 15927.18,
@@ -2641,13 +3106,16 @@
       "degiro": {
         "updatedAt": "2026-08-22T18:00:00",
         "valueEur": 29392.33,
-        "cashEur": 1581.63
+        "cashEur": 1581.63,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-22T18:05:00",
         "cryptoValueEur": 10156.84,
         "cashCurrentEur": 6395.23,
-        "cashSavingsEur": 7666.67
+        "cashSavingsEur": 7666.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 70.88
       },
       "portfolioValueEur": 39549.17,
       "cashEur": 15932.91,
@@ -2658,13 +3126,16 @@
       "degiro": {
         "updatedAt": "2026-08-23T18:00:00",
         "valueEur": 29600.36,
-        "cashEur": 1584.38
+        "cashEur": 1584.38,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-23T18:05:00",
         "cryptoValueEur": 10097.09,
         "cashCurrentEur": 6402.54,
-        "cashSavingsEur": 7680.0
+        "cashSavingsEur": 7680.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 71.4
       },
       "portfolioValueEur": 39697.45,
       "cashEur": 15810.32,
@@ -2675,13 +3146,16 @@
       "degiro": {
         "updatedAt": "2026-08-24T18:00:00",
         "valueEur": 29540.22,
-        "cashEur": 1587.13
+        "cashEur": 1587.13,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-24T18:05:00",
         "cryptoValueEur": 10236.44,
         "cashCurrentEur": 6409.85,
-        "cashSavingsEur": 7693.33
+        "cashSavingsEur": 7693.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 71.93
       },
       "portfolioValueEur": 39776.66,
       "cashEur": 15959.22,
@@ -2692,13 +3166,16 @@
       "degiro": {
         "updatedAt": "2026-08-25T18:00:00",
         "valueEur": 29871.42,
-        "cashEur": 1589.89
+        "cashEur": 1589.89,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-25T18:05:00",
         "cryptoValueEur": 10197.08,
         "cashCurrentEur": 6417.16,
-        "cashSavingsEur": 7706.67
+        "cashSavingsEur": 7706.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 72.46
       },
       "portfolioValueEur": 40068.5,
       "cashEur": 15955.7,
@@ -2709,13 +3186,16 @@
       "degiro": {
         "updatedAt": "2026-08-26T18:00:00",
         "valueEur": 29938.54,
-        "cashEur": 1592.64
+        "cashEur": 1592.64,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-26T18:05:00",
         "cryptoValueEur": 10256.98,
         "cashCurrentEur": 6424.46,
-        "cashSavingsEur": 7720.0
+        "cashSavingsEur": 7720.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 72.99
       },
       "portfolioValueEur": 40195.52,
       "cashEur": 15884.89,
@@ -2726,13 +3206,16 @@
       "degiro": {
         "updatedAt": "2026-08-27T18:00:00",
         "valueEur": 29790.52,
-        "cashEur": 1595.39
+        "cashEur": 1595.39,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-27T18:05:00",
         "cryptoValueEur": 10226.65,
         "cashCurrentEur": 6431.77,
-        "cashSavingsEur": 7733.33
+        "cashSavingsEur": 7733.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 73.52
       },
       "portfolioValueEur": 40017.17,
       "cashEur": 15867.69,
@@ -2743,13 +3226,16 @@
       "degiro": {
         "updatedAt": "2026-08-28T18:00:00",
         "valueEur": 29719.75,
-        "cashEur": 1598.14
+        "cashEur": 1598.14,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-28T18:05:00",
         "cryptoValueEur": 10327.68,
         "cashCurrentEur": 6439.08,
-        "cashSavingsEur": 7746.67
+        "cashSavingsEur": 7746.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 74.05
       },
       "portfolioValueEur": 40047.43,
       "cashEur": 15941.1,
@@ -2760,13 +3246,16 @@
       "degiro": {
         "updatedAt": "2026-08-29T18:00:00",
         "valueEur": 29537.24,
-        "cashEur": 1600.89
+        "cashEur": 1600.89,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-29T18:05:00",
         "cryptoValueEur": 10314.32,
         "cashCurrentEur": 6446.39,
-        "cashSavingsEur": 7760.0
+        "cashSavingsEur": 7760.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 74.58
       },
       "portfolioValueEur": 39851.56,
       "cashEur": 15910.29,
@@ -2777,13 +3266,16 @@
       "degiro": {
         "updatedAt": "2026-08-30T18:00:00",
         "valueEur": 29653.1,
-        "cashEur": 1603.64
+        "cashEur": 1603.64,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-30T18:05:00",
         "cryptoValueEur": 10061.32,
         "cashCurrentEur": 6453.7,
-        "cashSavingsEur": 7773.33
+        "cashSavingsEur": 7773.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 75.11
       },
       "portfolioValueEur": 39714.42,
       "cashEur": 15966.29,
@@ -2794,13 +3286,16 @@
       "degiro": {
         "updatedAt": "2026-08-31T18:00:00",
         "valueEur": 29731.64,
-        "cashEur": 1606.39
+        "cashEur": 1606.39,
+        "netDepositsEur": 21500.0
       },
       "revolut": {
         "updatedAt": "2026-08-31T18:05:00",
         "cryptoValueEur": 9814.6,
         "cashCurrentEur": 6461.01,
-        "cashSavingsEur": 7786.67
+        "cashSavingsEur": 7786.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 75.64
       },
       "portfolioValueEur": 39546.24,
       "cashEur": 16019.46,
@@ -2811,13 +3306,16 @@
       "degiro": {
         "updatedAt": "2026-09-01T18:00:00",
         "valueEur": 29529.85,
-        "cashEur": 1609.14
+        "cashEur": 1609.14,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-01T18:05:00",
         "cryptoValueEur": 9798.96,
         "cashCurrentEur": 6468.32,
-        "cashSavingsEur": 7800.0
+        "cashSavingsEur": 7800.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 76.18
       },
       "portfolioValueEur": 39328.81,
       "cashEur": 15938.18,
@@ -2828,13 +3326,16 @@
       "degiro": {
         "updatedAt": "2026-09-02T18:00:00",
         "valueEur": 29487.64,
-        "cashEur": 1611.89
+        "cashEur": 1611.89,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-02T18:05:00",
         "cryptoValueEur": 9654.08,
         "cashCurrentEur": 6475.63,
-        "cashSavingsEur": 7813.33
+        "cashSavingsEur": 7813.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 76.71
       },
       "portfolioValueEur": 39141.72,
       "cashEur": 15995.8,
@@ -2845,13 +3346,16 @@
       "degiro": {
         "updatedAt": "2026-09-03T18:00:00",
         "valueEur": 29693.5,
-        "cashEur": 1614.64
+        "cashEur": 1614.64,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-03T18:05:00",
         "cryptoValueEur": 9596.64,
         "cashCurrentEur": 6482.94,
-        "cashSavingsEur": 7826.67
+        "cashSavingsEur": 7826.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 77.25
       },
       "portfolioValueEur": 39290.14,
       "cashEur": 16077.18,
@@ -2862,13 +3366,16 @@
       "degiro": {
         "updatedAt": "2026-09-04T18:00:00",
         "valueEur": 29947.0,
-        "cashEur": 1617.39
+        "cashEur": 1617.39,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-04T18:05:00",
         "cryptoValueEur": 9475.32,
         "cashCurrentEur": 6490.24,
-        "cashSavingsEur": 7840.0
+        "cashSavingsEur": 7840.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 77.79
       },
       "portfolioValueEur": 39422.32,
       "cashEur": 15983.48,
@@ -2879,13 +3386,16 @@
       "degiro": {
         "updatedAt": "2026-09-05T18:00:00",
         "valueEur": 29667.08,
-        "cashEur": 1620.14
+        "cashEur": 1620.14,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-05T18:05:00",
         "cryptoValueEur": 9499.07,
         "cashCurrentEur": 6497.55,
-        "cashSavingsEur": 7853.33
+        "cashSavingsEur": 7853.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 78.32
       },
       "portfolioValueEur": 39166.15,
       "cashEur": 16143.64,
@@ -2896,13 +3406,16 @@
       "degiro": {
         "updatedAt": "2026-09-06T18:00:00",
         "valueEur": 29605.64,
-        "cashEur": 1622.89
+        "cashEur": 1622.89,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-06T18:05:00",
         "cryptoValueEur": 9578.39,
         "cashCurrentEur": 6504.86,
-        "cashSavingsEur": 7866.67
+        "cashSavingsEur": 7866.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 78.86
       },
       "portfolioValueEur": 39184.03,
       "cashEur": 16122.1,
@@ -2913,13 +3426,16 @@
       "degiro": {
         "updatedAt": "2026-09-07T18:00:00",
         "valueEur": 29740.98,
-        "cashEur": 1625.64
+        "cashEur": 1625.64,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-07T18:05:00",
         "cryptoValueEur": 9710.96,
         "cashCurrentEur": 6512.17,
-        "cashSavingsEur": 7880.0
+        "cashSavingsEur": 7880.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 79.4
       },
       "portfolioValueEur": 39451.94,
       "cashEur": 16162.43,
@@ -2930,13 +3446,16 @@
       "degiro": {
         "updatedAt": "2026-09-08T18:00:00",
         "valueEur": 29580.81,
-        "cashEur": 1628.39
+        "cashEur": 1628.39,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-08T18:05:00",
         "cryptoValueEur": 9469.38,
         "cashCurrentEur": 6519.48,
-        "cashSavingsEur": 7893.33
+        "cashSavingsEur": 7893.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 79.94
       },
       "portfolioValueEur": 39050.19,
       "cashEur": 16048.41,
@@ -2947,13 +3466,16 @@
       "degiro": {
         "updatedAt": "2026-09-09T18:00:00",
         "valueEur": 29373.87,
-        "cashEur": 1631.15
+        "cashEur": 1631.15,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-09T18:05:00",
         "cryptoValueEur": 9558.09,
         "cashCurrentEur": 6526.79,
-        "cashSavingsEur": 7906.67
+        "cashSavingsEur": 7906.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 80.48
       },
       "portfolioValueEur": 38931.96,
       "cashEur": 16127.62,
@@ -2964,13 +3486,16 @@
       "degiro": {
         "updatedAt": "2026-09-10T18:00:00",
         "valueEur": 29227.7,
-        "cashEur": 1633.9
+        "cashEur": 1633.9,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-10T18:05:00",
         "cryptoValueEur": 9662.76,
         "cashCurrentEur": 6534.1,
-        "cashSavingsEur": 7920.0
+        "cashSavingsEur": 7920.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 81.03
       },
       "portfolioValueEur": 38890.46,
       "cashEur": 16173.47,
@@ -2981,13 +3506,16 @@
       "degiro": {
         "updatedAt": "2026-09-11T18:00:00",
         "valueEur": 29049.97,
-        "cashEur": 1636.65
+        "cashEur": 1636.65,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-11T18:05:00",
         "cryptoValueEur": 9721.56,
         "cashCurrentEur": 6541.41,
-        "cashSavingsEur": 7933.33
+        "cashSavingsEur": 7933.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 81.57
       },
       "portfolioValueEur": 38771.53,
       "cashEur": 16183.85,
@@ -2998,13 +3526,16 @@
       "degiro": {
         "updatedAt": "2026-09-12T18:00:00",
         "valueEur": 28839.28,
-        "cashEur": 1639.4
+        "cashEur": 1639.4,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-12T18:05:00",
         "cryptoValueEur": 9889.5,
         "cashCurrentEur": 6548.71,
-        "cashSavingsEur": 7946.67
+        "cashSavingsEur": 7946.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 82.12
       },
       "portfolioValueEur": 38728.78,
       "cashEur": 16231.92,
@@ -3015,13 +3546,16 @@
       "degiro": {
         "updatedAt": "2026-09-13T18:00:00",
         "valueEur": 28626.03,
-        "cashEur": 1642.15
+        "cashEur": 1642.15,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-13T18:05:00",
         "cryptoValueEur": 9646.24,
         "cashCurrentEur": 6556.02,
-        "cashSavingsEur": 7960.0
+        "cashSavingsEur": 7960.0,
+        "netInvestedEur": 0.0,
+        "interestEur": 82.66
       },
       "portfolioValueEur": 38272.27,
       "cashEur": 16141.0,
@@ -3032,13 +3566,16 @@
       "degiro": {
         "updatedAt": "2026-09-14T18:00:00",
         "valueEur": 28773.02,
-        "cashEur": 1644.9
+        "cashEur": 1644.9,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-14T18:05:00",
         "cryptoValueEur": 9883.54,
         "cashCurrentEur": 6563.33,
-        "cashSavingsEur": 7973.33
+        "cashSavingsEur": 7973.33,
+        "netInvestedEur": 0.0,
+        "interestEur": 83.21
       },
       "portfolioValueEur": 38656.56,
       "cashEur": 16167.96,
@@ -3049,13 +3586,16 @@
       "degiro": {
         "updatedAt": "2026-09-15T18:00:00",
         "valueEur": 28944.62,
-        "cashEur": 1647.65
+        "cashEur": 1647.65,
+        "netDepositsEur": 22000.0
       },
       "revolut": {
         "updatedAt": "2026-09-15T18:05:00",
         "cryptoValueEur": 9666.67,
         "cashCurrentEur": 6570.64,
-        "cashSavingsEur": 7986.67
+        "cashSavingsEur": 7986.67,
+        "netInvestedEur": 0.0,
+        "interestEur": 83.75
       },
       "portfolioValueEur": 38611.29,
       "cashEur": 16228.35,

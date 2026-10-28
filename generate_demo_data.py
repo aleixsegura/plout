@@ -203,6 +203,18 @@ for i, day in enumerate(history_days):
     day["cashEur"] = round(day["cashEur"] * ratios["cash"] ** k, 2)
     day["portfolioValueEur"] = round(day["degiro"]["valueEur"] + day["revolut"]["cryptoValueEur"], 2)
     day["totalEur"] = round(day["portfolioValueEur"] + day["cashEur"], 2)
+# Running totals for the Holdings return chart (no random draws, so every
+# other demo file stays byte-identical): a 500 € DEGIRO deposit at each month
+# start landing on the live 22,000 €, no crypto trades, and Boosted interest
+# at 2.5 % a year on the day's savings balance.
+months_left = lambda d: (TODAY.year - d.year) * 12 + TODAY.month - d.month
+interest = 0.0
+for i, day in enumerate(history_days):
+    d = start + timedelta(days=i)
+    day["degiro"]["netDepositsEur"] = 22000.0 - 500.0 * months_left(d)
+    interest += day["revolut"]["cashSavingsEur"] * 0.025 / 365
+    day["revolut"]["netInvestedEur"] = 0.0
+    day["revolut"]["interestEur"] = round(interest, 2)
 
 w("history.json", dict(baseCurrency="EUR", days=history_days))
 
@@ -598,6 +610,49 @@ for symbol, path in paths.items():
     baseCurrency="EUR",
     unresolved=[],
     series=price_series,
+    # The return chart's index line: the demo's world-ETF walk under the real
+    # benchmark's name (no new draws, so the series above stay identical).
+    benchmark=dict(
+        symbol="VALL",
+        name="Vanguard FTSE Global All-Cap UCITS ETF (Acc)",
+        isin="IE000VAHT5T0",
+        proxy=dict(symbol="VWCE", name="Vanguard FTSE All-World UCITS ETF (Acc)", isin="IE00BK5BQT80"),
+        splicedAt=iso(TODAY - timedelta(days=60)),
+        dates=price_series["VWCE.DE"]["dates"],
+        closesEur=price_series["VWCE.DE"]["closesEur"],
+    ),
 ), ensure_ascii=False) + "\n")
+
+# ---------------------------------------------------------------------------
+# DEGIRO deposits (export_deposits.py) — the same schedule history.json's
+# netDepositsEur follows: a lump sum a year before the history starts, then
+# 500 € at each month start, summing to the positions' 22,000 €.
+# ---------------------------------------------------------------------------
+deposit_moves = [dict(
+    date=ts(start - timedelta(days=365), 10, 0),
+    kind="deposit",
+    description="flatex Deposit",
+    type="CASH_TRANSACTION",
+    currency="EUR",
+    amount=22000.0 - 500.0 * months_left(start),
+    amountEur=22000.0 - 500.0 * months_left(start),
+)]
+for k in range(months_left(start) - 1, -1, -1):
+    first = date(TODAY.year, TODAY.month, 1)
+    m = (first.month - 1 - k) % 12 + 1
+    y = first.year + (first.month - 1 - k) // 12
+    deposit_moves.append(dict(
+        date=ts(date(y, m, 1), 10, 0), kind="deposit", description="flatex Deposit",
+        type="CASH_TRANSACTION", currency="EUR", amount=500.0, amountEur=500.0,
+    ))
+w("deposits.json", dict(
+    updatedAt=ts(TODAY),
+    source="DEGIRO via degiro-connector",
+    baseCurrency="EUR",
+    fromDate="2015-01-01",
+    toDate=iso(TODAY),
+    totalEur=round(sum(d["amountEur"] for d in deposit_moves), 2),
+    movements=deposit_moves,
+))
 
 print(f"Wrote demo fixtures to {OUT}")

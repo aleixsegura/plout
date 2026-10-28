@@ -83,6 +83,9 @@ const es: Translations = {
   holdings: {
     sectorDistribution: "Distribución por sectores",
     totalValue: "Valor total",
+    performance: "Rendimiento",
+    sinceOpening: (month: string) => `DEGIRO desde ${month}:`,
+    sameDepositsIn: (symbol: string) => `mismos ingresos en ${symbol}:`,
     sourceDegiro: "DEGIRO",
     sourceDegiroRevolut: "DEGIRO + Revolut",
   },
@@ -91,6 +94,10 @@ const es: Translations = {
       "Aún no hay historial — ejecuta los scripts de exportación para empezar a registrar instantáneas.",
     onDate: (date: string) => `el ${date} — el historial se construye con cada exportación`,
     sinceStart: (date: string) => `desde el ${date}`,
+    sameMoneyIn: (symbol: string) => `Mismo dinero en ${symbol}`,
+    difference: "diferencia",
+    noPerformance:
+      "Aún no hay suficientes instantáneas con datos de ingresos — ejecuta export_deposits.py para completar los días anteriores.",
   },
   kpis: {
     ariaLabel: "Métricas clave de la cartera",

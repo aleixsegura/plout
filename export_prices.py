@@ -16,8 +16,15 @@ Sources, all keyless and best-effort:
   ecb        api.frankfurter.dev (ECB reference rates) to convert non-EUR closes.
 
 The ISIN comes from positions.json, or from taxes.json's trades for exports that
-predate the field. A series that fails to download keeps the previous run's
-copy, so one flaky request never empties the page.
+predate the field.
+
+A `benchmark` series rides along for the Holdings return chart's "vs index"
+line: Vanguard FTSE Global All-Cap Acc (VALL). It only listed in August 2026,
+so the years before are Vanguard FTSE All-World Acc (VWCE) — same provider,
+same methodology minus the small caps — chain-linked on VALL's first close.
+
+A series that fails to download keeps the previous run's copy, so one flaky
+request never empties the page.
 
 Like export_marketcaps.py, the web app's dev server runs this with
 --max-age-hours, so it exits before its first request unless the export is stale
@@ -63,6 +70,11 @@ ONVISTA_EXCHANGE = {
     "BRU": "BRU", "MIL": "MIL", "BIT": "MIL", "MAD": "MAD", "BME": "MAD",
     "LSE": "LSE", "LON": "LSE", "SWX": "SWX", "EBS": "SWX", "VIE": "VIE",
 }
+
+# The yardstick for the return chart, and the proxy that stands in for it
+# before it listed. Both are accumulating, so their closes are total return.
+BENCHMARK = {"symbol": "VALL", "name": "Vanguard FTSE Global All-Cap UCITS ETF (Acc)", "isin": "IE000VAHT5T0"}
+BENCHMARK_PROXY = {"symbol": "VWCE", "name": "Vanguard FTSE All-World UCITS ETF (Acc)", "isin": "IE00BK5BQT80"}
 
 # Quote currencies some venues use for minor units; closes are divided by 100.
 MINOR_UNITS = {"GBX": "GBP", "GBp": "GBP", "ZAc": "ZAR", "ILA": "ILS"}
@@ -368,6 +380,61 @@ def build_series(targets: list[Target], previous: dict) -> tuple[dict, list[str]
     return dict(sorted(out.items())), unresolved
 
 
+def splice(
+    proxy_dates: list[str], proxy_closes: list[float], dates: list[str], closes: list[float]
+) -> tuple[list[str], list[float]]:
+    """One continuous series: the proxy until the target's first close, then the
+    target's closes rescaled so its first one equals the proxy's that day (or
+    the proxy's last before it). Returns carry over exactly; levels are the
+    proxy's."""
+    if not dates:
+        return proxy_dates, proxy_closes
+    start = dates[0]
+    i = bisect_right(proxy_dates, start)
+    if i == 0:
+        return dates, closes
+    scale = proxy_closes[i - 1] / closes[0]
+    # Proxy closes strictly before the target's first date; from there on, the target.
+    head = i - 1 if proxy_dates[i - 1] == start else i
+    return proxy_dates[:head] + dates, proxy_closes[:head] + [round(c * scale, 4) for c in closes]
+
+
+def build_benchmark(previous: dict | None) -> dict | None:
+    """The spliced benchmark series in EUR, or the previous run's on failure."""
+    end = datetime.now(timezone.utc).date()
+    start = end - timedelta(days=HISTORY_DAYS)
+    session = requests.Session()
+    session.headers.update(BROWSER_HEADERS)
+    old_refs = (previous or {}).get("refs") or {}
+    raw = {}
+    for spec in (BENCHMARK, BENCHMARK_PROXY):
+        target = Target(symbol=spec["symbol"], source="onvista", isin=spec["isin"], exchange="XET", currency="EUR")
+        old = {"isin": spec["isin"], "ref": old_refs[spec["symbol"]]} if spec["symbol"] in old_refs else None
+        try:
+            series = fetch_series(session, target, old, start, end)
+        except Exception as exc:
+            print(f"  warning: benchmark {spec['symbol']}: onvista request failed ({exc})", file=sys.stderr)
+            series = None
+        if not series or not series["dates"] or (series["currency"] or "EUR") != "EUR":
+            return previous
+        raw[spec["symbol"]] = series
+
+    main, proxy = raw[BENCHMARK["symbol"]], raw[BENCHMARK_PROXY["symbol"]]
+    dates, closes = splice(proxy["dates"], proxy["closes"], main["dates"], main["closes"])
+    return {
+        "symbol": BENCHMARK["symbol"],
+        "name": BENCHMARK["name"],
+        "isin": BENCHMARK["isin"],
+        "proxy": {k: BENCHMARK_PROXY[k] for k in ("symbol", "name", "isin")},
+        # First date that is the benchmark itself rather than the proxy.
+        "splicedAt": main["dates"][0],
+        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "refs": {sym: s["ref"] for sym, s in raw.items() if s.get("ref")},
+        "dates": dates,
+        "closesEur": closes,
+    }
+
+
 def is_fresh(previous: dict, targets: list[Target], max_age_hours: float) -> bool:
     """Is the last export recent enough, and does it still cover every holding?
 
@@ -375,7 +442,7 @@ def is_fresh(previous: dict, targets: list[Target], max_age_hours: float) -> boo
     however recent the file is, an unresolvable one doesn't keep forcing them.
     """
     series = previous.get("series") if isinstance(previous, dict) else None
-    if not series:
+    if not series or not previous.get("benchmark"):
         return False
     try:
         updated = datetime.fromisoformat(previous["updatedAt"])
@@ -422,6 +489,7 @@ def main() -> None:
 
     print(f"Fetching daily prices for {len(targets)} holdings...", flush=True)
     series, unresolved = build_series(targets, previous)
+    benchmark = build_benchmark(previous.get("benchmark"))
 
     payload = {
         "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -429,10 +497,16 @@ def main() -> None:
         "baseCurrency": "EUR",
         "unresolved": unresolved,
         "series": series,
+        "benchmark": benchmark,
     }
     out_file.write_text(json.dumps(payload, ensure_ascii=False) + "\n")
 
     print(f"Wrote {len(series)} price series to {out_file}")
+    if benchmark:
+        print(f"  benchmark {benchmark['symbol']}: {benchmark['dates'][0]} → {benchmark['dates'][-1]}"
+              f" ({benchmark['proxy']['symbol']} before {benchmark['splicedAt']})")
+    else:
+        print("  warning: no benchmark series — the return chart's index line is hidden.", file=sys.stderr)
     if unresolved:
         print(
             f"  warning: no prices for {', '.join(unresolved)} — they are left out "
