@@ -197,8 +197,14 @@ export default function PortfolioChart({
     });
 
     chart.timeScale().fitContent();
+    // autoSize keeps the bar spacing when the box resizes, so a chart that
+    // grows (rotating a phone, unfolding a foldable) would show only part of
+    // the series. Re-fit on every width change to keep the whole period.
+    const refit = () => chart.timeScale().fitContent();
+    chart.timeScale().subscribeSizeChange(refit);
 
     return () => {
+      chart.timeScale().unsubscribeSizeChange(refit);
       setHovered(null);
       onHoverRef.current?.(null);
       chart.remove();
@@ -266,11 +272,11 @@ export default function PortfolioChart({
             <span className="text-muted">{t.portfolioChart.sinceStart(shortDate(first.date, locale))}</span>
           </span>
           {hasBenchmark && benchmark && shown.benchmark != null && (
-            <span className="flex w-full items-center gap-1.5 text-xs tabular-nums text-muted">
+            <span className="flex w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs tabular-nums text-muted">
               <svg width="14" height="2" aria-hidden="true" className="shrink-0">
                 <line x1="0" y1="1" x2="14" y2="1" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2" />
               </svg>
-              <span title={benchmark.name}>{t.portfolioChart.sameMoneyIn(benchmark.symbol)}</span>
+              <span title={benchmark.name} className="whitespace-nowrap">{t.portfolioChart.sameMoneyIn(benchmark.symbol)}</span>
               <span className={`font-medium ${gainLoss(shown.benchmark)}`}>{eurSigned.format(shown.benchmark)}</span>
               <span>·</span>
               <span>{t.portfolioChart.difference}</span>

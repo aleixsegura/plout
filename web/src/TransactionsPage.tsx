@@ -208,7 +208,7 @@ export default function TransactionsPage() {
           <h1 className="font-display text-[26px] font-semibold tracking-tight">{t.transactions.title}</h1>
           <p className="mt-1 max-w-prose text-sm text-secondary">{t.transactions.description}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             className={navButton}
