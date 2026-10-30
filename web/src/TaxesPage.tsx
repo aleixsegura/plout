@@ -266,11 +266,6 @@ function YearPanel({ year }: { year: TaxYear }) {
 
   return (
     <>
-      {year.open && (
-        <p className="mb-5 rounded-xl border border-hairline bg-elevated px-4 py-3 text-[13.5px] text-secondary">
-          {t.taxes.openYear(year.year, year.filedIn)}
-        </p>
-      )}
 
       <section
         className="panel-grid mb-6 grid [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))]"
@@ -332,8 +327,7 @@ function YearPanel({ year }: { year: TaxYear }) {
 
       {hasIncome && (
         <>
-          <h2 className="mt-7 mb-1 text-base font-semibold">{t.taxes.incomeTitle}</h2>
-          <p className="mb-3 max-w-prose text-sm text-secondary">{t.taxes.incomeDescription}</p>
+          <h2 className="mt-7 mb-3 text-base font-semibold">{t.taxes.incomeTitle}</h2>
 
           {dividends.payments.length > 0 && (
             <>
@@ -399,7 +393,6 @@ function YearPanel({ year }: { year: TaxYear }) {
       </div>
 
       <p className="mt-7 max-w-prose text-[13px] text-muted">{t.taxes.feesNote}</p>
-      <p className="mt-2 max-w-prose text-[13px] text-muted">{t.taxes.disclaimer}</p>
     </>
   );
 }

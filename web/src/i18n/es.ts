@@ -125,14 +125,12 @@ const es: Translations = {
   taxes: {
     title: "Renta",
     description:
-      "Lo que hay que declarar en cada ejercicio: cada venta emparejada con sus compras por FIFO, más los rendimientos del año. Lo que vendes en un año se declara en la renta que se presenta la primavera siguiente.",
+      "Lo que hay que declarar en cada ejercicio: cada venta emparejada con sus compras por FIFO, más los rendimientos del año.",
     noDataIntro: "Aún no hay datos fiscales. Ejecuta",
     noDataOutro: "para construir tu historial de ventas en",
     noYears: "Todavía no hay nada que declarar: ni ventas, ni dividendos, ni recompensas.",
     yearsAria: "Ejercicio",
     yearTab: (year: string, filedIn: string) => `${year} · se presenta en ${filedIn}`,
-    openYear: (year: string, filedIn: string) =>
-      `${year} sigue abierto, así que esto es un seguimiento y no la declaración definitiva que presentarás en ${filedIn}. Vuelve a ejecutar el exporter después de cada venta.`,
     totalsAria: "Totales del ejercicio",
     netResult: "Resultado neto",
     assetsSold: (count: number) => (count === 1 ? "1 activo vendido" : `${count} activos vendidos`),
@@ -210,8 +208,6 @@ const es: Translations = {
     unknown: "desconocida",
     fxAt: (rate: number, source: string) => `· cambio ${rate.toFixed(4)} (${source})`,
     incomeTitle: "Rendimientos del capital mobiliario",
-    incomeDescription:
-      "Los dividendos y las recompensas de staking son rendimientos del capital mobiliario y tributan en la base del ahorro, pero van en apartados distintos del formulario.",
     dividendsTitle: "Dividendos",
     dividendsNote:
       "La retención es el impuesto pagado en el extranjero, que es la base de la deducción por doble imposición internacional. Aquí no hay retención española.",
@@ -233,8 +229,6 @@ const es: Translations = {
       "Las mismas cifras campo a campo, listas para dárselas a un agente que rellene el formulario de la Agencia Tributaria.",
     feesNote:
       "Las comisiones de compra y de venta ya están dentro de los valores de adquisición y transmisión, que es donde las pone la ley. Las de conectividad y custodia son un coste real pero no son deducibles en este impuesto.",
-    disclaimer:
-      "Calculado a partir de tus propios extractos — no es asesoramiento fiscal. Revisa cada cifra antes de presentar nada.",
   },
   dividends: {
     title: "Dividendos",

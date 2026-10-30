@@ -126,14 +126,12 @@ const en = {
   taxes: {
     title: "Tax return",
     description:
-      "What has to be declared for each fiscal year: every sale matched to its purchases with FIFO, plus the investment income of the year. Sales made in a year are declared in the return filed the following spring.",
+      "What has to be declared for each fiscal year: every sale matched to its purchases with FIFO, plus the investment income of the year.",
     noDataIntro: "No tax data yet. Run",
     noDataOutro: "to build your disposal history into",
     noYears: "Nothing to declare yet — no sales, dividends or rewards found.",
     yearsAria: "Fiscal year",
     yearTab: (year: string, filedIn: string) => `${year} · filed ${filedIn}`,
-    openYear: (year: string, filedIn: string) =>
-      `${year} is still running, so these figures are a running total rather than the final return you will file in ${filedIn}. Re-run the exporter after every sale.`,
     totalsAria: "Fiscal year totals",
     netResult: "Net result",
     assetsSold: (count: number) => (count === 1 ? "1 asset sold" : `${count} assets sold`),
@@ -211,8 +209,6 @@ const en = {
     unknown: "unknown",
     fxAt: (rate: number, source: string) => `· FX ${rate.toFixed(4)} (${source})`,
     incomeTitle: "Investment income",
-    incomeDescription:
-      "Dividends and staking rewards are both investment income taxed in the savings base, but they go in different sections of the form.",
     dividendsTitle: "Dividends",
     dividendsNote:
       "Withholding is the tax suffered abroad — the base of the double-taxation deduction. There is no Spanish withholding on these.",
@@ -234,8 +230,6 @@ const en = {
       "The same figures written out field by field, ready to hand to an agent filling in the tax office's web form.",
     feesNote:
       "Buy and sell commissions are already inside the acquisition and disposal values, which is where the law puts them. Connectivity and custody fees are a real cost but are not deductible in this tax.",
-    disclaimer:
-      "Computed from your own statements — not tax advice. Check every figure before filing anything.",
   },
   dividends: {
     title: "Dividends",

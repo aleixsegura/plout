@@ -127,14 +127,12 @@ const ca: Translations = {
   taxes: {
     title: "Renda",
     description:
-      "El que cal declarar a cada exercici: cada venda aparellada amb les seves compres per FIFO, més els rendiments de l'any. El que véns en un any es declara a la renda que es presenta la primavera següent.",
+      "El que cal declarar a cada exercici: cada venda aparellada amb les seves compres per FIFO, més els rendiments de l'any.",
     noDataIntro: "Encara no hi ha dades fiscals. Executa",
     noDataOutro: "per construir el teu historial de vendes a",
     noYears: "Encara no hi ha res a declarar: ni vendes, ni dividends, ni recompenses.",
     yearsAria: "Exercici",
     yearTab: (year: string, filedIn: string) => `${year} · es presenta el ${filedIn}`,
-    openYear: (year: string, filedIn: string) =>
-      `${year} encara és obert, així que això és un seguiment i no la declaració definitiva que presentaràs el ${filedIn}. Torna a executar l'exporter després de cada venda.`,
     totalsAria: "Totals de l'exercici",
     netResult: "Resultat net",
     assetsSold: (count: number) => (count === 1 ? "1 actiu venut" : `${count} actius venuts`),
@@ -212,8 +210,6 @@ const ca: Translations = {
     unknown: "desconeguda",
     fxAt: (rate: number, source: string) => `· canvi ${rate.toFixed(4)} (${source})`,
     incomeTitle: "Rendiments del capital mobiliari",
-    incomeDescription:
-      "Els dividends i les recompenses de staking són rendiments del capital mobiliari i tributen a la base de l'estalvi, però van en apartats diferents del formulari.",
     dividendsTitle: "Dividends",
     dividendsNote:
       "La retenció és l'impost pagat a l'estranger, que és la base de la deducció per doble imposició internacional. Aquí no hi ha retenció espanyola.",
@@ -235,8 +231,6 @@ const ca: Translations = {
       "Les mateixes xifres camp a camp, a punt per donar-les a un agent que ompli el formulari de l'Agència Tributària.",
     feesNote:
       "Les comissions de compra i de venda ja són dins dels valors d'adquisició i transmissió, que és on les posa la llei. Les de connectivitat i custòdia són un cost real però no són deduïbles en aquest impost.",
-    disclaimer:
-      "Calculat a partir dels teus propis extractes — no és assessorament fiscal. Revisa cada xifra abans de presentar res.",
   },
   dividends: {
     title: "Dividends",
