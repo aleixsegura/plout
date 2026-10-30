@@ -39,6 +39,32 @@ const PAD_X = 6;
 const PAD_LEFT = 52; // gutter for the tick labels, so they never sit on a bar
 const GAP_PX = 2; // surface gap between stacked segments
 
+/** Rough width of an axis label: ~6.5px per character of the 11px font. */
+function labelWidth(label: string): number {
+  return label.length * 6.5;
+}
+
+/** Indices of the axis labels to draw. On a narrow plot (phones), or with
+ * long labels, they'd collide, so walking out from the highlighted bar (else
+ * the last labelled one) a label is kept only when it clears the previous
+ * kept one. Callers may leave labels blank on purpose (sparse daily axes);
+ * those are skipped, not counted. */
+function visibleLabels(bars: Bar[], slot: number, highlightKey: string | null): Set<number> {
+  const labelled = bars.flatMap((b, i) => (b.label ? [i] : []));
+  const shown = new Set<number>();
+  if (labelled.length === 0) return shown;
+  const hi = bars.findIndex((b) => b.key === highlightKey && b.label);
+  const anchor = hi >= 0 ? hi : labelled[labelled.length - 1];
+  shown.add(anchor);
+  const clears = (a: number, b: number) =>
+    Math.abs(a - b) * slot >= (labelWidth(bars[a].label) + labelWidth(bars[b].label)) / 2 + 8;
+  let last = anchor;
+  for (const i of labelled) if (i > anchor && clears(i, last)) shown.add((last = i));
+  last = anchor;
+  for (const i of [...labelled].reverse()) if (i < anchor && clears(i, last)) shown.add((last = i));
+  return shown;
+}
+
 function total(bar: Bar): number {
   return bar.segments ? bar.segments.reduce((s, x) => s + x.value, 0) : bar.value ?? 0;
 }
@@ -69,14 +95,7 @@ export default function Bars({
   const y = (v: number) => PAD_TOP + plotH - (niceMax > 0 ? (v / niceMax) * plotH : 0);
   const ticks = [niceMax / 3, (2 * niceMax) / 3, niceMax];
   const hovered = bars.find((b) => b.key === hover) ?? null;
-  // On a narrow plot (phones) every label no longer fits under its bar, so
-  // only every `labelStep`-th one is drawn. The step counts from the
-  // highlighted bar (else the last), which therefore always keeps its label.
-  // Width is estimated at ~6.5px per character of the 11px axis font.
-  const labelW = Math.max(...bars.map((b) => b.label.length), 0) * 6.5 + 6;
-  const labelStep = Math.max(1, Math.ceil(labelW / Math.max(slot, 1)));
-  const hiIndex = bars.findIndex((b) => b.key === highlightKey);
-  const labelAnchor = hiIndex >= 0 ? hiIndex : n - 1;
+  const shownLabels = visibleLabels(bars, slot, highlightKey);
 
   return (
     <div className="relative" ref={wrapRef}>
@@ -149,9 +168,10 @@ export default function Bars({
                   {formatValue(sum)}
                 </text>
               )}
-              {(i - labelAnchor) % labelStep === 0 && (
+              {shownLabels.has(i) && (
                 <text
-                  x={x + barW / 2}
+                  // Clamped so the first and last labels stay inside the plot.
+                  x={Math.min(Math.max(x + barW / 2, PAD_LEFT + labelWidth(bar.label) / 2), width - labelWidth(bar.label) / 2)}
                   y={height - 6}
                   textAnchor="middle"
                   className={isHi ? "fill-accent font-semibold" : "fill-muted"}

@@ -191,39 +191,34 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      {/* Collapsing is a request for room, so it also lifts the reading-width
-          cap: expanded stays capped for comfortable line lengths, collapsed
-          fills the viewport. The capped column is centred in the space right
-          of the sidebar, so wide screens don't leave it pinned left with an
-          empty band on the right. */}
+      {/* The content always fills the window beside the sidebar, inside the
+          page padding: a capped column left empty bands on wide screens. */}
       <main
-        className={`px-10 py-8 transition-[margin] duration-200 ease-out max-md:ml-0 max-md:max-w-none max-md:px-4 max-md:py-5 ${
+        className={`px-10 py-8 transition-[margin] duration-200 ease-out max-md:ml-0 max-md:px-4 max-md:py-5 ${
           collapsed ? "ml-14" : "ml-60"
         }`}
       >
-        <div className={`mx-auto ${collapsed ? "max-w-none" : "max-w-[1280px]"}`}>
-          {import.meta.env.MODE === "demo" && (
-            <p className="mb-5 rounded-md bg-elevated px-3 py-2 text-[13px] text-secondary">
-              {t.app.demoNotice}
-            </p>
-          )}
+        {import.meta.env.MODE === "demo" && (
+          <p className="mb-5 rounded-md bg-elevated px-3 py-2 text-[13px] text-secondary">
+            {t.app.demoNotice}
+          </p>
+        )}
 
-          <Outlet />
+        <Outlet />
 
-          {/* lightweight-charts is Apache-2.0 with an attribution requirement;
-              the in-chart logo is off, so the notice lives here. */}
-          <footer className="mt-10 text-[11px] text-muted">
-            {t.app.chartsBy}{" "}
-            <a
-              href="https://www.tradingview.com/"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="underline underline-offset-2 hover:text-secondary"
-            >
-              TradingView
-            </a>
-          </footer>
-        </div>
+        {/* lightweight-charts is Apache-2.0 with an attribution requirement;
+            the in-chart logo is off, so the notice lives here. */}
+        <footer className="mt-10 text-[11px] text-muted">
+          {t.app.chartsBy}{" "}
+          <a
+            href="https://www.tradingview.com/"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="underline underline-offset-2 hover:text-secondary"
+          >
+            TradingView
+          </a>
+        </footer>
       </main>
     </div>
   );

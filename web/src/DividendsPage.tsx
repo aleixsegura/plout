@@ -101,7 +101,7 @@ export default function DividendsPage() {
   if (dividends === null) {
     return (
       <div>
-        <h1 className="mb-2 text-xl font-semibold">{t.dividends.title}</h1>
+        <h1 className="mb-2 font-display text-[26px] font-semibold tracking-tight">{t.dividends.title}</h1>
         <p className="max-w-prose text-secondary">
           {t.dividends.noDataIntro}{" "}
           <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">
@@ -120,7 +120,7 @@ export default function DividendsPage() {
   if (payments.length === 0 && upcoming.length === 0) {
     return (
       <div>
-        <h1 className="mb-2 text-xl font-semibold">{t.dividends.title}</h1>
+        <h1 className="mb-2 font-display text-[26px] font-semibold tracking-tight">{t.dividends.title}</h1>
         <p className="text-secondary">
           {t.dividends.noPaymentsFound(dividends.fromDate, dividends.toDate)}
         </p>
@@ -130,7 +130,7 @@ export default function DividendsPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold">{t.dividends.title}</h1>
+      <h1 className="mb-1 font-display text-[26px] font-semibold tracking-tight">{t.dividends.title}</h1>
       <p className="mb-5 text-sm text-secondary">
         {t.dividends.description}{" "}
         <span className="text-muted">{t.dividends.tax}</span> {t.dividends.taxIsWithholding}

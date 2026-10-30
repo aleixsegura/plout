@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Edge } from "../correlation";
 import { placeLabels, textWidth, type LabelSpot } from "./labelPlacement";
 import useContainerWidth from "./useContainerWidth";
@@ -31,12 +31,15 @@ interface Props {
   corr: number[][];
   theta: number;
   groups?: GraphGroup[];
+  /** Fixed plot height; omit to fill the parent's remaining height (the
+   * parent must be a flex column), never below MIN_FILL_HEIGHT. */
   height?: number;
   tooltip: (i: number) => ReactNode;
   ariaLabel: string;
 }
 
 const PAD = 34;
+const MIN_FILL_HEIGHT = 360;
 /** Least correlation distance between a group member and a holding outside
  * its group (√(2(1−ρ)) at ρ ≈ 0.5), and the extra pull of those springs. */
 const APART = 1;
@@ -178,9 +181,23 @@ function spotsAroundBox(cx: number, cy: number, box: { x0: number; y0: number; x
 
 /** The market graph: holdings as nodes, an edge wherever ρ ≥ θ, the maximum
  * independent set filled in the accent. Hovering a node isolates its links. */
-export default function MarketGraph({ nodes, edges, corr, theta, groups = [], height = 360, tooltip, ariaLabel }: Props) {
+export default function MarketGraph({ nodes, edges, corr, theta, groups = [], height: fixedHeight, tooltip, ariaLabel }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const width = useContainerWidth(wrapRef);
+  // Filling: the wrapper takes the card's leftover height (flex-1) and the SVG
+  // is laid absolutely inside it, so the drawing never feeds back into the
+  // size it was measured from — the graph can shrink as well as grow.
+  const [fillHeight, setFillHeight] = useState(MIN_FILL_HEIGHT);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || fixedHeight !== undefined) return;
+    const update = () => setFillHeight(Math.max(Math.floor(el.clientHeight), MIN_FILL_HEIGHT));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fixedHeight]);
+  const height = fixedHeight ?? fillHeight;
   const [hover, setHover] = useState<number | null>(null);
   const groupKey = groups.map((g) => g.members.join(",")).join("|");
   // groupKey stands in for `groups`, a fresh array on every render.
@@ -253,12 +270,12 @@ export default function MarketGraph({ nodes, edges, corr, theta, groups = [], he
   const groupLabel = blobs.map((_, k) => spots[byWeight.length + k]);
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className={fixedHeight === undefined ? "relative min-h-[360px] flex-1" : "relative"}>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         width={width}
         height={height}
-        className="block max-w-full"
+        className={`block max-w-full ${fixedHeight === undefined ? "absolute inset-0" : ""}`}
         role="img"
         aria-label={ariaLabel}
         onMouseLeave={() => setHover(null)}

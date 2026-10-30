@@ -71,7 +71,7 @@ export default function TaxesPage() {
   if (taxes === null) {
     return (
       <div>
-        <h1 className="mb-2 text-xl font-semibold">{t.taxes.title}</h1>
+        <h1 className="mb-2 font-display text-[26px] font-semibold tracking-tight">{t.taxes.title}</h1>
         <p className="max-w-prose text-secondary">
           {t.taxes.noDataIntro}{" "}
           <code className="rounded bg-elevated px-1.5 py-0.5 text-[0.85em]">
@@ -90,7 +90,7 @@ export default function TaxesPage() {
   if (taxes.years.length === 0) {
     return (
       <div>
-        <h1 className="mb-2 text-xl font-semibold">{t.taxes.title}</h1>
+        <h1 className="mb-2 font-display text-[26px] font-semibold tracking-tight">{t.taxes.title}</h1>
         <p className="text-secondary">{t.taxes.noYears}</p>
       </div>
     );
@@ -109,7 +109,7 @@ export default function TaxesPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold">{t.taxes.title}</h1>
+      <h1 className="mb-1 font-display text-[26px] font-semibold tracking-tight">{t.taxes.title}</h1>
       <p className="mb-5 max-w-prose text-sm text-secondary">{t.taxes.description}</p>
 
       <YearTabs

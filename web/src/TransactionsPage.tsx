@@ -328,148 +328,151 @@ export default function TransactionsPage() {
             </ul>
           )}
         </Card>
+      </div>
 
-        <div className="col-span-12">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setShowAll(false);
-              }}
-              placeholder={t.transactions.searchPlaceholder}
-              aria-label={t.transactions.search}
-              className="h-9 min-w-[16rem] flex-1 rounded-md border border-hairline bg-surface px-3 text-sm text-primary placeholder:text-muted focus:border-hairline-strong focus:outline-none focus-visible:outline-2 focus-visible:outline-focus sm:max-w-sm"
-            />
-            <div className="flex flex-wrap gap-1.5">
-              {(["all", "expense", "income", "internal"] as KindFilter[]).map((k) => (
-                <button key={k} type="button" className={chipClass(kind === k)} onClick={() => setKind(k)} aria-pressed={kind === k}>
-                  {k === "all" ? t.transactions.all : k === "expense" ? t.transactions.expensesOnly : k === "income" ? t.transactions.incomeOnly : t.transactions.internal}
-                </button>
-              ))}
-              {category && (
-                <button type="button" className={`${chipClass(true)} inline-flex items-center gap-1.5`} onClick={() => setCategory(null)}>
-                  <span className="size-2 rounded-[2px]" style={{ background: color(category) }} aria-hidden />
-                  {categoryLabel(t, category)} ×
-                </button>
-              )}
-            </div>
-            <span className="ml-auto text-xs tabular-nums text-muted">{t.transactions.rowsShown(visibleRows.length, tableRows.length)}</span>
+      {/* The table and the interest card stand on their own below the panel:
+          inside panel-grid they'd need to be cards themselves, or the grid's
+          rules double up on the table's own and never close around the rest. */}
+      <section className="mt-6" aria-label={t.transactions.title}>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setShowAll(false);
+            }}
+            placeholder={t.transactions.searchPlaceholder}
+            aria-label={t.transactions.search}
+            className="h-9 min-w-[16rem] flex-1 rounded-md border border-hairline bg-surface px-3 text-sm text-primary placeholder:text-muted focus:border-hairline-strong focus:outline-none focus-visible:outline-2 focus-visible:outline-focus sm:max-w-sm"
+          />
+          <div className="flex flex-wrap gap-1.5">
+            {(["all", "expense", "income", "internal"] as KindFilter[]).map((k) => (
+              <button key={k} type="button" className={chipClass(kind === k)} onClick={() => setKind(k)} aria-pressed={kind === k}>
+                {k === "all" ? t.transactions.all : k === "expense" ? t.transactions.expensesOnly : k === "income" ? t.transactions.incomeOnly : t.transactions.internal}
+              </button>
+            ))}
+            {category && (
+              <button type="button" className={`${chipClass(true)} inline-flex items-center gap-1.5`} onClick={() => setCategory(null)}>
+                <span className="size-2 rounded-[2px]" style={{ background: color(category) }} aria-hidden />
+                {categoryLabel(t, category)} ×
+              </button>
+            )}
           </div>
-
-          <div className={TABLE_WRAP}>
-            <table className={TABLE}>
-              <thead>
-                <tr>
-                  <th className={TH}>{t.transactions.date}</th>
-                  <th className={TH}>{t.transactions.merchant}</th>
-                  <th className={TH}>{t.transactions.category}</th>
-                  <th className={`${TH} ${NUM}`}>{t.transactions.amount}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {groups.length === 0 && (
-                  <tr>
-                    <td className={`${TD} text-secondary`} colSpan={4}>
-                      {t.transactions.noRows}
-                    </td>
-                  </tr>
-                )}
-                {groups.map((g) => (
-                  <GroupRows key={g.day} group={g} locale={locale} color={color} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {tableRows.length > ROWS_PREVIEW && (
-            <button
-              type="button"
-              className="mt-3 text-sm font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-focus"
-              onClick={() => setShowAll((v) => !v)}
-            >
-              {showAll ? t.transactions.showFewer : t.transactions.showAll(tableRows.length)}
-            </button>
-          )}
+          <span className="ml-auto text-xs tabular-nums text-muted">{t.transactions.rowsShown(visibleRows.length, tableRows.length)}</span>
         </div>
 
-        <Card className="col-span-12" title={t.transactions.interest.title}>
-          {savings && (
-            <p className="-mt-2 mb-4 text-xs text-secondary">
-              {t.transactions.interest.description(
-                savings.name,
-                savings.since ? new Date(savings.since).toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" }) : "—",
+        <div className={TABLE_WRAP}>
+          <table className={TABLE}>
+            <thead>
+              <tr>
+                <th className={TH}>{t.transactions.date}</th>
+                <th className={TH}>{t.transactions.merchant}</th>
+                <th className={TH}>{t.transactions.category}</th>
+                <th className={`${TH} ${NUM}`}>{t.transactions.amount}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.length === 0 && (
+                <tr>
+                  <td className={`${TD} text-secondary`} colSpan={4}>
+                    {t.transactions.noRows}
+                  </td>
+                </tr>
               )}
-            </p>
-          )}
-          {!interest || interest.daily.length === 0 ? (
-            <p className="text-sm text-secondary">{t.transactions.interest.noInterest}</p>
-          ) : (
-            <>
-              <div className="panel-grid mb-4 grid [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
-                <KpiCard dense label={t.transactions.interest.thisMonth} value={eur.format(interestInMonth(file, monthKey()))} valueClass="text-gain" />
-                <KpiCard dense label={t.transactions.interest.last30} value={eur.format(last30)} valueClass="text-gain" />
-                <KpiCard dense label={t.transactions.interest.total} value={eur.format(interest.total)} valueClass="text-gain" />
-                {savings?.aer !== undefined && (
-                  <KpiCard
-                    dense
-                    label={t.transactions.interest.rate}
-                    value={`${savings.aer.toLocaleString("es-ES", { maximumFractionDigits: 2 })}% AER`}
-                    sub={
-                      savings.interestRate !== undefined ? (
-                        <span className={`${SUB_DENSE} text-secondary`}>{savings.interestRate.toLocaleString("es-ES", { maximumFractionDigits: 2 })}% NIR</span>
-                      ) : undefined
-                    }
-                  />
-                )}
-                {savings && <KpiCard dense label={t.transactions.interest.balance} value={eur.format(savings.balanceEur)} />}
+              {groups.map((g) => (
+                <GroupRows key={g.day} group={g} locale={locale} color={color} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {tableRows.length > ROWS_PREVIEW && (
+          <button
+            type="button"
+            className="mt-3 text-sm font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-focus"
+            onClick={() => setShowAll((v) => !v)}
+          >
+            {showAll ? t.transactions.showFewer : t.transactions.showAll(tableRows.length)}
+          </button>
+        )}
+      </section>
+
+      <Card className="mt-6" title={t.transactions.interest.title}>
+        {savings && (
+          <p className="-mt-2 mb-4 text-xs text-secondary">
+            {t.transactions.interest.description(
+              savings.name,
+              savings.since ? new Date(savings.since).toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" }) : "—",
+            )}
+          </p>
+        )}
+        {!interest || interest.daily.length === 0 ? (
+          <p className="text-sm text-secondary">{t.transactions.interest.noInterest}</p>
+        ) : (
+          <>
+            <div className="panel-grid mb-4 grid [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
+              <KpiCard dense label={t.transactions.interest.thisMonth} value={eur.format(interestInMonth(file, monthKey()))} valueClass="text-gain" />
+              <KpiCard dense label={t.transactions.interest.last30} value={eur.format(last30)} valueClass="text-gain" />
+              <KpiCard dense label={t.transactions.interest.total} value={eur.format(interest.total)} valueClass="text-gain" />
+              {savings?.aer !== undefined && (
+                <KpiCard
+                  dense
+                  label={t.transactions.interest.rate}
+                  value={`${savings.aer.toLocaleString("es-ES", { maximumFractionDigits: 2 })}% AER`}
+                  sub={
+                    savings.interestRate !== undefined ? (
+                      <span className={`${SUB_DENSE} text-secondary`}>{savings.interestRate.toLocaleString("es-ES", { maximumFractionDigits: 2 })}% NIR</span>
+                    ) : undefined
+                  }
+                />
+              )}
+              {savings && <KpiCard dense label={t.transactions.interest.balance} value={eur.format(savings.balanceEur)} />}
+            </div>
+            <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
+              <div className="min-w-0 lg:col-span-7">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{t.transactions.interest.daily}</h3>
+                <Bars
+                  bars={interestDaily.map((d, i) => ({
+                    key: d.date,
+                    label: (i + 1) % 15 === 0 ? new Date(d.date).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "",
+                    value: d.amount,
+                    color: "var(--gain)",
+                  }))}
+                  height={180}
+                  formatValue={(v) => eur.format(v)}
+                  tooltipTitle={(b) => new Date(b.key).toLocaleDateString(locale, { day: "numeric", month: "long" })}
+                  ariaLabel={t.transactions.interest.dailyAria}
+                />
               </div>
-              <div className="panel-grid grid grid-cols-12">
-                <div className="col-span-12 lg:col-span-7">
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{t.transactions.interest.daily}</h3>
-                  <Bars
-                    bars={interestDaily.map((d, i) => ({
-                      key: d.date,
-                      label: (i + 1) % 15 === 0 ? new Date(d.date).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "",
-                      value: d.amount,
-                      color: "var(--gain)",
-                    }))}
-                    height={180}
-                    formatValue={(v) => eur.format(v)}
-                    tooltipTitle={(b) => new Date(b.key).toLocaleDateString(locale, { day: "numeric", month: "long" })}
-                    ariaLabel={t.transactions.interest.dailyAria}
-                  />
-                </div>
-                <div className="col-span-12 lg:col-span-5">
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{t.transactions.interest.byMonth}</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-[13px]">
-                      <thead>
-                        <tr>
-                          <th className={TH}>{t.transactions.interest.month}</th>
-                          <th className={`${TH} ${NUM}`}>{t.transactions.interest.days}</th>
-                          <th className={`${TH} ${NUM}`}>{t.transactions.interest.amount}</th>
-                          <th className={`${TH} ${NUM}`}>{t.transactions.interest.effectiveRate}</th>
+              <div className="min-w-0 lg:col-span-5">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{t.transactions.interest.byMonth}</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-[13px]">
+                    <thead>
+                      <tr>
+                        <th className={TH}>{t.transactions.interest.month}</th>
+                        <th className={`${TH} ${NUM}`}>{t.transactions.interest.days}</th>
+                        <th className={`${TH} ${NUM}`}>{t.transactions.interest.amount}</th>
+                        <th className={`${TH} ${NUM}`}>{t.transactions.interest.effectiveRate}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {interestByMonth.map((m) => (
+                        <tr key={m.month}>
+                          <td className={TD}>{monthLabel(m.month, locale)}</td>
+                          <td className={`${TD} ${NUM} text-secondary`}>{m.days}</td>
+                          <td className={`${TD} ${NUM} font-medium text-gain`}>{eur.format(m.amount)}</td>
+                          <td className={`${TD} ${NUM} text-secondary`}>{m.rate !== null ? `${pct1.format(m.rate)}%` : "—"}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {interestByMonth.map((m) => (
-                          <tr key={m.month}>
-                            <td className={TD}>{monthLabel(m.month, locale)}</td>
-                            <td className={`${TD} ${NUM} text-secondary`}>{m.days}</td>
-                            <td className={`${TD} ${NUM} font-medium text-gain`}>{eur.format(m.amount)}</td>
-                            <td className={`${TD} ${NUM} text-secondary`}>{m.rate !== null ? `${pct1.format(m.rate)}%` : "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            </>
-          )}
-        </Card>
-      </div>
+            </div>
+          </>
+        )}
+      </Card>
     </>
   );
 }

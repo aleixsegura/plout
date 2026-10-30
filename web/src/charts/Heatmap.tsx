@@ -20,8 +20,12 @@ interface Props {
 
 const LABEL_W = 64;
 const LABEL_H = 22;
-const MAX_CELL = 46;
+const MAX_CELL = 80;
 const GAP = 2;
+/** Room around the plot for the 2px cluster outlines, which sit 1px outside
+ * the cells: without it the outline of a block at the top or right edge is
+ * clipped by the SVG box. */
+const EDGE = 3;
 /** Cells this size or bigger carry their ρ as text. */
 const MIN_CELL_FOR_VALUE = 30;
 
@@ -40,16 +44,16 @@ export default function Heatmap({ labels, matrix, order, highlight, groups = [],
   const width = useContainerWidth(wrapRef);
   const [hover, setHover] = useState<{ i: number; j: number } | null>(null);
   const n = order.length;
-  const cell = Math.max(12, Math.min(MAX_CELL, Math.floor((width - LABEL_W) / Math.max(n, 1))));
+  const cell = Math.max(12, Math.min(MAX_CELL, Math.floor((width - LABEL_W - EDGE) / Math.max(n, 1))));
   const size = cell * n;
   const height = size + LABEL_H;
 
   return (
     <div ref={wrapRef} className="relative">
       <svg
-        viewBox={`0 0 ${LABEL_W + size} ${height}`}
-        width={LABEL_W + size}
-        height={height}
+        viewBox={`0 ${-EDGE} ${LABEL_W + size + EDGE} ${height + EDGE}`}
+        width={LABEL_W + size + EDGE}
+        height={height + EDGE}
         className="block max-w-full"
         role="img"
         aria-label={ariaLabel}
@@ -87,7 +91,7 @@ export default function Heatmap({ labels, matrix, order, highlight, groups = [],
                       y={r * cell + cell / 2 + 3.5}
                       textAnchor="middle"
                       className={Math.abs(rho) >= 0.6 ? "fill-surface tabular-nums" : "fill-primary tabular-nums"}
-                      style={{ fontSize: 10.5, pointerEvents: "none" }}
+                      style={{ fontSize: cell >= 56 ? 12 : 10.5, pointerEvents: "none" }}
                     >
                       {rhoText(rho)}
                     </text>
