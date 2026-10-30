@@ -69,6 +69,14 @@ export default function Bars({
   const y = (v: number) => PAD_TOP + plotH - (niceMax > 0 ? (v / niceMax) * plotH : 0);
   const ticks = [niceMax / 3, (2 * niceMax) / 3, niceMax];
   const hovered = bars.find((b) => b.key === hover) ?? null;
+  // On a narrow plot (phones) every label no longer fits under its bar, so
+  // only every `labelStep`-th one is drawn. The step counts from the
+  // highlighted bar (else the last), which therefore always keeps its label.
+  // Width is estimated at ~6.5px per character of the 11px axis font.
+  const labelW = Math.max(...bars.map((b) => b.label.length), 0) * 6.5 + 6;
+  const labelStep = Math.max(1, Math.ceil(labelW / Math.max(slot, 1)));
+  const hiIndex = bars.findIndex((b) => b.key === highlightKey);
+  const labelAnchor = hiIndex >= 0 ? hiIndex : n - 1;
 
   return (
     <div className="relative" ref={wrapRef}>
@@ -141,15 +149,17 @@ export default function Bars({
                   {formatValue(sum)}
                 </text>
               )}
-              <text
-                x={x + barW / 2}
-                y={height - 6}
-                textAnchor="middle"
-                className={isHi ? "fill-accent font-semibold" : "fill-muted"}
-                style={{ fontSize: 11 }}
-              >
-                {bar.label}
-              </text>
+              {(i - labelAnchor) % labelStep === 0 && (
+                <text
+                  x={x + barW / 2}
+                  y={height - 6}
+                  textAnchor="middle"
+                  className={isHi ? "fill-accent font-semibold" : "fill-muted"}
+                  style={{ fontSize: 11 }}
+                >
+                  {bar.label}
+                </text>
+              )}
             </g>
           );
         })}

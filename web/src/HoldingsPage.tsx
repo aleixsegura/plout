@@ -66,7 +66,7 @@ export default function HoldingsPage() {
             sourceLabel={revolut ? t.holdings.sourceDegiroRevolut : t.holdings.sourceDegiro}
           />
         </div>
-        <div className="flex min-w-[320px] flex-1 flex-col">
+        <div className="flex min-w-0 flex-[1_1_320px] flex-col">
           <h2 className="mb-3 text-base font-semibold">{t.holdings.performance}</h2>
           <div className="flex-1">
             {/* Return, not value: the Dashboard already charts net worth, and

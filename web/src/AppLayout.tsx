@@ -122,10 +122,14 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen">
       {/* Module sidebar; collapses to an icon rail, and to a top bar below md
-          where the rail state is ignored (nothing to reclaim horizontally). */}
+          where the rail state is ignored (nothing to reclaim horizontally).
+          The top bar is two rows: brand + language, then the nav links on a
+          strip that scrolls sideways. Six links don't fit a phone's width, and
+          a row that overflows widens the whole document, which mobile
+          browsers then zoom out to fit — shrinking the page into a column. */}
       <aside
         data-collapsed={collapsed}
-        className={`group fixed inset-y-0 left-0 flex flex-col gap-6 overflow-y-auto border-r border-hairline-strong py-5 transition-[width] duration-200 ease-out max-md:static max-md:w-auto max-md:flex-row max-md:items-center max-md:gap-4 max-md:overflow-visible max-md:border-r-0 max-md:border-b max-md:border-hairline-strong max-md:px-4 max-md:py-3 ${
+        className={`group fixed inset-y-0 left-0 flex flex-col gap-6 overflow-y-auto border-r border-hairline-strong py-5 transition-[width] duration-200 ease-out max-md:static max-md:w-auto max-md:flex-row max-md:flex-wrap max-md:items-center max-md:gap-x-4 max-md:gap-y-2 max-md:overflow-visible max-md:border-r-0 max-md:border-b max-md:border-hairline-strong max-md:px-4 max-md:py-3 ${
           collapsed ? "w-14 px-2" : "w-60 px-3"
         }`}
       >
@@ -149,36 +153,38 @@ export default function AppLayout() {
           </button>
         </div>
 
-        <nav className="flex flex-col gap-0.5 max-md:flex-row max-md:items-center max-md:gap-1">
-          {primaryItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={navLinkClass}
-              title={collapsed ? item.label : undefined}
-            >
-              <span className="shrink-0 max-md:hidden">{item.icon}</span>
-              <span className="truncate md:group-data-[collapsed=true]:hidden">{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
+        <div className="contents max-md:order-last max-md:-mx-4 max-md:flex max-md:w-[calc(100%+2rem)] max-md:items-center max-md:gap-1 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none]">
+          <nav className="flex flex-col gap-0.5 max-md:shrink-0 max-md:flex-row max-md:items-center max-md:gap-1">
+            {primaryItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={navLinkClass}
+                title={collapsed ? item.label : undefined}
+              >
+                <span className="shrink-0 max-md:hidden">{item.icon}</span>
+                <span className="truncate md:group-data-[collapsed=true]:hidden">{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
 
-        <div className="h-px bg-hairline max-md:h-6 max-md:w-px" />
+          <div className="h-px bg-hairline max-md:h-6 max-md:w-px max-md:shrink-0" />
 
-        <nav className="flex flex-col gap-0.5 max-md:flex-row max-md:items-center max-md:gap-1">
-          {secondaryItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={secondaryNavLinkClass}
-              title={collapsed ? item.label : undefined}
-            >
-              <span className="shrink-0 max-md:hidden">{item.icon}</span>
-              <span className="truncate md:group-data-[collapsed=true]:hidden">{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
+          <nav className="flex flex-col gap-0.5 max-md:shrink-0 max-md:flex-row max-md:items-center max-md:gap-1">
+            {secondaryItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={secondaryNavLinkClass}
+                title={collapsed ? item.label : undefined}
+              >
+                <span className="shrink-0 max-md:hidden">{item.icon}</span>
+                <span className="truncate md:group-data-[collapsed=true]:hidden">{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
 
         <div className="mt-auto flex flex-col gap-1 max-md:ml-auto max-md:mt-0 max-md:flex-row">
           <LanguageToggle />
@@ -187,33 +193,37 @@ export default function AppLayout() {
 
       {/* Collapsing is a request for room, so it also lifts the reading-width
           cap: expanded stays capped for comfortable line lengths, collapsed
-          fills the viewport. */}
+          fills the viewport. The capped column is centred in the space right
+          of the sidebar, so wide screens don't leave it pinned left with an
+          empty band on the right. */}
       <main
         className={`px-10 py-8 transition-[margin] duration-200 ease-out max-md:ml-0 max-md:max-w-none max-md:px-4 max-md:py-5 ${
-          collapsed ? "ml-14 max-w-none" : "ml-60 max-w-[1280px]"
+          collapsed ? "ml-14" : "ml-60"
         }`}
       >
-        {import.meta.env.MODE === "demo" && (
-          <p className="mb-5 rounded-md bg-elevated px-3 py-2 text-[13px] text-secondary">
-            {t.app.demoNotice}
-          </p>
-        )}
+        <div className={`mx-auto ${collapsed ? "max-w-none" : "max-w-[1280px]"}`}>
+          {import.meta.env.MODE === "demo" && (
+            <p className="mb-5 rounded-md bg-elevated px-3 py-2 text-[13px] text-secondary">
+              {t.app.demoNotice}
+            </p>
+          )}
 
-        <Outlet />
+          <Outlet />
 
-        {/* lightweight-charts is Apache-2.0 with an attribution requirement;
-            the in-chart logo is off, so the notice lives here. */}
-        <footer className="mt-10 text-[11px] text-muted">
-          {t.app.chartsBy}{" "}
-          <a
-            href="https://www.tradingview.com/"
-            target="_blank"
-            rel="noreferrer noopener"
-            className="underline underline-offset-2 hover:text-secondary"
-          >
-            TradingView
-          </a>
-        </footer>
+          {/* lightweight-charts is Apache-2.0 with an attribution requirement;
+              the in-chart logo is off, so the notice lives here. */}
+          <footer className="mt-10 text-[11px] text-muted">
+            {t.app.chartsBy}{" "}
+            <a
+              href="https://www.tradingview.com/"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="underline underline-offset-2 hover:text-secondary"
+            >
+              TradingView
+            </a>
+          </footer>
+        </div>
       </main>
     </div>
   );
