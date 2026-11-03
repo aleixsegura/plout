@@ -113,6 +113,36 @@ class RunningTotalsTest(unittest.TestCase):
             self.assertEqual(history["days"][0]["degiro"]["netDepositsEur"], 1000)
             self.assertEqual(history["days"][1]["degiro"]["netDepositsEur"], 9999)
 
+    def test_backfill_recomputes_revolut_net_invested(self):
+        """A stale net invested (computed before the ledger had the Bybit
+        transfer) is replaced, so every day agrees with the same ledger."""
+        import json
+        import tempfile
+
+        trades = {
+            "trades": [{"date": "2026-07-01T10:00:00+00:00", "side": "sell", "grossAmount": 600, "feeAmount": 0}],
+            "deposits": [{"date": "2026-06-25T10:00:00+00:00", "valueEur": 1000}],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp)
+            (data / "revolut_trades.json").write_text(json.dumps(trades))
+            revolut = lambda at, invested: {"updatedAt": at, "netInvestedEur": invested, "interestEur": 0}
+            history = {"days": [
+                {"date": "2026-07-15", "degiro": None, "revolut": revolut("2026-07-15T10:00:00+00:00", -600)},
+                {"date": "2026-08-15", "degiro": None, "revolut": revolut("2026-08-15T10:00:00+00:00", 400)},
+            ]}
+            self.assertEqual(backfill(history, data), 1)
+            self.assertEqual([d["revolut"]["netInvestedEur"] for d in history["days"]], [400, 400])
+
+    def test_backfill_keeps_revolut_net_invested_without_trades(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            history = {"days": [{"date": "2026-07-15", "degiro": None, "revolut": {
+                "updatedAt": "2026-07-15T10:00:00+00:00", "netInvestedEur": 123, "interestEur": 0}}]}
+            self.assertEqual(backfill(history, Path(tmp)), 0)
+            self.assertEqual(history["days"][0]["revolut"]["netInvestedEur"], 123)
+
 
 if __name__ == "__main__":
     unittest.main()

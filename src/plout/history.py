@@ -17,7 +17,8 @@ transfers into DEGIRO): DEGIRO's net deposits, the Boosted interest credited so
 far, and the EUR put into Revolut positions. Only differences between days are
 ever used, so a running total that starts late is fine. Days recorded before a
 field existed are filled in by `backfill()` from the exports that hold the
-dated movements (deposits.json, revolut_trades.json, revolut_transactions.json).
+dated movements (deposits.json, revolut_trades.json, revolut_transactions.json);
+Revolut's net invested is recomputed on every day, every run, so all days agree.
 """
 
 import argparse
@@ -146,9 +147,19 @@ def _revolut_entry(
 
 
 def backfill(history: dict, data_dir: Path) -> int:
-    """Fill the running totals that days recorded before them lack. Only
-    missing values are filled — a figure a snapshot recorded live wins.
-    Returns how many fields were filled."""
+    """Fill the running totals that days recorded before them lack, and
+    recompute the Revolut net invested of every day.
+
+    DEGIRO net deposits and Boosted interest are only filled when missing — a
+    figure a snapshot recorded live wins. Revolut's net invested is always
+    recomputed from revolut_trades.json instead: the chart only uses
+    differences between days, so every day must be computed from the same
+    ledger. A day computed from an older, incomplete ledger (one without the
+    June Bybit transfers, say) next to a day computed from the full one reads
+    as a large flow that never happened, and the chart shows it as a loss.
+    Without a trades file the stored values are kept.
+
+    Returns how many fields were filled or changed."""
     deposits = _read_json(data_dir / "deposits.json")
     trades = _read_json(data_dir / "revolut_trades.json")
     transactions = _read_json(data_dir / "revolut_transactions.json")
@@ -163,15 +174,15 @@ def backfill(history: dict, data_dir: Path) -> int:
         revolut = day.get("revolut")
         if not revolut:
             continue
-        for key, compute, source in (
-            ("netInvestedEur", revolut_net_invested_at, trades),
-            ("interestEur", revolut_interest_at, transactions),
-        ):
-            if revolut.get(key) is None:
-                value = compute(source, revolut.get("updatedAt"))
-                if value is not None:
-                    revolut[key] = value
-                    filled += 1
+        invested = revolut_net_invested_at(trades, revolut.get("updatedAt"))
+        if invested is not None and invested != revolut.get("netInvestedEur"):
+            revolut["netInvestedEur"] = invested
+            filled += 1
+        if revolut.get("interestEur") is None:
+            interest = revolut_interest_at(transactions, revolut.get("updatedAt"))
+            if interest is not None:
+                revolut["interestEur"] = interest
+                filled += 1
     return filled
 
 
@@ -238,7 +249,7 @@ def main() -> None:
     hist = load_history(data)
     n = backfill(hist, data)
     save_history(hist, data)
-    print(f"Filled {n} field(s) across {len(hist['days'])} day(s) in {data / 'history.json'}")
+    print(f"Filled or updated {n} field(s) across {len(hist['days'])} day(s) in {data / 'history.json'}")
 
 
 if __name__ == "__main__":
