@@ -68,6 +68,8 @@ const es: Translations = {
     Healthcare: "Sanidad",
     "Consumer Staples": "Consumo básico",
     Financials: "Financieras",
+    Industrials: "Industriales",
+    Bonds: "Bonos",
     "Currency / FX": "Divisa / FX",
     Cash: "Efectivo",
     Other: "Otros",

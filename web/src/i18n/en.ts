@@ -69,6 +69,8 @@ const en = {
     Healthcare: "Healthcare",
     "Consumer Staples": "Consumer Staples",
     Financials: "Financials",
+    Industrials: "Industrials",
+    Bonds: "Bonds",
     "Currency / FX": "Currency / FX",
     Cash: "Cash",
     Other: "Other",

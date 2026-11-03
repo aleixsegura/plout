@@ -19,6 +19,8 @@ export const SECTOR_ORDER = [
   "Healthcare",
   "Consumer Staples",
   "Financials",
+  "Industrials",
+  "Bonds",
   "Currency / FX",
   "Cash",
 ] as const;
