@@ -12,3 +12,4 @@ manual_trades.json
 *.local.md
 *.egg-info/
 build/
+uv.lock
