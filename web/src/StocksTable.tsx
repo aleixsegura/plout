@@ -78,6 +78,8 @@ interface SortState {
   dir: SortDir;
 }
 
+const DEFAULT_SORT: SortState = { key: "value", dir: "desc" };
+
 interface Props {
   stocks: Stock[];
   /** Highlighted sector (holdings only); rows outside it get de-emphasized. */
@@ -134,12 +136,16 @@ export default function StocksTable({
 }: Props) {
   const { t } = useTranslation();
   const showPositions = positionsData !== undefined;
-  const [sort, setSort] = useState<SortState | null>(null);
+  // `chosenSort` is what the user clicked; until then the table shows the
+  // heaviest position first. Derived rather than seeded into state because the
+  // positions load after the first render, when there's no value to sort by.
+  const [chosenSort, setChosenSort] = useState<SortState | null>(null);
+  const sort = chosenSort ?? (showPositions ? DEFAULT_SORT : null);
 
   const toggleSort = (key: SortKey) => {
-    setSort((prev) =>
-      prev !== null && prev.key === key
-        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+    setChosenSort(
+      sort !== null && sort.key === key
+        ? { key, dir: sort.dir === "asc" ? "desc" : "asc" }
         : { key, dir: "asc" },
     );
   };
