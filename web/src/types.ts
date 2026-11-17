@@ -391,6 +391,10 @@ export interface TaxAsset {
   deferredLossEur: number;
   deferred: boolean;
   review: boolean;
+  /** Some sale has no known purchase or no official FX rate: not final. */
+  incomplete?: boolean;
+  /** False for unlisted securities, whose repurchase window is a year. */
+  listed?: boolean;
   disposals: TaxDisposal[];
 }
 
@@ -400,9 +404,20 @@ export interface TaxDividendPayment {
   name: string | null;
   currency: string;
   grossEur: number;
-  /** Withholding suffered abroad — the base of the double-taxation deduction. */
+  /** Everything withheld at source. */
   withholdingEur: number;
   netEur: number;
+  isin?: string | null;
+  /** Country of the paying company (ISIN prefix unless overridden). */
+  country?: string | null;
+  treatyRatePct?: number | null;
+  /** Withholding Spain credits: capped at the treaty rate. */
+  creditableEur?: number;
+  /** Withheld above the treaty rate — reclaimed from the source country. */
+  excessEur?: number;
+  spanishWithholdingEur?: number;
+  fxSource?: string;
+  incomplete?: boolean;
 }
 
 export interface TaxStakingReward {
@@ -427,7 +442,15 @@ export type TaxNoticeId =
   | "traspaso-degiro"
   | "staking-sin-precio"
   | "regla-dos-meses"
-  | "regla-dos-meses-cripto";
+  | "regla-dos-meses-cripto"
+  | "regla-dos-meses-reintegro"
+  | "sin-tipo-oficial"
+  | "tipo-cambio-desviado"
+  | "dividendo-pais-desconocido"
+  | "dividendo-pais-dudoso"
+  | "exceso-retencion"
+  | "sin-reglas"
+  | "perdidas-caducadas";
 
 export interface TaxNotice {
   id: TaxNoticeId | string;
@@ -452,8 +475,11 @@ export interface TaxYear {
      * repurchase blocking them was sold. Part of `netEur`, but of no single
      * asset row's `computableResultEur`. */
     reintegratedLossEur: number;
-    /** Savings-base brackets applied in isolation — an estimate, not the bill. */
-    estimatedTaxEur: number;
+    /** Tax on the whole savings base (gains + investment income) after loss
+     * offsetting and the double-taxation credit — an estimate, not the bill.
+     * Null for a year with no known savings scale. */
+    estimatedTaxEur: number | null;
+    incomplete?: boolean;
     byAsset: TaxAsset[];
   };
   investmentIncome: {
@@ -461,6 +487,12 @@ export interface TaxYear {
       grossEur: number;
       withholdingEur: number;
       netEur: number;
+      foreignGrossEur?: number;
+      creditableEur?: number;
+      excessEur?: number;
+      spanishWithholdingEur?: number;
+      excessByCountry?: { country: string; amountEur: number; treatyRatePct: number }[];
+      incomplete?: boolean;
       payments: TaxDividendPayment[];
     };
     staking: {
@@ -469,8 +501,36 @@ export interface TaxYear {
       rewards: TaxStakingReward[];
     };
   };
+  /** Base del ahorro under art. 49 LIRPF, as integrate_savings writes it. */
+  savings?: TaxSavings;
   checks: TaxNotice[];
   warnings: TaxNotice[];
+}
+
+export interface TaxPendingBalance {
+  originYear: number;
+  block: "gp" | "rcm";
+  amountEur: number;
+}
+
+export interface TaxSavings {
+  gainsBlockEur: number;
+  incomeBlockEur: number;
+  crossOffsetEur: number;
+  pendingApplied: { originYear: number; block: "gp" | "rcm"; ownBlockEur: number; otherBlockEur: number }[];
+  pendingCarried: TaxPendingBalance[];
+  pendingExpired: TaxPendingBalance[];
+  gainsInBaseEur: number;
+  incomeInBaseEur: number;
+  baseEur: number;
+  scaleKnown: boolean;
+  cuotaEur: number | null;
+  averageRatePct: number | null;
+  foreignIncomeInBaseEur: number;
+  creditableForeignTaxEur: number;
+  doubleTaxDeductionEur: number | null;
+  cuotaAfterDeductionEur: number | null;
+  treatySource: string;
 }
 
 export interface TaxTrade {

@@ -140,7 +140,8 @@ const en = {
     gains: "Gains",
     losses: "Losses",
     estimatedTax: "Estimated tax",
-    estimatedTaxNote: "savings base, in isolation",
+    estimatedTaxNote: "savings base, offsets and treaty credit applied",
+    estimatedTaxUnknown: "no rules for this year",
     deferred: "Deferred loss",
     deferredNote: "two-month repurchase rule",
     reintegrated: "Released loss",
@@ -159,7 +160,7 @@ const en = {
       "comisiones-no-deducibles": (p: NoticeParams) =>
         `${eur(p.amountEur)} of connectivity and custody fees in ${p.year}. Not deductible in this tax: only buy and sell commissions count, and those are already inside the acquisition and disposal values.`,
       "lote-descubierto": (p: NoticeParams) =>
-        `${p.symbol}: ${qty(p.quantity)} units sold on ${p.date} with no purchase lot behind them. They are declared at an acquisition value of 0 — add the purchase to manual_trades.json to fix it.`,
+        `${p.symbol}: ${qty(p.quantity)} units sold on ${p.date} with no known purchase. The sale is incomplete and its section of the return is blocked: don't fill it in until the purchase is in manual_trades.json (at a cost of 0 you would overpay).`,
       "traspaso-degiro": (p: NoticeParams) =>
         `${p.symbol}: the ${p.date} entry is flagged as a transfer in DEGIRO. Check that the acquisition value is the original one and not the transfer's.`,
       "staking-sin-precio": (p: NoticeParams) =>
@@ -172,6 +173,20 @@ const en = {
         `${p.symbol}: ${eur(p.amountEur)} of loss blocked on the ${p.lossDate} sale is released — on ${p.date} you sold ${qty(p.quantity)} of the repurchased shares, so that part now counts. It sits apart from this sale's own result.`,
       "regla-dos-meses-cripto": (p: NoticeParams) =>
         `${p.symbol}: ${eur(p.lossEur)} loss on ${p.date} with purchases on ${days(p.repurchases)}. Check whether the repurchase rule applies to virtual currencies before counting it.`,
+      "sin-tipo-oficial": (p: NoticeParams) =>
+        `${p.symbol}: no ECB rate for ${p.currency} on ${p.date}. The operation is left incomplete rather than converted at an unofficial rate.`,
+      "tipo-cambio-desviado": (p: NoticeParams) =>
+        `${p.symbol}: the trade of ${p.date} implies ${Number(p.brokerRate).toFixed(6)} EUR/${p.currency}, ${Number(p.deviationPct).toFixed(2)}% away from the ECB (${Number(p.ecbRate).toFixed(6)}). Probably a misread figure: the ECB rate is used.`,
+      "dividendo-pais-desconocido": (p: NoticeParams) =>
+        `${p.symbol}: ${p.country ? `no treaty rate on file for ${p.country}` : "unknown source country"} for the ${p.date} dividend, so the treaty cap can't be applied and all the withholding is credited. Set the country in dividendCountries in manual_trades.json.`,
+      "dividendo-pais-dudoso": (p: NoticeParams) =>
+        `${p.symbol}: looks like a depositary receipt (ADR/GDR). What counts is the company's country, not the ISIN's (${p.country}); confirm it in dividendCountries in manual_trades.json.`,
+      "exceso-retencion": (p: NoticeParams) =>
+        `${p.country}: ${eur(p.amountEur)} was withheld above the ${p.ratePct}% treaty rate in ${p.year}. Spain doesn't credit that part — reclaim it from ${p.country}'s tax office.`,
+      "sin-reglas": (p: NoticeParams) =>
+        `No rules for ${p.what} in ${p.year}: that figure is left out rather than guessed.`,
+      "perdidas-caducadas": (p: NoticeParams) =>
+        `${eur(p.amountEur)} of ${p.block === "gp" ? "capital losses" : "negative investment income"} from ${p.origin} expires: ${p.year} is the fourth and last year to offset it.`,
     } as Record<string, (p: NoticeParams) => string>,
     noticesAria: "Notices",
     disposalsTitle: "What to declare, per asset",
@@ -192,6 +207,7 @@ const en = {
     deferredBadge: "deferred",
     partlyDeferredBadge: "partly deferred",
     reviewBadge: "review",
+    incompleteBadge: "incomplete",
     computableTotal: "Computable total",
     reintegratedRow: "Earlier year's loss released",
     reintegratedFrom: (date: string, qty: string) =>

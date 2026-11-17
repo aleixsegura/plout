@@ -654,6 +654,9 @@ def load_cost_basis() -> dict[str, dict]:
 #                  the fee; the crypto leg's `counterpart.amount` is the *net*
 #                  proceeds, which is why the fiat leg is the one read here —
 #                  tax law wants the gross and the fee apart, not netted.
+#   EXCHANGE       a buy or sell in the regular app (EUR -> BTC). Only the
+#                  crypto leg is in the queried pockets; its `counterpart`
+#                  carries the fiat amount on the other side.
 #   TOPUP          coins arriving from an outside wallet (the Bybit transfer).
 #                  Moving your own coins is not an acquisition, so this is
 #                  recorded as a deposit: the cost basis stays with the
@@ -675,6 +678,73 @@ def _ledger_date(row: dict) -> str:
         datetime.fromtimestamp(millis / 1000, tz=timezone.utc)
         .astimezone()
         .isoformat(timespec="seconds")
+    )
+
+
+def _exchange_trade(
+    completed: list[dict], ccy: Currencies, *, need_fiat_leg: bool = False
+) -> tuple[dict | None, str | None]:
+    """One crypto trade from the completed legs of an exchange group.
+
+    Returns (trade, None), or (None, reason) when the legs can't make one.
+    The fiat side comes from the fiat leg when the group carries it (Revolut X
+    trades always do, since its fiat pockets are queried). A buy or sell in the
+    regular app is booked against the EUR current pocket, which the ledger does
+    not query, so there the crypto leg's `counterpart` — the fiat amount on the
+    other side — stands in for it. Revolut X passes need_fiat_leg: there the
+    counterpart is the *net* amount, and the fee must be kept apart.
+    """
+    crypto_legs = [l for l in completed if ccy.is_crypto(l.get("currency", ""))]
+    fiat = next((l for l in completed if not ccy.is_crypto(l.get("currency", ""))), None)
+    if not crypto_legs:
+        return None, "fiat-only"
+    if len(crypto_legs) > 1:
+        # Coin-for-coin swaps are a disposal and an acquisition at once; they
+        # need both legs valued in EUR, which nothing here does yet.
+        return None, "crypto-swap"
+    crypto = crypto_legs[0]
+    symbol = crypto["currency"]
+    quantity = abs(ccy.amount(crypto.get("amount", 0), symbol))
+    if not quantity:
+        return None, "incomplete"
+
+    if fiat is None and need_fiat_leg:
+        return None, "incomplete"
+    if fiat is not None:
+        fiat_ccy = fiat["currency"]
+        gross = abs(ccy.amount(fiat.get("amount", 0), fiat_ccy))
+        fee = abs(ccy.amount(fiat.get("fee", 0), fiat_ccy))
+    else:
+        counterpart = crypto.get("counterpart") or {}
+        fiat_ccy = str(counterpart.get("currency") or "")
+        if not fiat_ccy or ccy.is_crypto(fiat_ccy) or not counterpart.get("amount"):
+            return None, "incomplete"
+        gross = abs(ccy.amount(counterpart["amount"], fiat_ccy))
+        # A fee booked on the crypto leg is in coin units; value it at the
+        # trade's own price so it lands in the same currency as the gross.
+        fee_coins = abs(ccy.amount(crypto.get("fee", 0), symbol)) if crypto.get("fee") else 0.0
+        fee = fee_coins * gross / quantity
+    if not gross:
+        return None, "incomplete"
+
+    return (
+        {
+            "id": crypto.get("id"),
+            "platform": "Revolut",
+            "date": _ledger_date(crypto),
+            "side": "sell" if crypto.get("amount", 0) < 0 else "buy",
+            "symbol": symbol,
+            "name": ccy.name(symbol),
+            "quantity": round(quantity, 10),
+            "currency": fiat_ccy,
+            # Gross first, fee apart: taxes.py subtracts the fee
+            # itself to reach the disposal value.
+            "grossAmount": round(gross, 2),
+            "feeAmount": round(fee, 2),
+            "price": _round_price(gross / quantity),
+            "description": crypto.get("description"),
+        },
+        None,
     )
 
 
@@ -708,36 +778,17 @@ def build_crypto_ledger(rows: list[dict], ccy: Currencies) -> dict:
             ignored[f"{kind}:not-completed"] = ignored.get(f"{kind}:not-completed", 0) + 1
             continue
 
-        if kind == "REVX_EXCHANGE":
-            crypto = next((l for l in completed if ccy.is_crypto(l.get("currency", ""))), None)
-            fiat = next((l for l in completed if not ccy.is_crypto(l.get("currency", ""))), None)
-            if crypto is None or fiat is None:
-                ignored["REVX_EXCHANGE:incomplete"] = (
-                    ignored.get("REVX_EXCHANGE:incomplete", 0) + 1
-                )
-                continue
-            symbol = crypto["currency"]
-            quantity = abs(ccy.amount(crypto.get("amount", 0), symbol))
-            gross = abs(ccy.amount(fiat.get("amount", 0), fiat["currency"]))
-            fee = abs(ccy.amount(fiat.get("fee", 0), fiat["currency"]))
-            trades.append(
-                {
-                    "id": crypto.get("id"),
-                    "platform": "Revolut",
-                    "date": _ledger_date(crypto),
-                    "side": "sell" if crypto.get("amount", 0) < 0 else "buy",
-                    "symbol": symbol,
-                    "name": ccy.name(symbol),
-                    "quantity": round(quantity, 10),
-                    "currency": fiat["currency"],
-                    # Gross first, fee apart: taxes.py subtracts the fee
-                    # itself to reach the disposal value.
-                    "grossAmount": round(gross, 2),
-                    "feeAmount": round(fee, 2),
-                    "price": _round_price(gross / quantity) if quantity else None,
-                    "description": crypto.get("description"),
-                }
+        if kind in ("REVX_EXCHANGE", "EXCHANGE"):
+            trade, problem = _exchange_trade(
+                completed, ccy, need_fiat_leg=kind == "REVX_EXCHANGE"
             )
+            if problem == "fiat-only":
+                # A plain currency exchange (EUR -> USD) touches no crypto.
+                continue
+            if trade is None:
+                ignored[f"{kind}:{problem}"] = ignored.get(f"{kind}:{problem}", 0) + 1
+                continue
+            trades.append(trade)
         elif kind == "TOPUP":
             for leg in completed:
                 symbol = leg.get("currency", "")
@@ -779,7 +830,9 @@ def build_crypto_ledger(rows: list[dict], ccy: Currencies) -> dict:
     }
 
 
-def build_positions(captured: dict[str, list[Any]], ccy: Currencies) -> list[dict]:
+def build_positions(
+    captured: dict[str, list[Any]], ccy: Currencies, trades: list[dict] | None = None
+) -> list[dict]:
     # Aggregate crypto across pockets of the same currency (a coin can sit in
     # both a CURRENT and a STAKING pocket).
     qty_by_symbol: dict[str, float] = {}
@@ -818,26 +871,85 @@ def build_positions(captured: dict[str, list[Any]], ccy: Currencies) -> list[dic
                 round(quantity * (price - prev_price), 2) if prev_price is not None else None
             ),
         }
-        # Fold in a manual cost basis when one is configured: cost is the
-        # current quantity at the average unit price (avg-cost method),
-        # converted to EUR so P&L is comparable with DEGIRO's EUR figures.
-        entry = cost_basis.get(symbol)
-        if entry is not None:
-            avg_price = float(entry["avgPrice"])
-            avg_ccy = str(entry.get("currency", "EUR")).upper()
-            rate = spot_price(avg_ccy, "EUR")
-            if rate:
-                cost_eur = round(quantity * avg_price * rate, 2)
-                pos["avgPrice"] = avg_price
-                pos["avgPriceCurrency"] = avg_ccy
-                pos["costEur"] = cost_eur
-                pos["plEur"] = None if value_eur is None else round(value_eur - cost_eur, 2)
-            else:
-                print(f"  warning: no {avg_ccy}->EUR rate for {symbol} cost basis; reporting without P&L.")
         positions.append(pos)
 
+    fold_cost_basis(positions, cost_basis, trades or [])
     positions.sort(key=lambda p: -(p["valueEur"] or 0))
     return positions
+
+
+def blend_cost_eur(
+    quantity: float, base_avg_eur: float, trades: list[dict], to_eur
+) -> float:
+    """EUR cost of `quantity` coins under the average-cost method.
+
+    `base_avg_eur` is the hand-kept average, which covers every coin held
+    before `trades` (and staking rewards since, which stay in that pool as
+    they always have). The trades are folded in oldest first: a buy adds what
+    was paid, fee included; a sell takes coins out at the running average and
+    leaves it unchanged. `to_eur(currency)` converts a trade's currency.
+    """
+    bought = sum(t["quantity"] for t in trades if t["side"] == "buy")
+    sold = sum(t["quantity"] for t in trades if t["side"] == "sell")
+    pool_qty = max(quantity - bought + sold, 0.0)
+    pool_cost = pool_qty * base_avg_eur
+    for t in sorted(trades, key=lambda t: t["date"]):
+        if t["side"] == "buy":
+            rate = to_eur(t["currency"])
+            pool_cost += (t["grossAmount"] + t["feeAmount"]) * rate
+            pool_qty += t["quantity"]
+        elif pool_qty > 0:
+            take = min(t["quantity"], pool_qty)
+            pool_cost -= pool_cost / pool_qty * take
+            pool_qty -= take
+    # Rounding, or a sell the pool didn't cover, can leave the pool a hair
+    # off the live balance: price the live balance at the pool's average.
+    return pool_cost / pool_qty * quantity if pool_qty > 0 else 0.0
+
+
+def fold_cost_basis(positions: list[dict], cost_basis: dict[str, dict], trades: list[dict]) -> None:
+    """Add avgPrice / costEur / plEur to each position with a cost basis.
+
+    The hand-kept avgPrice in crypto_cost_basis.json holds for the coins held
+    on its `asOf` date. Buys and sells in Revolut's ledger after that date are
+    blended in automatically, so a new buy moves the average without editing
+    the file. An entry with no `asOf` is taken as-is, as before: nothing tells
+    which ledger trades it already includes. Everything is converted to EUR so
+    P&L is comparable with DEGIRO's EUR figures.
+    """
+    for pos in positions:
+        symbol = pos["symbol"]
+        entry = cost_basis.get(symbol)
+        if entry is None:
+            continue
+        quantity = pos["quantity"]
+        avg_price = float(entry["avgPrice"])
+        avg_ccy = str(entry.get("currency", "EUR")).upper()
+        rate = spot_price(avg_ccy, "EUR")
+        if not rate:
+            print(f"  warning: no {avg_ccy}->EUR rate for {symbol} cost basis; reporting without P&L.")
+            continue
+        as_of = str(entry.get("asOf") or "")
+        later = [
+            t for t in trades
+            if as_of and t.get("symbol") == symbol and str(t.get("date", ""))[:10] > as_of
+        ]
+        rates_ok = all(spot_price(t["currency"], "EUR") for t in later)
+        if later and rates_ok:
+            cost_eur = blend_cost_eur(
+                quantity, avg_price * rate, later, lambda c: spot_price(c, "EUR") or 0.0
+            )
+            avg_price = _round_price(cost_eur / quantity / rate) if quantity else avg_price
+        else:
+            if later:
+                print(f"  warning: missing an FX rate for a {symbol} trade; using the manual average only.")
+            cost_eur = quantity * avg_price * rate
+        cost_eur = round(cost_eur, 2)
+        pos["avgPrice"] = avg_price
+        pos["avgPriceCurrency"] = avg_ccy
+        pos["costEur"] = cost_eur
+        value_eur = pos.get("valueEur")
+        pos["plEur"] = None if value_eur is None else round(value_eur - cost_eur, 2)
 
 
 # ── Account transactions (spending, income, savings interest) ──────────────────
@@ -1299,7 +1411,7 @@ def write_transactions(
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 
-def write_crypto_ledger(context, headers, captured, ccy: Currencies, out_dir: Path) -> None:
+def write_crypto_ledger(context, headers, captured, ccy: Currencies, out_dir: Path) -> dict | None:
     """Fetch and write data/revolut_trades.json.
 
     Pockets are not filtered by state: a closed pocket still holds the history
@@ -1309,7 +1421,7 @@ def write_crypto_ledger(context, headers, captured, ccy: Currencies, out_dir: Pa
     """
     if not headers:
         print("  warning: never saw the app's transactions call — no ledger exported.")
-        return
+        return None
 
     pockets = [
         p
@@ -1319,7 +1431,7 @@ def write_crypto_ledger(context, headers, captured, ccy: Currencies, out_dir: Pa
     ]
     if not pockets:
         print("  no crypto pockets — no ledger to export.")
-        return
+        return None
 
     rows = fetch_pocket_transactions(context, headers, pockets)
     ledger = build_crypto_ledger(rows, ccy)
@@ -1355,6 +1467,7 @@ def write_crypto_ledger(context, headers, captured, ccy: Currencies, out_dir: Pa
         print(f"  {len(ledger['rewards'])} staking rewards: {summary}")
     if ledger["ignoredTypes"]:
         print(f"  skipped: {ledger['ignoredTypes']}")
+    return ledger
 
 
 def main() -> None:
@@ -1436,9 +1549,22 @@ def main() -> None:
     # and what did it make", which the snapshot above structurally cannot. A
     # failure here must never cost us the snapshot that already succeeded.
     try:
-        write_crypto_ledger(context, headers, captured, ccy, out_dir)
+        ledger = write_crypto_ledger(context, headers, captured, ccy, out_dir)
     except Exception as exc:
+        ledger = None
         print(f"  warning: could not export the crypto ledger ({exc})", file=sys.stderr)
+
+    # With the ledger in hand, blend buys made since the hand-kept average
+    # into each position's cost, and rewrite the snapshot with it.
+    if ledger and ledger["trades"]:
+        try:
+            fold_cost_basis(positions, load_cost_basis(), ledger["trades"])
+            out_file.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+            for p in positions:
+                if p.get("avgPrice") is not None:
+                    print(f"  {p['symbol']} avg price {p['avgPrice']:,.2f} {p['avgPriceCurrency']}")
+        except Exception as exc:
+            print(f"  warning: could not blend ledger trades into the cost basis ({exc})", file=sys.stderr)
 
     # Third output, same rule: the bank statement and the savings interest.
     if not args.no_transactions:

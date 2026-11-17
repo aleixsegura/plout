@@ -287,8 +287,12 @@ function YearPanel({ year }: { year: TaxYear }) {
         </div>
         <div className={CARD}>
           <span className={LABEL}>{t.taxes.estimatedTax}</span>
-          <span className={VALUE}>{eur.format(gains.estimatedTaxEur)}</span>
-          <span className={SUB}>{t.taxes.estimatedTaxNote}</span>
+          <span className={VALUE}>
+            {gains.estimatedTaxEur == null ? "—" : eur.format(gains.estimatedTaxEur)}
+          </span>
+          <span className={SUB}>
+            {gains.estimatedTaxEur == null ? t.taxes.estimatedTaxUnknown : t.taxes.estimatedTaxNote}
+          </span>
         </div>
         {gains.deferredLossEur !== 0 && (
           <div className={CARD}>
@@ -488,6 +492,9 @@ function AssetTable({ assets }: { assets: TaxAsset[] }) {
                         ? t.taxes.deferredBadge
                         : t.taxes.partlyDeferredBadge}
                     </span>
+                  )}
+                  {asset.incomplete && (
+                    <span className="ml-1.5 text-xs text-loss">{t.taxes.incompleteBadge}</span>
                   )}
                   {asset.review && (
                     <span className="ml-1.5 text-xs text-muted">{t.taxes.reviewBadge}</span>

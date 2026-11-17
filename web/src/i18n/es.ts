@@ -139,7 +139,8 @@ const es: Translations = {
     gains: "Ganancias",
     losses: "Pérdidas",
     estimatedTax: "Cuota estimada",
-    estimatedTaxNote: "base del ahorro, aislada",
+    estimatedTaxNote: "base del ahorro, con compensaciones y doble imposición",
+    estimatedTaxUnknown: "sin reglas para este año",
     deferred: "Pérdida diferida",
     deferredNote: "regla de los dos meses",
     reintegrated: "Pérdida recuperada",
@@ -158,7 +159,7 @@ const es: Translations = {
       "comisiones-no-deducibles": (p: NoticeParams) =>
         `${eur(p.amountEur)} de comisiones de conectividad y custodia en ${p.year}. No son deducibles en el IRPF: solo entran las comisiones de compra y de venta, y esas ya están dentro de los valores de adquisición y transmisión.`,
       "lote-descubierto": (p: NoticeParams) =>
-        `${p.symbol}: ${qty(p.quantity)} unidades vendidas el ${p.date} sin lote de adquisición detrás. Se declaran con valor de adquisición 0 — añade la compra a manual_trades.json para corregirlo.`,
+        `${p.symbol}: ${qty(p.quantity)} unidades vendidas el ${p.date} sin compra conocida. La venta queda incompleta y su apartado bloqueado: no lo rellenes hasta añadir la compra a manual_trades.json (con coste 0 pagarías de más).`,
       "traspaso-degiro": (p: NoticeParams) =>
         `${p.symbol}: la entrada del ${p.date} está marcada como traspaso en DEGIRO. Comprueba que el valor de adquisición es el original y no el del traspaso.`,
       "staking-sin-precio": (p: NoticeParams) =>
@@ -171,6 +172,20 @@ const es: Translations = {
         `${p.symbol}: se integran ${eur(p.amountEur)} de pérdida que quedaron bloqueados en la venta del ${p.lossDate} — el ${p.date} vendiste ${qty(p.quantity)} de los títulos recomprados, así que esa parte ya es computable. Va aparte del resultado de esta venta.`,
       "regla-dos-meses-cripto": (p: NoticeParams) =>
         `${p.symbol}: pérdida de ${eur(p.lossEur)} el ${p.date} con compras el ${days(p.repurchases)}. Revisa si aplica la regla de recompra a monedas virtuales antes de computarla.`,
+      "sin-tipo-oficial": (p: NoticeParams) =>
+        `${p.symbol}: no hay tipo de cambio del BCE para ${p.currency} el ${p.date}. La operación queda incompleta: no se convierte con un tipo no oficial.`,
+      "tipo-cambio-desviado": (p: NoticeParams) =>
+        `${p.symbol}: la operación del ${p.date} implica ${Number(p.brokerRate).toFixed(6)} EUR/${p.currency}, un ${Number(p.deviationPct).toFixed(2)} % lejos del BCE (${Number(p.ecbRate).toFixed(6)}). Probablemente el dato está mal leído: se usa el BCE.`,
+      "dividendo-pais-desconocido": (p: NoticeParams) =>
+        `${p.symbol}: ${p.country ? `no hay tipo de convenio registrado para ${p.country}` : "no se sabe de qué país es"} el dividendo del ${p.date}, así que no se aplica el tope del convenio y se deduce todo lo retenido. Indica el país en dividendCountries de manual_trades.json.`,
+      "dividendo-pais-dudoso": (p: NoticeParams) =>
+        `${p.symbol}: parece un certificado de depósito (ADR/GDR). Cuenta el país de la sociedad, no el del ISIN (${p.country}); confírmalo en dividendCountries de manual_trades.json.`,
+      "exceso-retencion": (p: NoticeParams) =>
+        `${p.country}: se retuvieron ${eur(p.amountEur)} por encima del ${p.ratePct} % del convenio en ${p.year}. Eso no se deduce en España: se reclama a la administración de ${p.country}.`,
+      "sin-reglas": (p: NoticeParams) =>
+        `No hay reglas de ${p.what} para ${p.year}: esa cifra no se estima en vez de dar una equivocada.`,
+      "perdidas-caducadas": (p: NoticeParams) =>
+        `Caducan ${eur(p.amountEur)} de saldo negativo de ${p.block === "gp" ? "ganancias y pérdidas" : "rendimientos del capital mobiliario"} de ${p.origin}: ${p.year} es el cuarto y último año para compensarlo.`,
     } as Record<string, (p: NoticeParams) => string>,
     noticesAria: "Avisos",
     disposalsTitle: "Qué declarar, por activo",
@@ -191,6 +206,7 @@ const es: Translations = {
     deferredBadge: "diferida",
     partlyDeferredBadge: "parcialmente diferida",
     reviewBadge: "revisar",
+    incompleteBadge: "incompleta",
     computableTotal: "Total computable",
     reintegratedRow: "Pérdida de ejercicios anteriores que se recupera",
     reintegratedFrom: (date: string, qty: string) =>

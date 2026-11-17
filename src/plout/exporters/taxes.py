@@ -50,44 +50,52 @@ import urllib.request
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 
 from degiro_connector.trading.models.transaction import HistoryRequest
 
 from plout.config import PROJECT_ROOT
 from plout.exporters.degiro import connect, fetch_product_meta
-from plout.exporters.dividends import to_eur
+from plout.exporters.ecb import EcbHistory
+from plout.exporters.renta_casillas import annotate_pack, load_dictionary
 from plout.exporters.revolut import crypto_price_eur, crypto_price_eur_at
-
-# Quantities carry 8 decimals for crypto, so exact float comparison never
-# holds and matching a sale against a dozen lots leaves float dust behind.
-# Anything below a hundredth of the smallest real unit is treated as zero.
-EPS = 1e-9
-# What counts as "nothing left" once a whole FIFO queue has been drained: the
-# dust from summing a dozen lots lands around 1e-8, well under any real holding.
-QTY_EPS = 1e-6
-
-# Base imponible del ahorro. Only ever an estimate here: the real rate depends
-# on the rest of your income, which this repo knows nothing about.
-SAVINGS_BRACKETS = (
-    (6_000.0, 0.19),
-    (50_000.0, 0.21),
-    (200_000.0, 0.23),
-    (300_000.0, 0.27),
-    (None, 0.30),
+from plout.exporters.tax_rules import (
+    MODELO_720_THRESHOLDS,
+    MODELO_721_THRESHOLDS,
+    TREATY_RATES,
+    TREATY_SOURCE,
+    ZERO,
+    Pending,
+    average_rate_pct,
+    cents,
+    creditable_tax,
+    dec,
+    dividend_country,
+    double_tax_deduction,
+    integrate,
+    modelo_threshold,
+    money,
+    savings_tax,
 )
 
-# Modelo 721 (informative declaration for virtual currencies held abroad).
-MODELO_721_THRESHOLD = 50_000.0
-# Modelo 720, the same idea for everything else held abroad. Its threshold is
-# per *block* rather than on the total — accounts, securities and property are
-# each measured against it on their own — so the check reports them apart.
-# Crypto is deliberately not one of the blocks: it moved to the 721 when that
-# form was created, and counting it here would double-declare it.
-MODELO_720_THRESHOLD = 50_000.0
+# Amounts and quantities are Decimal inside this module and float only in the
+# JSON it writes: every float that comes in goes through `dec`, so there is no
+# float dust to absorb and no epsilon to tune. Money is rounded to the cent
+# once, on the figures that are declared — never lot by lot before adding up.
 
 MANUAL_FILE = PROJECT_ROOT / "manual_trades.json"
 BYBIT_FILE = PROJECT_ROOT / "bybit.csv"
+
+
+def qty(value) -> float:
+    """A quantity for JSON: exact, up to the 10 decimals any source carries."""
+    return float(dec(value).quantize(Decimal("1e-10")))
+
+
+def total(values) -> float:
+    """Cent-rounded sum of already-declared figures."""
+    return money(sum((dec(v) for v in values), ZERO))
 
 
 # ── FX ─────────────────────────────────────────────────────────────────────────
@@ -103,25 +111,46 @@ FX_ENDPOINTS = (
     "https://api.frankfurter.app/{day}?base={base}&symbols=EUR",
 )
 
+# When frankfurter is down, the same series straight from the ECB, kept on
+# disk. Never a market price: a conversion with no official rate is left
+# incomplete instead — see `fx_to_eur`.
+ECB_HISTORY = EcbHistory(PROJECT_ROOT / "data" / "ecb" / "eurofxref-hist.csv")
 
-def fx_to_eur(currency: str, day: str) -> tuple[float, str, str]:
-    """Rate to convert `currency` into EUR on `day`, with its provenance.
 
-    Returns (rate, source, rate_date). Falls back to the Coinbase spot the
-    other exporters already use, so a frankfurter outage degrades the
-    provenance rather than sinking the export.
-    """
+def _fx_base(currency: str) -> str:
     # USDC and USDT are dollar-pegged and have no ECB series of their own; the
     # Bybit statement quotes them one-for-one with the dollar.
-    base = "USD" if currency.upper() in ("USD", "USDC", "USDT", "BUSD") else currency.upper()
+    return "USD" if currency.upper() in ("USD", "USDC", "USDT", "BUSD") else currency.upper()
+
+
+def fx_to_eur(currency: str, day: str, prefer_local: bool = False) -> tuple[float, str, str] | None:
+    """ECB rate to convert `currency` into EUR on `day`, with its provenance.
+
+    Returns (rate, source, rate_date), or None when no official rate exists
+    for that currency and day. There is deliberately no market-price fallback:
+    a tax figure converted at an unofficial rate looks exactly as definitive
+    as a correct one, so the caller marks the operation incomplete instead.
+
+    `prefer_local` reads the ECB file first — for bulk checks where a hundred
+    HTTP calls would buy nothing the file doesn't already have.
+    """
+    base = _fx_base(currency)
     if base == "EUR":
         return 1.0, "identity", day
 
     key = (base, day)
     if key in _fx_cache:
-        cached = _fx_cache[key]
-        if cached:
-            return cached
+        return _fx_cache[key]
+
+    def local():
+        found = ECB_HISTORY.rate(base, day)
+        return (found[0], "ecb-file", found[1]) if found else None
+
+    if prefer_local:
+        result = local()
+        if result:
+            _fx_cache[key] = result
+            return result
 
     for template in FX_ENDPOINTS:
         url = template.format(day=day, base=base)
@@ -136,13 +165,12 @@ def fx_to_eur(currency: str, day: str) -> tuple[float, str, str]:
         except Exception:
             continue
 
-    print(f"  warning: no ECB rate for {base} on {day}; falling back to Coinbase spot.",
-          file=sys.stderr)
-    converted = to_eur(1.0, base, day)
-    result = (converted, "coinbase", day)
+    result = local()
+    if result is None:
+        print(f"  warning: no ECB rate for {base} on {day}; the operation is left incomplete.",
+              file=sys.stderr)
     _fx_cache[key] = result
     return result
-
 
 
 # ── Notices ────────────────────────────────────────────────────────────────────
@@ -159,6 +187,10 @@ def _es(value: float) -> str:
 
 def _es_qty(value: float) -> str:
     return f"{value:.8f}".rstrip("0").rstrip(".").replace(".", ",")
+
+
+def _window(p: dict) -> str:
+    return "regla de los dos meses" if p.get("months", 2) == 2 else "regla del año, valores no cotizados"
 
 
 NOTICE_TEXT = {
@@ -180,9 +212,47 @@ NOTICE_TEXT = {
         f"están dentro de los valores de adquisición y transmisión."
     ),
     "lote-descubierto": lambda p: (
-        f"{p['symbol']}: {_es_qty(p['quantity'])} unidades vendidas el {p['date']} sin lote de "
-        f"adquisición. Se declaran con valor de adquisición 0 — añade la compra a "
-        f"manual_trades.json para corregirlo."
+        f"{p['symbol']}: {_es_qty(p['quantity'])} unidades vendidas el {p['date']} sin compra "
+        f"conocida. La venta queda incompleta y su apartado bloqueado: no lo rellenes hasta "
+        f"añadir la compra a manual_trades.json (con coste 0 pagarías de más)."
+    ),
+    "sin-tipo-oficial": lambda p: (
+        f"{p['symbol']}: no hay tipo de cambio del BCE para {p['currency']} el {p['date']}. "
+        f"La operación queda incompleta: no se convierte con un tipo no oficial."
+    ),
+    "tipo-cambio-desviado": lambda p: (
+        f"{p['symbol']}: el cambio implícito de la operación del {p['date']} "
+        f"({p['brokerRate']:.6f} EUR/{p['currency']}) se desvía un {_es(p['deviationPct'])} % "
+        f"del BCE ({p['ecbRate']:.6f}). Probablemente el dato está mal leído: se usa el BCE."
+    ),
+    "dividendo-pais-desconocido": lambda p: (
+        (
+            f"{p['symbol']}: no se sabe de qué país es el dividendo del {p['date']}"
+            if not p.get("country")
+            else f"{p['symbol']}: no hay tipo de convenio registrado para {p['country']} "
+            f"(dividendo del {p['date']})"
+        )
+        + ", así que no se puede aplicar el tope del convenio y se deduce todo lo retenido. "
+        "Indica el país en `dividendCountries` de manual_trades.json o revisa el convenio."
+    ),
+    "dividendo-pais-dudoso": lambda p: (
+        f"{p['symbol']}: parece un certificado de depósito (ADR/GDR). El país que cuenta es el "
+        f"de la sociedad, no el del ISIN ({p['country'] or '—'}); confírmalo en "
+        f"`dividendCountries` de manual_trades.json."
+    ),
+    "exceso-retencion": lambda p: (
+        f"{p['country']}: se retuvieron {_es(p['amountEur'])} € por encima del "
+        f"{_es(p['ratePct'])} % del convenio en {p['year']}. Eso no se deduce en España: "
+        f"se reclama a la administración de {p['country']}."
+    ),
+    "sin-reglas": lambda p: (
+        f"No hay reglas de {p['what']} para {p['year']}: no se estima esa cifra en vez de "
+        f"dar una equivocada."
+    ),
+    "perdidas-caducadas": lambda p: (
+        f"Caducan {_es(p['amountEur'])} € de saldo negativo de "
+        f"{'ganancias y pérdidas' if p['block'] == 'gp' else 'rendimientos del capital mobiliario'}"
+        f" de {p['origin']}: en {p['year']} se cumplen los 4 años para compensarlo."
     ),
     "traspaso-degiro": lambda p: (
         f"{p['symbol']}: la entrada del {p['date']} está marcada como traspaso en DEGIRO; "
@@ -196,15 +266,15 @@ NOTICE_TEXT = {
         (
             f"{p['symbol']}: la pérdida de {_es(p['lossEur'])} € del {p['date']} no es computable "
             f"este ejercicio — recompra de valores homogéneos el {', '.join(p['repurchases'])} "
-            f"(regla de los dos meses). Se integrará cuando vendas esos valores."
+            f"({_window(p)}). Se integrará cuando vendas esos valores."
         )
         if p["deferredEur"] == p["lossEur"]
         else (
             f"{p['symbol']}: de la pérdida de {_es(p['lossEur'])} € del {p['date']}, "
             f"{_es(p['deferredEur'])} € no son computables este ejercicio — de los "
             f"{_es_qty(p['soldQuantity'])} títulos vendidos recompraste "
-            f"{_es_qty(p['quantity'])} el {', '.join(p['repurchases'])} (regla de los dos "
-            f"meses). Los {_es(p['computableEur'])} € restantes sí se computan; la parte "
+            f"{_es_qty(p['quantity'])} el {', '.join(p['repurchases'])} ({_window(p)}). "
+            f"Los {_es(p['computableEur'])} € restantes sí se computan; la parte "
             f"diferida se integrará cuando vendas esos valores."
         )
     ),
@@ -258,28 +328,40 @@ class Lot:
     `quantity`: what was paid plus the fees inherent to the purchase."""
 
     day: str
-    quantity: float
-    cost_eur: float
+    quantity: Decimal
+    cost_eur: Decimal
     source: str
     # Part of cost_eur, kept apart only so the page can show what the purchase
     # commissions were; they are already inside the valor de adquisición.
-    fee_eur: float = 0.0
+    fee_eur: Decimal = ZERO
     note: str | None = None
     fx_rate: float | None = None
     fx_source: str | None = None
-    remaining: float = field(init=False)
+    platform: str | None = None
+    # What the annex shows: price per unit in the trade's own currency.
+    price: Decimal | None = None
+    currency: str | None = None
+    # True when the cost could not be established (no official FX rate): any
+    # sale this lot funds is then incomplete too.
+    incomplete: bool = False
+    remaining: Decimal = field(init=False)
     # Quantity of this lot that funded each disposal, by its index in the
     # disposals list. The two-month rule needs it to tell a genuine repurchase
     # apart from the very shares being sold — see flag_two_month_rule.
-    used: dict[int, float] = field(init=False)
+    used: dict[int, Decimal] = field(init=False)
 
     def __post_init__(self) -> None:
+        self.quantity = dec(self.quantity)
+        self.cost_eur = dec(self.cost_eur)
+        self.fee_eur = dec(self.fee_eur)
+        if self.price is not None:
+            self.price = dec(self.price)
         self.remaining = self.quantity
         self.used = {}
 
     @property
-    def unit_cost(self) -> float:
-        return self.cost_eur / self.quantity if self.quantity else 0.0
+    def unit_cost(self) -> Decimal:
+        return self.cost_eur / self.quantity if self.quantity else ZERO
 
 
 @dataclass
@@ -288,12 +370,25 @@ class Sale:
     minus the fees inherent to the sale."""
 
     day: str
-    quantity: float
-    proceeds_eur: float
-    fee_eur: float
+    quantity: Decimal
+    proceeds_eur: Decimal
+    fee_eur: Decimal
     platform: str
     ref: str | None = None
     note: str | None = None
+    price: Decimal | None = None
+    currency: str | None = None
+    fx_rate: float | None = None
+    fx_source: str | None = None
+    fx_date: str | None = None
+    incomplete: bool = False
+
+    def __post_init__(self) -> None:
+        self.quantity = dec(self.quantity)
+        self.proceeds_eur = dec(self.proceeds_eur)
+        self.fee_eur = dec(self.fee_eur)
+        if self.price is not None:
+            self.price = dec(self.price)
 
 
 @dataclass
@@ -309,85 +404,94 @@ class Asset:
     isin: str | None = None
     lots: list[Lot] = field(default_factory=list)
     sales: list[Sale] = field(default_factory=list)
+    # Admitted to trading on a regulated market. Decides the repurchase window
+    # of art. 33.5: two months if listed, one year if not.
+    listed: bool = True
 
 
 def match_fifo(asset: Asset) -> tuple[list[dict], list[tuple[str, dict]]]:
     """Match every sale against the oldest available lots.
 
-    Returns (disposals, warnings). A sale that no lot covers is not silently
-    dropped and its cost is not invented: the uncovered slice is declared with
-    a zero acquisition value — the conservative reading, since it maximises the
-    gain — and named in the warnings so it can be fixed in manual_trades.json.
+    Returns (disposals, warnings). A sale that no lot covers is neither
+    dropped nor given an invented cost: the uncovered slice gets a zero
+    acquisition value so the arithmetic still runs, but the disposal is marked
+    `incomplete` and the filing pack refuses to present it as final — a zero
+    cost maximises the gain, and copying it would mean paying too much.
+
+    Each parcel keeps its unrounded euros; the sale's own valores are rounded
+    once, from those sums. The parcel lines are rounded for display only and
+    can sit a cent off the sale's total.
     """
     lots = sorted(asset.lots, key=lambda lot: lot.day)
     warnings: list[tuple[str, dict]] = []
     disposals: list[dict] = []
 
     for sale in sorted(asset.sales, key=lambda s: s.day):
-        if sale.quantity <= EPS:
+        if sale.quantity <= 0:
             continue
-        unit_proceeds = sale.proceeds_eur / sale.quantity
         remaining = sale.quantity
         parcels: list[dict] = []
+        # Unrounded (quantity, acquisition, proceeds) per parcel.
+        exact: list[tuple[Decimal, Decimal, Decimal]] = []
+        reasons: set[str] = set()
+        if sale.incomplete:
+            reasons.add("sin-tipo-de-cambio")
+
+        def parcel(take: Decimal, acquisition: Decimal, lot: Lot | None) -> dict:
+            proceeds = sale.proceeds_eur * take / sale.quantity
+            exact.append((take, acquisition, proceeds))
+            return {
+                "quantity": qty(take),
+                "acquisitionDate": lot.day if lot else None,
+                "acquisitionValueEur": money(acquisition),
+                "buyFeesEur": money(lot.fee_eur * take / lot.quantity) if lot and lot.quantity else 0.0,
+                "disposalValueEur": money(proceeds),
+                # Filled in below, once every parcel of this sale is known.
+                "sellFeesEur": 0.0,
+                "resultEur": float(cents(proceeds) - cents(acquisition)),
+                "source": lot.source if lot else "uncovered",
+                "platform": lot.platform if lot else None,
+                "note": lot.note if lot else "Sin compra conocida",
+                "fxRate": lot.fx_rate if lot else None,
+                "fxSource": lot.fx_source if lot else None,
+                "price": float(lot.price) if lot and lot.price is not None else None,
+                "currency": lot.currency if lot else None,
+                "lotQuantity": qty(lot.quantity) if lot else None,
+                "incomplete": lot is None or lot.incomplete,
+            }
 
         for lot in lots:
-            if remaining <= EPS:
+            if remaining <= 0:
                 break
             # A lot bought after the sale cannot fund it, but stays queued for
             # later sales.
-            if lot.remaining <= EPS or lot.day > sale.day:
+            if lot.remaining <= 0 or lot.day > sale.day:
                 continue
             take = min(lot.remaining, remaining)
             lot.remaining -= take
             remaining -= take
-            lot.used[len(disposals)] = lot.used.get(len(disposals), 0.0) + take
-            acquisition = take * lot.unit_cost
-            proceeds = take * unit_proceeds
-            parcels.append(
-                {
-                    "quantity": round(take, 10),
-                    "acquisitionDate": lot.day,
-                    "acquisitionValueEur": round(acquisition, 2),
-                    "buyFeesEur": round(take / lot.quantity * lot.fee_eur, 2) if lot.quantity else 0.0,
-                    "disposalValueEur": round(proceeds, 2),
-                    # Filled in below, once every parcel of this sale is known.
-                    "sellFeesEur": 0.0,
-                    "resultEur": round(proceeds - acquisition, 2),
-                    "source": lot.source,
-                    "note": lot.note,
-                    "fxRate": lot.fx_rate,
-                    "fxSource": lot.fx_source,
-                }
-            )
+            lot.used[len(disposals)] = lot.used.get(len(disposals), ZERO) + take
+            parcels.append(parcel(take, lot.cost_eur * take / lot.quantity, lot))
+            if lot.incomplete:
+                reasons.add("sin-tipo-de-cambio")
 
-        # QTY_EPS, not EPS: `remaining` is what is left of the sale after
-        # subtracting one lot at a time, so a fully covered sale of 70-odd
-        # staking dust lots lands a few times 1e-9 off zero. At EPS that noise
-        # becomes a phantom "sold with no acquisition lot" warning for 0,00 €.
-        if remaining > QTY_EPS:
-            proceeds = remaining * unit_proceeds
-            parcels.append(
-                {
-                    "quantity": round(remaining, 10),
-                    "acquisitionDate": None,
-                    "acquisitionValueEur": 0.0,
-                    "buyFeesEur": 0.0,
-                    "disposalValueEur": round(proceeds, 2),
-                    "sellFeesEur": 0.0,
-                    "resultEur": round(proceeds, 2),
-                    "source": "uncovered",
-                    "note": "Sin lote de adquisición conocido; coste 0 (conservador)",
-                    "fxRate": None,
-                    "fxSource": None,
-                }
-            )
+        # A remainder whose proceeds round to 0,00 € is not a missing purchase:
+        # it is the precision gap between venues (Bybit nets fees to 9
+        # decimals, Revolut keeps 8), and no declared figure moves by it. It is
+        # kept on the record but neither blocks the sale nor gets a line.
+        dust = ZERO
+        if remaining > 0 and cents(sale.proceeds_eur * remaining / sale.quantity) == 0:
+            dust, remaining = remaining, ZERO
+        if remaining > 0:
+            parcels.append(parcel(remaining, ZERO, None))
+            reasons.add("sin-compra")
             warnings.append((
                 sale.day[:4],
                 notice(
                     "lote-descubierto",
                     "warn",
                     symbol=asset.symbol,
-                    quantity=round(remaining, 8),
+                    quantity=qty(remaining),
                     date=sale.day,
                 ),
             ))
@@ -398,33 +502,48 @@ def match_fifo(asset: Asset) -> tuple[list[dict], list[tuple[str, dict]]]:
         # quantity, with the rounding remainder on the last parcel so the lines add
         # back up to the cent to what the broker actually charged.
         if parcels and sale.fee_eur:
-            allotted = 0.0
-            for parcel in parcels[:-1]:
-                share = round(sale.fee_eur * parcel["quantity"] / sale.quantity, 2)
-                parcel["sellFeesEur"] = share
+            fee = cents(sale.fee_eur)
+            allotted = ZERO
+            for line, (take, _acq, _proc) in zip(parcels[:-1], exact[:-1]):
+                share = cents(fee * take / sale.quantity)
+                line["sellFeesEur"] = float(share)
                 allotted += share
-            parcels[-1]["sellFeesEur"] = round(sale.fee_eur - allotted, 2)
+            parcels[-1]["sellFeesEur"] = float(fee - allotted)
 
-        acquisition_total = sum(p["acquisitionValueEur"] for p in parcels)
+        acquisition = cents(sum((a for _t, a, _p in exact), ZERO))
+        transmission = cents(sale.proceeds_eur)
+        result = float(transmission - acquisition)
         disposals.append(
             {
                 "date": sale.day,
-                "quantity": round(sale.quantity, 10),
+                "quantity": qty(sale.quantity),
                 "platform": sale.platform,
                 "ref": sale.ref,
                 "note": sale.note,
-                "acquisitionValueEur": round(acquisition_total, 2),
-                "buyFeesEur": round(sum(p["buyFeesEur"] for p in parcels), 2),
-                "disposalValueEur": round(sale.proceeds_eur, 2),
-                "sellFeesEur": round(sale.fee_eur, 2),
-                "resultEur": round(sale.proceeds_eur - acquisition_total, 2),
+                "acquisitionValueEur": float(acquisition),
+                "buyFeesEur": total(p["buyFeesEur"] for p in parcels),
+                "disposalValueEur": float(transmission),
+                "sellFeesEur": money(sale.fee_eur),
+                "resultEur": result,
+                # What the annex needs to show how the transmission was valued.
+                "price": float(sale.price) if sale.price is not None else None,
+                "currency": sale.currency,
+                "fxRate": sale.fx_rate,
+                "fxSource": sale.fx_source,
+                "fxDate": sale.fx_date,
+                # A sale with an unknown cost or an unofficial conversion is
+                # computed, but never presented as a figure to file.
+                "incomplete": bool(reasons),
+                "incompleteReasons": sorted(reasons),
+                "missingQuantity": qty(remaining) if remaining > 0 else 0.0,
+                "dustQuantity": qty(dust),
                 # Every disposal carries the deferral fields, so no consumer
                 # has to guess what a missing key means. flag_two_month_rule
                 # is the only thing that moves them off these defaults.
                 "deferred": False,
                 "deferredQuantity": 0.0,
                 "deferredLossEur": 0.0,
-                "computableResultEur": round(sale.proceeds_eur - acquisition_total, 2),
+                "computableResultEur": result,
                 # A loss an earlier year could not compute, released by this
                 # sale because it is the one closing the repurchased position.
                 # Deliberately outside computableResultEur: it is a separate
@@ -441,7 +560,7 @@ def match_fifo(asset: Asset) -> tuple[list[dict], list[tuple[str, dict]]]:
 # ── Regla de los dos meses (art. 33.5 f LIRPF) ─────────────────────────────────
 
 
-def held_at_year_end(lot: Lot, disposals: list[dict], year: str) -> float:
+def held_at_year_end(lot: Lot, disposals: list[dict], year: str) -> Decimal:
     """Units of `lot` still in the portfolio at 31 December of `year`.
 
     Both callers need the position as the year closed rather than as it stands
@@ -450,9 +569,10 @@ def held_at_year_end(lot: Lot, disposals: list[dict], year: str) -> float:
     was held when that return was due.
     """
     if lot.day[:4] > year:
-        return 0.0
+        return ZERO
     consumed = sum(
-        taken for index, taken in lot.used.items() if disposals[index]["date"][:4] <= year
+        (taken for index, taken in lot.used.items() if disposals[index]["date"][:4] <= year),
+        ZERO,
     )
     return lot.quantity - consumed
 
@@ -497,14 +617,18 @@ def flag_two_month_rule(asset: Asset, disposals: list[dict]) -> list[tuple[str, 
     lots are a budget shared across every sale they cover, spent oldest sale
     first — otherwise one purchase would defer the same shares several times.
 
-    Listed shares and ETFs only. For crypto the DGT's position on which window
+    The window is two months for securities admitted to trading and one year
+    for those that are not (art. 33.5 g), which `asset.listed` decides.
+
+    Shares and ETFs only. For crypto the DGT's position on which window
     applies is not settled, so a loss there is flagged for review rather than
     deferred automatically.
     """
+    months = 2 if asset.listed else 12
     notes: list[tuple[str, dict]] = []
     lots = sorted(asset.lots, key=lambda lot: lot.day)
     # Units of each lot still able to act as a repurchase, shared across sales.
-    budget: dict[int, float] = {id(lot): lot.quantity for lot in lots}
+    budget: dict[int, Decimal] = {id(lot): lot.quantity for lot in lots}
     # Per lot, the units it spent blocking a loss and the euros they block,
     # oldest loss first. Selling those units later hands the euros back — see
     # the reintegration pass at the end.
@@ -522,9 +646,9 @@ def flag_two_month_rule(asset: Asset, disposals: list[dict]) -> list[tuple[str, 
     for day in sorted(by_day):
         group = by_day[day]
         sold_day = date.fromisoformat(day)
-        window = (_shift_months(sold_day, -2), _shift_months(sold_day, 2))
+        window = (_shift_months(sold_day, -months), _shift_months(sold_day, months))
 
-        candidates: list[tuple[Lot, float]] = []
+        candidates: list[tuple[Lot, Decimal]] = []
         for lot in lots:
             if not (window[0] <= date.fromisoformat(lot.day) <= window[1]):
                 continue
@@ -536,10 +660,10 @@ def flag_two_month_rule(asset: Asset, disposals: list[dict]) -> list[tuple[str, 
             # year, netting to nothing). Sales in *later* years are deliberately
             # ignored so regenerating the file cannot rewrite a filed year.
             spare = min(budget[id(lot)], held_at_year_end(lot, disposals, day[:4]))
-            if spare > EPS:
+            if spare > 0:
                 candidates.append((lot, spare))
-        available = sum(spare for _lot, spare in candidates)
-        if available <= EPS:
+        available = sum((spare for _lot, spare in candidates), ZERO)
+        if available <= 0:
             continue
 
         repurchases = sorted({lot.day for lot, _spare in candidates})
@@ -553,40 +677,41 @@ def flag_two_month_rule(asset: Asset, disposals: list[dict]) -> list[tuple[str, 
                     "regla-dos-meses-cripto",
                     "warn",
                     symbol=asset.symbol,
-                    lossEur=round(sum(d["resultEur"] for _i, d in group), 2),
+                    lossEur=total(d["resultEur"] for _i, d in group),
                     date=day,
                     repurchases=repurchases,
                 ),
             ))
             continue
 
-        sold_total = sum(disposal["quantity"] for _index, disposal in group)
+        sold_total = sum((dec(disposal["quantity"]) for _index, disposal in group), ZERO)
         deferred_total = min(sold_total, available)
         # Spend the budget so a later sale cannot defer the same shares again.
         pending = deferred_total
-        spent: list[tuple[Lot, float]] = []
+        spent: list[tuple[Lot, Decimal]] = []
         for lot, spare in candidates:
-            if pending <= EPS:
+            if pending <= 0:
                 break
             take = min(spare, pending)
             budget[id(lot)] -= take
             pending -= take
             spent.append((lot, take))
 
-        fraction = deferred_total / sold_total if sold_total else 0.0
+        fraction = deferred_total / sold_total if sold_total else ZERO
         for _index, disposal in group:
-            deferred_loss = round(disposal["resultEur"] * fraction, 2)
+            deferred_loss = cents(dec(disposal["resultEur"]) * fraction)
             disposal["deferred"] = True
-            disposal["deferredQuantity"] = round(disposal["quantity"] * fraction, 10)
-            disposal["deferredLossEur"] = deferred_loss
-            disposal["computableResultEur"] = round(disposal["resultEur"] - deferred_loss, 2)
+            disposal["deferredQuantity"] = qty(dec(disposal["quantity"]) * fraction)
+            disposal["deferredLossEur"] = float(deferred_loss)
+            disposal["computableResultEur"] = float(dec(disposal["resultEur"]) - deferred_loss)
             disposal["deferredBecause"] = repurchases
+            disposal["deferralWindowMonths"] = months
 
         # One warning per security and day, not per sell order: the reader
         # cares that 25 of 85 shares came back, not about a pro-rata slice of
         # 0,588 titles landing on the smallest of three orders.
-        loss_total = round(sum(d["resultEur"] for _i, d in group), 2)
-        deferred_loss_total = round(sum(d["deferredLossEur"] for _i, d in group), 2)
+        loss_total = sum((dec(d["resultEur"]) for _i, d in group), ZERO)
+        deferred_loss_total = sum((dec(d["deferredLossEur"]) for _i, d in group), ZERO)
 
         # Note the euros against the very units that blocked them, so selling
         # part of the repurchase later releases the matching part.
@@ -595,9 +720,9 @@ def flag_two_month_rule(asset: Asset, disposals: list[dict]) -> list[tuple[str, 
             share = (
                 blocked_left
                 if position == len(spent) - 1
-                else round(deferred_loss_total * take / deferred_total, 2)
+                else cents(deferred_loss_total * take / deferred_total)
             )
-            blocked_left = round(blocked_left - share, 2)
+            blocked_left -= share
             claims[id(lot)].append(
                 {"year": day[:4], "day": day, "units": take, "eur": share}
             )
@@ -607,13 +732,14 @@ def flag_two_month_rule(asset: Asset, disposals: list[dict]) -> list[tuple[str, 
                 "regla-dos-meses",
                 "warn",
                 symbol=asset.symbol,
-                lossEur=loss_total,
-                deferredEur=deferred_loss_total,
-                computableEur=round(loss_total - deferred_loss_total, 2),
-                quantity=round(deferred_total, 8),
-                soldQuantity=round(sold_total, 8),
+                lossEur=float(loss_total),
+                deferredEur=float(deferred_loss_total),
+                computableEur=float(loss_total - deferred_loss_total),
+                quantity=qty(deferred_total),
+                soldQuantity=qty(sold_total),
                 date=day,
                 repurchases=repurchases,
+                months=months,
             ),
         ))
 
@@ -645,7 +771,7 @@ def _release_deferrals(
         for index in sorted(lot.used, key=lambda i: (disposals[i]["date"], i)):
             disposal = disposals[index]
             taken = lot.used[index]
-            while taken > EPS and pending:
+            while taken > 0 and pending:
                 claim = pending[0]
                 # Claims are in loss-date order, so once the oldest is not
                 # older than this sale, none of the rest is either.
@@ -656,21 +782,21 @@ def _release_deferrals(
                 # a fresh rounding, so the pieces add up to the euros deferred.
                 amount = (
                     claim["eur"]
-                    if units >= claim["units"] - EPS
-                    else round(claim["eur"] * units / claim["units"], 2)
+                    if units >= claim["units"]
+                    else cents(claim["eur"] * units / claim["units"])
                 )
                 claim["units"] -= units
-                claim["eur"] = round(claim["eur"] - amount, 2)
+                claim["eur"] -= amount
                 taken -= units
-                if claim["units"] <= EPS:
+                if claim["units"] <= 0:
                     pending.pop(0)
                 if amount == 0:
                     continue
-                disposal["reintegratedLossEur"] = round(
-                    disposal["reintegratedLossEur"] + amount, 2
+                disposal["reintegratedLossEur"] = float(
+                    dec(disposal["reintegratedLossEur"]) + amount
                 )
                 disposal["reintegratedFrom"].append(
-                    {"date": claim["day"], "amountEur": amount, "quantity": round(units, 10)}
+                    {"date": claim["day"], "amountEur": float(amount), "quantity": qty(units)}
                 )
                 notes.append((
                     disposal["date"][:4],
@@ -678,8 +804,8 @@ def _release_deferrals(
                         "regla-dos-meses-reintegro",
                         "info",
                         symbol=asset.symbol,
-                        amountEur=amount,
-                        quantity=round(units, 8),
+                        amountEur=float(amount),
+                        quantity=qty(units),
                         date=disposal["date"],
                         lossDate=claim["day"],
                     ),
@@ -770,6 +896,60 @@ def normalize_degiro(transactions: list[dict], meta: dict[str, dict]) -> list[di
     return trades
 
 
+# How far a broker's own conversion may sit from the ECB before it is taken
+# for a misread figure. DEGIRO's AutoFX margin is 0.25 %, so anything near this
+# is not a margin, it is a wrong number.
+FX_DEVIATION_LIMIT = Decimal("0.05")
+
+
+def check_degiro_fx(trades: list[dict], fx=None) -> list[tuple[str, dict]]:
+    """Compare each foreign-currency DEGIRO trade against the ECB of its day.
+
+    DEGIRO's euros are what actually left or entered the account — the
+    "importe real" art. 35 asks for — so they are kept as they are. The check
+    only catches a figure that cannot be a conversion at all: more than 5 %
+    away from the ECB means a misread field, and then the ECB is used instead
+    (the fees DEGIRO charged on top are kept).
+    """
+    fx = fx or (lambda currency, day: fx_to_eur(currency, day, prefer_local=True))
+    warnings: list[tuple[str, dict]] = []
+    for trade in trades:
+        currency = (trade.get("currency") or "EUR").upper()
+        native = abs(dec(trade.get("price")) * dec(trade.get("quantity")))
+        if currency == "EUR" or not native or not trade.get("totalEur"):
+            continue
+        found = fx(currency, trade["date"])
+        if not found:
+            continue
+        ecb = dec(found[0])
+        implied = abs(dec(trade["totalEur"])) / native
+        deviation = abs(implied - ecb) / ecb
+        trade["impliedFxRate"] = float(implied.quantize(Decimal("1e-8")))
+        trade["ecbFxRate"] = found[0]
+        if deviation <= FX_DEVIATION_LIMIT:
+            continue
+        sign = -1 if dec(trade["totalEur"]) < 0 else 1
+        fees = dec(trade["totalPlusFeesEur"]) - dec(trade["totalEur"])
+        corrected = cents(native * ecb) * sign
+        trade["totalEur"] = float(corrected)
+        trade["totalPlusFeesEur"] = float(corrected + fees)
+        trade["fxCorrected"] = True
+        warnings.append((
+            trade["date"][:4],
+            notice(
+                "tipo-cambio-desviado",
+                "warn",
+                symbol=trade["symbol"],
+                date=trade["date"],
+                currency=currency,
+                brokerRate=float(implied),
+                ecbRate=found[0],
+                deviationPct=money(deviation * 100),
+            ),
+        ))
+    return warnings
+
+
 # ── Bybit ──────────────────────────────────────────────────────────────────────
 
 # Quote currencies Bybit pairs against, longest first so "ETHUSDC" splits into
@@ -819,7 +999,8 @@ def parse_bybit(path: Path, debug: bool = False) -> list[dict]:
         if not day or filled <= 0:
             continue
 
-        rate, fx_source, rate_day = fx_to_eur(quote, day)
+        fx = fx_to_eur(quote, day)
+        rate, fx_source, rate_day = fx if fx else (0.0, None, None)
         trades.append(
             {
                 "id": row.get("Transaction ID"),
@@ -837,9 +1018,11 @@ def parse_bybit(path: Path, debug: bool = False) -> list[dict]:
                 "totalEur": round(value * rate, 2),
                 "totalPlusFeesEur": round(value * rate, 2),
                 "feesEur": 0.0,
-                "fxRate": rate,
+                "fxRate": rate if fx else None,
                 "fxSource": fx_source,
                 "fxDate": rate_day,
+                # No official rate: the EUR figures above are placeholders.
+                "incomplete": fx is None,
             }
         )
     return trades
@@ -849,22 +1032,32 @@ def parse_bybit(path: Path, debug: bool = False) -> list[dict]:
 
 
 def load_manual(path: Path) -> dict:
-    """Disposals, staking rewards and stray lots kept by hand.
+    """Disposals, staking rewards and stray lots kept by hand, plus the two
+    things only the user knows: which country a dividend really comes from
+    (`dividendCountries`) and the loss balances their filed returns left
+    pending (`pendingLosses`).
 
     Read best-effort like crypto_cost_basis.json: a missing or broken file
     means "nothing to add", never a failed export.
     """
+    empty = {"disposals": [], "rewards": [], "lots": [], "pendingLosses": [], "dividendCountries": {}}
     if not path.exists():
-        return {"disposals": [], "rewards": [], "lots": []}
+        return empty
     try:
         data = json.loads(path.read_text())
     except Exception as exc:
         print(f"  warning: could not read {path.name} ({exc}); ignoring it.", file=sys.stderr)
-        return {"disposals": [], "rewards": [], "lots": []}
+        return empty
     return {
         "disposals": data.get("disposals") or [],
         "rewards": data.get("rewards") or [],
         "lots": data.get("lots") or [],
+        "pendingLosses": data.get("pendingLosses") or [],
+        "dividendCountries": {
+            str(k).upper(): str(v).upper()
+            for k, v in (data.get("dividendCountries") or {}).items()
+            if not str(k).startswith("_")
+        },
     }
 
 
@@ -922,7 +1115,7 @@ def superseded_by_ledger(
     return bool(window and window[0] <= day <= window[1])
 
 
-def reward_value_eur(symbol: str, quantity: float, day: str) -> tuple[float, str]:
+def reward_value_eur(symbol: str, quantity: Decimal, day: str) -> tuple[Decimal, str]:
     """EUR market value of a staking reward on the day it was credited.
 
     That figure does double duty: it is the rendimiento del capital mobiliario
@@ -931,11 +1124,27 @@ def reward_value_eur(symbol: str, quantity: float, day: str) -> tuple[float, str
     """
     price = crypto_price_eur_at(symbol, day) or crypto_price_eur(symbol)
     if not price:
-        return 0.0, "unavailable"
-    return quantity * price, "coinbase"
+        return ZERO, "unavailable"
+    return dec(quantity) * dec(price), "coinbase"
 
 
 # ── Building the per-year view ─────────────────────────────────────────────────
+
+
+def queue_key(trade: dict) -> str:
+    """The FIFO queue a security belongs to.
+
+    Homogeneous securities (art. 37.2 LIRPF) are those of the same issuer with
+    the same rights — the same ISIN — wherever they are held: the oldest
+    bought go first counting every broker and every exchange together (TEAC,
+    19/02/2026, RG 1535/2024). DEGIRO gives AAPL on NASDAQ and on Xetra two
+    product ids, so keying on the product would run two separate queues.
+    """
+    isin = str(trade.get("isin") or "").strip().upper()
+    if isin:
+        return f"isin:{isin}"
+    platform = str(trade.get("platform") or "manual").lower()
+    return f"{platform}:{trade.get('productId') or trade['symbol']}"
 
 
 def build_assets(
@@ -959,14 +1168,28 @@ def build_assets(
         name = kwargs.get("name")
         if name and asset.name == asset.symbol and name != asset.symbol:
             asset.name = name
+        # One queue can now span several brokers; the row names all of them.
+        platform = kwargs.get("platform")
+        if platform and platform not in asset.platform.split(" + "):
+            asset.platform = " + ".join(sorted(asset.platform.split(" + ") + [platform]))
+        if kwargs.get("listed") is False:
+            asset.listed = False
+        if not asset.isin and kwargs.get("isin"):
+            asset.isin = kwargs["isin"]
         return asset
 
-    # DEGIRO: homogeneity is per product, so productId is the queue key.
+    def fx_note(symbol: str, currency: str, day: str) -> None:
+        warnings.append((
+            day[:4],
+            notice("sin-tipo-oficial", "warn", symbol=symbol, currency=currency, date=day),
+        ))
+
     for trade in degiro:
-        if trade["quantity"] <= 0:
+        if _num(trade["quantity"]) <= 0:
             continue
+        quantity = dec(trade["quantity"])
         asset = asset_for(
-            f"degiro:{trade['productId']}",
+            queue_key(trade),
             symbol=trade["symbol"],
             name=trade["name"],
             asset_type=trade["assetType"],
@@ -974,17 +1197,24 @@ def build_assets(
             currency=trade["currency"],
             isin=trade.get("isin"),
         )
+        note = f"{_num(trade['quantity']):g} @ {_num(trade['price']):g} {trade['currency']}"
+        implied = trade.get("impliedFxRate")
+        if implied is None and trade["currency"] == "EUR":
+            implied = 1.0
         if trade["side"] == "buy":
             asset.lots.append(
                 Lot(
                     day=trade["date"],
-                    quantity=trade["quantity"],
-                    cost_eur=abs(trade["totalPlusFeesEur"]),
+                    quantity=quantity,
+                    cost_eur=abs(dec(trade["totalPlusFeesEur"])),
                     source="degiro",
-                    fee_eur=trade["feesEur"],
-                    note=f"{trade['quantity']:g} @ {trade['price']:g} {trade['currency']}",
-                    fx_rate=trade.get("fxRate"),
-                    fx_source="degiro",
+                    fee_eur=dec(trade["feesEur"]),
+                    note=note,
+                    fx_rate=implied,
+                    fx_source="ecb" if trade.get("fxCorrected") else "degiro",
+                    platform="DEGIRO",
+                    price=dec(trade["price"]),
+                    currency=trade["currency"],
                 )
             )
             if trade["transfered"]:
@@ -998,12 +1228,16 @@ def build_assets(
             asset.sales.append(
                 Sale(
                     day=trade["date"],
-                    quantity=trade["quantity"],
-                    proceeds_eur=abs(trade["totalPlusFeesEur"]),
-                    fee_eur=trade["feesEur"],
+                    quantity=quantity,
+                    proceeds_eur=abs(dec(trade["totalPlusFeesEur"])),
+                    fee_eur=dec(trade["feesEur"]),
                     platform="DEGIRO",
                     ref=str(trade["id"]) if trade.get("id") else None,
-                    note=f"{trade['quantity']:g} @ {trade['price']:g} {trade['currency']}",
+                    note=note,
+                    price=dec(trade["price"]),
+                    currency=trade["currency"],
+                    fx_rate=implied,
+                    fx_source="ecb" if trade.get("fxCorrected") else "degiro",
                 )
             )
 
@@ -1019,29 +1253,53 @@ def build_assets(
             platform="Revolut",
             currency="EUR",
         )
+        incomplete = bool(trade.get("incomplete"))
+        if incomplete:
+            fx_note(trade["symbol"], trade["currency"], trade["date"])
         if trade["side"] == "buy":
             asset.lots.append(
                 Lot(
                     day=trade["date"],
-                    quantity=trade["quantity"],
-                    cost_eur=trade["totalEur"],
+                    quantity=dec(trade["quantity"]),
+                    cost_eur=dec(trade["totalEur"]),
                     source="bybit",
-                    note=f"{trade['quantity']:.8f} @ {trade['price']:g} {trade['currency']}",
+                    note=f"{_num(trade['quantity']):.8f} @ {_num(trade['price']):g} {trade['currency']}",
                     fx_rate=trade.get("fxRate"),
                     fx_source=trade.get("fxSource"),
+                    platform="Bybit",
+                    price=dec(trade["price"]),
+                    currency=trade["currency"],
+                    incomplete=incomplete,
                 )
             )
         else:
             asset.sales.append(
                 Sale(
                     day=trade["date"],
-                    quantity=trade["quantity"],
-                    proceeds_eur=trade["totalEur"],
-                    fee_eur=0.0,
+                    quantity=dec(trade["quantity"]),
+                    proceeds_eur=dec(trade["totalEur"]),
+                    fee_eur=ZERO,
                     platform="Bybit",
                     ref=str(trade.get("id") or "") or None,
+                    price=dec(trade["price"]),
+                    currency=trade["currency"],
+                    fx_rate=trade.get("fxRate"),
+                    fx_source=trade.get("fxSource"),
+                    fx_date=trade.get("fxDate"),
+                    incomplete=incomplete,
                 )
             )
+
+    def to_eur_official(amounts: tuple, currency: str, day: str, symbol: str):
+        """(eur amounts, rate, source, rate day, incomplete) at the ECB rate."""
+        if currency == "EUR":
+            return tuple(dec(a) for a in amounts), 1.0, "identity", day, False
+        fx = fx_to_eur(currency, day)
+        if fx is None:
+            fx_note(symbol, currency, day)
+            return tuple(ZERO for _ in amounts), None, None, None, True
+        rate = dec(fx[0])
+        return tuple(dec(a) * rate for a in amounts), fx[0], fx[1], fx[2], False
 
     # Revolut's own ledger. Deposits are deliberately not lots: moving your own
     # coins in from another wallet is not an acquisition, so the cost basis
@@ -1050,18 +1308,14 @@ def build_assets(
     # outcome — better a named warning than an invented cost.
     for trade in ledger["trades"]:
         symbol = str(trade.get("symbol") or "").upper()
-        quantity = _num(trade.get("quantity"))
+        quantity = dec(_num(trade.get("quantity")))
         day = str(trade.get("date") or "")[:10]
         if not symbol or quantity <= 0 or not day:
             continue
         currency = (trade.get("currency") or "EUR").upper()
-        gross = _num(trade.get("grossAmount"))
-        fee = _num(trade.get("feeAmount"))
-        if currency == "EUR":
-            gross_eur, fee_eur = gross, fee
-        else:
-            rate, _source, _day = fx_to_eur(currency, day)
-            gross_eur, fee_eur = gross * rate, fee * rate
+        (gross_eur, fee_eur), rate, source, rate_day, incomplete = to_eur_official(
+            (_num(trade.get("grossAmount")), _num(trade.get("feeAmount"))), currency, day, symbol
+        )
         platform = trade.get("platform") or "Revolut"
         asset = asset_for(
             f"crypto:{symbol}",
@@ -1071,6 +1325,7 @@ def build_assets(
             platform=platform,
             currency="EUR",
         )
+        price = dec(_num(trade.get("grossAmount"))) / quantity
         if trade.get("side") == "buy":
             asset.lots.append(
                 Lot(
@@ -1081,6 +1336,12 @@ def build_assets(
                     source="revolut",
                     fee_eur=fee_eur,
                     note=trade.get("description"),
+                    fx_rate=rate,
+                    fx_source=source,
+                    platform=platform,
+                    price=price,
+                    currency=currency,
+                    incomplete=incomplete,
                 )
             )
         else:
@@ -1093,23 +1354,22 @@ def build_assets(
                     platform=platform,
                     ref=trade.get("id"),
                     note=trade.get("description"),
+                    price=price,
+                    currency=currency,
+                    fx_rate=rate,
+                    fx_source=source,
+                    fx_date=rate_day,
+                    incomplete=incomplete,
                 )
             )
 
-    # Staking rewards straight from the ledger: real dates and amounts, so no
-    # `approximate` flag and no estimate to revisit.
-    for reward in ledger["rewards"]:
-        symbol = str(reward.get("symbol") or "").upper()
-        quantity = _num(reward.get("quantity"))
-        day = str(reward.get("date") or "")[:10]
-        if not symbol or quantity <= 0 or not day:
-            continue
+    def add_reward(symbol: str, quantity: Decimal, day: str, platform: str, name: str,
+                   approximate: bool) -> None:
         value, source = reward_value_eur(symbol, quantity, day)
-        platform = reward.get("platform") or "Revolut"
         asset = asset_for(
             f"crypto:{symbol}",
             symbol=symbol,
-            name=symbol,
+            name=name,
             asset_type="crypto",
             platform=platform,
             currency="EUR",
@@ -1122,6 +1382,7 @@ def build_assets(
                 source="staking",
                 note="Recompensa de staking, valorada el día de cobro",
                 fx_source=source,
+                platform=platform,
             )
         )
         rewards.append(
@@ -1129,9 +1390,9 @@ def build_assets(
                 "date": day,
                 "platform": platform,
                 "symbol": symbol,
-                "quantity": round(quantity, 10),
-                "valueEur": round(value, 2),
-                "approximate": False,
+                "quantity": qty(quantity),
+                "valueEur": money(value),
+                "approximate": approximate,
                 "priceSource": source,
             }
         )
@@ -1141,11 +1402,21 @@ def build_assets(
                 notice("staking-sin-precio", "warn", symbol=symbol, date=day),
             ))
 
-    # Staking rewards: acquisition lots whose cost is the value already taxed
-    # as a rendimiento.
+    # Staking rewards straight from the ledger: real dates and amounts, so no
+    # `approximate` flag and no estimate to revisit.
+    for reward in ledger["rewards"]:
+        symbol = str(reward.get("symbol") or "").upper()
+        quantity = dec(_num(reward.get("quantity")))
+        day = str(reward.get("date") or "")[:10]
+        if not symbol or quantity <= 0 or not day:
+            continue
+        add_reward(symbol, quantity, day, reward.get("platform") or "Revolut", symbol, False)
+
+    # Staking rewards kept by hand: acquisition lots whose cost is the value
+    # already taxed as a rendimiento.
     for reward in manual["rewards"]:
         symbol = str(reward.get("symbol") or "").upper()
-        quantity = _num(reward.get("quantity"))
+        quantity = dec(_num(reward.get("quantity")))
         day = str(reward.get("date") or "")[:10]
         if not symbol or quantity <= 0 or not day:
             continue
@@ -1153,71 +1424,54 @@ def build_assets(
         if superseded_by_ledger(coverage, platform_name, symbol, day):
             superseded.append(f"recompensa {symbol} {day} ({platform_name})")
             continue
-        value, source = reward_value_eur(symbol, quantity, day)
-        asset = asset_for(
-            f"crypto:{symbol}",
-            symbol=symbol,
-            name=reward.get("name") or symbol,
-            asset_type="crypto",
-            platform=reward.get("platform") or "Revolut",
-            currency="EUR",
+        add_reward(
+            symbol, quantity, day, platform_name, reward.get("name") or symbol,
+            bool(reward.get("approximate")),
         )
-        asset.lots.append(
-            Lot(
-                day=day,
-                quantity=quantity,
-                cost_eur=value,
-                source="staking",
-                note="Recompensa de staking, valorada el día de cobro",
-                fx_source=source,
-            )
-        )
-        rewards.append(
-            {
-                "date": day,
-                "platform": reward.get("platform") or "Revolut",
-                "symbol": symbol,
-                "quantity": round(quantity, 10),
-                "valueEur": round(value, 2),
-                "approximate": bool(reward.get("approximate")),
-                "priceSource": source,
-            }
-        )
-        if source == "unavailable":
-            warnings.append((
-                day[:4],
-                notice("staking-sin-precio", "warn", symbol=symbol, date=day),
-            ))
+
+    def manual_key(entry: dict, symbol: str, asset_type: str) -> str:
+        if asset_type == "crypto":
+            return f"crypto:{symbol}"
+        # Same ISIN, same queue as the DEGIRO lots of that security.
+        return queue_key({"isin": entry.get("isin"), "platform": "manual", "symbol": symbol})
 
     # Extra acquisition lots kept by hand.
     for lot in manual["lots"]:
         symbol = str(lot.get("symbol") or "").upper()
-        quantity = _num(lot.get("quantity"))
+        quantity = dec(_num(lot.get("quantity")))
         day = str(lot.get("date") or "")[:10]
         if not symbol or quantity <= 0 or not day:
             continue
+        asset_type = lot.get("assetType") or "crypto"
+        platform = lot.get("platform") or "manual"
         asset = asset_for(
-            f"crypto:{symbol}" if lot.get("assetType", "crypto") == "crypto" else f"manual:{symbol}",
+            manual_key(lot, symbol, asset_type),
             symbol=symbol,
             name=lot.get("name") or symbol,
-            asset_type=lot.get("assetType") or "crypto",
-            platform=lot.get("platform") or "manual",
+            asset_type=asset_type,
+            platform=platform,
             currency="EUR",
+            isin=lot.get("isin"),
+            listed=lot.get("listed", True) is not False,
         )
         asset.lots.append(
             Lot(
                 day=day,
                 quantity=quantity,
-                cost_eur=_num(lot.get("acquisitionValueEur")),
+                cost_eur=dec(_num(lot.get("acquisitionValueEur"))),
                 source="manual",
+                fee_eur=dec(_num(lot.get("buyFeeEur"))),
                 note=lot.get("note"),
+                platform=platform,
+                price=dec(lot["unitPrice"]) if lot.get("unitPrice") is not None else None,
+                currency=lot.get("currency"),
             )
         )
 
     # Disposals made outside DEGIRO.
     for disposal in manual["disposals"]:
         symbol = str(disposal.get("symbol") or "").upper()
-        quantity = _num(disposal.get("quantity"))
+        quantity = dec(_num(disposal.get("quantity")))
         day = str(disposal.get("date") or "")[:10]
         if not symbol or quantity <= 0 or not day:
             continue
@@ -1228,22 +1482,21 @@ def build_assets(
         asset_type = disposal.get("assetType") or "crypto"
         gross = _num(disposal.get("grossProceeds"))
         if not gross:
-            gross = quantity * _num(disposal.get("unitPrice"))
-        fee = _num(disposal.get("sellFee"))
+            gross = float(quantity * dec(_num(disposal.get("unitPrice"))))
         currency = (disposal.get("currency") or "EUR").upper()
-        if currency == "EUR":
-            gross_eur, fee_eur = gross, fee
-        else:
-            rate, _source, _day = fx_to_eur(currency, day)
-            gross_eur, fee_eur = gross * rate, fee * rate
+        (gross_eur, fee_eur), rate, source, rate_day, incomplete = to_eur_official(
+            (gross, _num(disposal.get("sellFee"))), currency, day, symbol
+        )
 
         asset = asset_for(
-            f"crypto:{symbol}" if asset_type == "crypto" else f"manual:{symbol}",
+            manual_key(disposal, symbol, asset_type),
             symbol=symbol,
             name=disposal.get("name") or symbol,
             asset_type=asset_type,
-            platform=disposal.get("platform") or "manual",
+            platform=platform_name,
             currency="EUR",
+            isin=disposal.get("isin"),
+            listed=disposal.get("listed", True) is not False,
         )
         asset.sales.append(
             Sale(
@@ -1253,9 +1506,15 @@ def build_assets(
                 # to the sale.
                 proceeds_eur=gross_eur - fee_eur,
                 fee_eur=fee_eur,
-                platform=disposal.get("platform") or "manual",
+                platform=platform_name,
                 ref=disposal.get("id"),
                 note=disposal.get("note"),
+                price=dec(gross) / quantity,
+                currency=currency,
+                fx_rate=rate,
+                fx_source=source,
+                fx_date=rate_day,
+                incomplete=incomplete,
             )
         )
 
@@ -1267,22 +1526,6 @@ def build_assets(
         )
 
     return assets, warnings, rewards
-
-
-def estimate_savings_tax(base: float) -> float:
-    """Marginal-bracket tax on a savings base, in isolation."""
-    if base <= 0:
-        return 0.0
-    tax = 0.0
-    lower = 0.0
-    for ceiling, rate in SAVINGS_BRACKETS:
-        top = base if ceiling is None else min(base, ceiling)
-        if top > lower:
-            tax += (top - lower) * rate
-            lower = top
-        if ceiling is not None and base <= ceiling:
-            break
-    return tax
 
 
 # ── Rendimientos del capital mobiliario ────────────────────────────────────────
@@ -1300,49 +1543,146 @@ def load_dividends(out_dir: Path) -> list[dict]:
         return []
 
 
-def dividends_for_year(payments: list[dict], year: str) -> dict:
+def dividends_for_year(
+    payments: list[dict],
+    year: str,
+    isins: dict[str, str] | None = None,
+    countries: dict[str, str] | None = None,
+    fx=None,
+) -> dict:
     """Dividends are rendimientos del capital mobiliario (art. 25.1 LIRPF): the
     same savings base as capital gains, a different section of the form.
 
-    `tax` is the withholding suffered abroad, which is what the double-taxation
-    deduction is computed on — there is no Spanish withholding on these.
+    Each payment is converted at the ECB rate of its day from the native
+    amounts, and its foreign withholding is split in two (art. 80 LIRPF and
+    the conventions): what the treaty lets the source country keep is
+    deductible in Spain (`creditableEur`); anything withheld above that is not
+    Spain's to give back and has to be reclaimed from that country
+    (`excessEur`). A Spanish company's withholding is a Spanish retención and
+    goes to its own box instead.
+
+    `isins` maps a DEGIRO productId to its ISIN; `countries` lets the user
+    override the country by symbol, ISIN or productId — for depositary
+    receipts, whose ISIN is the issuing bank's and not the paying company's.
     """
+    fx = fx or fx_to_eur
+    isins = isins or {}
+    countries = countries or {}
     rows = []
-    gross = withheld = net = 0.0
+    notes: list[dict] = []
     for payment in payments:
         if str(payment.get("date", ""))[:4] != year:
             continue
         day = str(payment["date"])[:10]
-        currency = payment.get("currency") or "EUR"
-        gross_eur = payment.get("grossEur")
-        tax_eur = payment.get("taxEur")
-        if gross_eur is None or tax_eur is None:
-            # Files from before the EUR-conversion feature only carry natives.
-            gross_eur = to_eur(_num(payment.get("gross")), currency, day)
-            tax_eur = to_eur(_num(payment.get("tax")), currency, day)
-        net_eur = gross_eur + tax_eur
+        currency = (payment.get("currency") or "EUR").upper()
+        symbol = payment.get("symbol")
+        incomplete = False
+        fx_source = "identity"
+        has_native = payment.get("gross") is not None
+        if currency == "EUR":
+            gross_eur = dec(payment["gross"] if has_native else payment.get("grossEur"))
+            tax_eur = dec(payment["tax"] if has_native else payment.get("taxEur"))
+        else:
+            found = fx(currency, day) if has_native else None
+            if found:
+                rate = dec(found[0])
+                gross_eur = dec(payment["gross"]) * rate
+                tax_eur = dec(payment["tax"]) * rate
+                fx_source = found[1]
+            else:
+                # No official rate: keep the exporter's own conversion so the
+                # income is not left out, but never present it as final.
+                gross_eur = dec(payment.get("grossEur"))
+                tax_eur = dec(payment.get("taxEur"))
+                fx_source = "unofficial"
+                incomplete = True
+                notes.append(
+                    notice("sin-tipo-oficial", "warn", symbol=symbol, currency=currency, date=day)
+                )
+        gross_eur = cents(gross_eur)
+        withheld = cents(abs(tax_eur))
 
-        gross += gross_eur
-        withheld += abs(tax_eur)
-        net += net_eur
+        product = str(payment.get("productId") or "")
+        isin = payment.get("isin") or isins.get(product)
+        override = next(
+            (countries[k] for k in (str(symbol or "").upper(), str(isin or "").upper(), product)
+             if k and k in countries),
+            None,
+        )
+        country, doubtful = dividend_country(isin, payment.get("name"), override)
+        spanish = country == "ES"
+        credit = creditable_tax(gross_eur, ZERO if spanish else withheld, country, year)
+        if not spanish and withheld and not credit.known and int(year) in TREATY_RATES:
+            notes.append(
+                notice("dividendo-pais-desconocido", "warn", symbol=symbol, date=day, country=country)
+            )
+        if doubtful and country:
+            notes.append(notice("dividendo-pais-dudoso", "warn", symbol=symbol, country=country))
+
         rows.append(
             {
                 "date": day,
-                "symbol": payment.get("symbol"),
+                "symbol": symbol,
                 "name": payment.get("name"),
                 "currency": currency,
-                "grossEur": round(gross_eur, 2),
-                "withholdingEur": round(abs(tax_eur), 2),
-                "netEur": round(net_eur, 2),
+                "isin": isin,
+                "country": country,
+                "grossEur": float(gross_eur),
+                "withholdingEur": float(withheld),
+                "netEur": float(gross_eur - withheld),
+                "treatyRatePct": float(credit.rate * 100) if credit.rate is not None else None,
+                "creditableEur": 0.0 if spanish else float(credit.creditable),
+                "excessEur": 0.0 if spanish else float(credit.excess),
+                "spanishWithholdingEur": float(withheld) if spanish else 0.0,
+                "fxSource": fx_source,
+                "incomplete": incomplete,
             }
         )
 
+    excess_by_country: dict[str, Decimal] = defaultdict(lambda: ZERO)
+    rate_by_country: dict[str, float] = {}
+    for row in rows:
+        if row["excessEur"]:
+            excess_by_country[row["country"]] += dec(row["excessEur"])
+            rate_by_country[row["country"]] = row["treatyRatePct"]
+    for country, amount in sorted(excess_by_country.items()):
+        notes.append(
+            notice(
+                "exceso-retencion",
+                "warn",
+                country=country,
+                amountEur=float(amount),
+                ratePct=rate_by_country[country],
+                year=year,
+            )
+        )
+
     rows.sort(key=lambda r: r["date"], reverse=True)
+    foreign = [r for r in rows if r["country"] != "ES"]
+    # One notice per (id, symbol) is enough; a monthly payer would repeat it.
+    seen: set = set()
+    unique_notes = []
+    for item in notes:
+        key = (item["id"], item["params"].get("symbol"), item["params"].get("country"),
+               item["params"].get("date") if item["id"] == "sin-tipo-oficial" else None)
+        if key not in seen:
+            seen.add(key)
+            unique_notes.append(item)
     return {
-        "grossEur": round(gross, 2),
-        "withholdingEur": round(withheld, 2),
-        "netEur": round(net, 2),
+        "grossEur": total(r["grossEur"] for r in rows),
+        "withholdingEur": total(r["withholdingEur"] for r in rows),
+        "netEur": total(r["netEur"] for r in rows),
+        "foreignGrossEur": total(r["grossEur"] for r in foreign),
+        "creditableEur": total(r["creditableEur"] for r in rows),
+        "excessEur": total(r["excessEur"] for r in rows),
+        "spanishWithholdingEur": total(r["spanishWithholdingEur"] for r in rows),
+        "excessByCountry": [
+            {"country": c, "amountEur": float(a), "treatyRatePct": rate_by_country[c]}
+            for c, a in sorted(excess_by_country.items())
+        ],
+        "incomplete": any(r["incomplete"] for r in rows),
         "payments": rows,
+        "notes": unique_notes,
     }
 
 
@@ -1353,7 +1693,7 @@ def staking_for_year(rewards: list[dict], year: str) -> dict:
     rows = [r for r in rewards if r["date"][:4] == year]
     rows.sort(key=lambda r: r["date"], reverse=True)
     return {
-        "grossEur": round(sum(r["valueEur"] for r in rows), 2),
+        "grossEur": total(r["valueEur"] for r in rows),
         "approximate": any(r["approximate"] for r in rows),
         "rewards": rows,
     }
@@ -1442,7 +1782,9 @@ def build_checks(out_dir: Path, year: str, is_current: bool) -> list[dict]:
     crypto = crypto_value_at_year_end(out_dir, year)
     if crypto:
         value, as_of = crypto
-        over = value >= MODELO_721_THRESHOLD
+        threshold = modelo_threshold(MODELO_721_THRESHOLDS, year)
+    if crypto and threshold is not None:
+        over = value >= threshold
         checks.append(
             notice(
                 "modelo-721",
@@ -1451,17 +1793,18 @@ def build_checks(out_dir: Path, year: str, is_current: bool) -> list[dict]:
                 asOf=as_of,
                 open=is_current,
                 over=over,
-                threshold=MODELO_721_THRESHOLD,
+                threshold=threshold,
             )
         )
 
     foreign = foreign_holdings_at_year_end(out_dir, year)
-    if foreign:
+    threshold = modelo_threshold(MODELO_720_THRESHOLDS, year)
+    if foreign and threshold is not None:
         cash, securities, as_of = foreign
         # Per block, never on the sum: 40.000 € in accounts and 40.000 € in
         # securities is 80.000 € abroad and still nothing to file.
         blocks = [("cuentas", cash), ("valores", securities)]
-        over_blocks = [name for name, value in blocks if value >= MODELO_720_THRESHOLD]
+        over_blocks = [name for name, value in blocks if value >= threshold]
         checks.append(
             notice(
                 "modelo-720",
@@ -1473,7 +1816,7 @@ def build_checks(out_dir: Path, year: str, is_current: bool) -> list[dict]:
                 over=bool(over_blocks),
                 overBlocks=over_blocks,
                 overLabel=" y ".join(over_blocks).capitalize(),
-                threshold=MODELO_720_THRESHOLD,
+                threshold=threshold,
             )
         )
 
@@ -1487,16 +1830,13 @@ def build_checks(out_dir: Path, year: str, is_current: bool) -> list[dict]:
 # ── Assembling the export ──────────────────────────────────────────────────────
 
 
-def aggregate_asset_year(asset: Asset, disposals: list[dict], remaining: float) -> dict:
+def aggregate_asset_year(asset: Asset, disposals: list[dict], remaining) -> dict:
     """One row of the summary table: everything sold of one asset in one year."""
+    remaining = dec(remaining)
     acquisition_dates = sorted(
         {p["acquisitionDate"] for d in disposals for p in d["parcels"] if p["acquisitionDate"]}
     )
     disposal_dates = sorted({d["date"] for d in disposals})
-    result = round(sum(d["resultEur"] for d in disposals), 2)
-    # Partial deferrals mean this is no longer "the disposals that aren't
-    # deferred" but a sum of per-disposal computable halves.
-    computable = round(sum(d["computableResultEur"] for d in disposals), 2)
 
     return {
         "key": asset.key,
@@ -1506,25 +1846,151 @@ def aggregate_asset_year(asset: Asset, disposals: list[dict], remaining: float) 
         "platform": asset.platform,
         "isin": asset.isin,
         "currency": asset.currency,
-        "quantity": round(sum(d["quantity"] for d in disposals), 10),
-        "remainingQuantity": round(remaining, 8) if remaining > QTY_EPS else 0.0,
-        "fullExit": remaining <= QTY_EPS,
+        "listed": asset.listed,
+        "quantity": qty(sum((dec(d["quantity"]) for d in disposals), ZERO)),
+        "remainingQuantity": qty(remaining) if remaining > 0 else 0.0,
+        "fullExit": remaining <= 0,
         "acquisitionDate": acquisition_dates[0] if len(acquisition_dates) == 1 else "varias",
         "acquisitionDates": acquisition_dates,
-        "acquisitionValueEur": round(sum(d["acquisitionValueEur"] for d in disposals), 2),
+        "acquisitionValueEur": total(d["acquisitionValueEur"] for d in disposals),
         "disposalDate": disposal_dates[0] if len(disposal_dates) == 1 else "varias",
         "disposalDates": disposal_dates,
-        "disposalValueEur": round(sum(d["disposalValueEur"] for d in disposals), 2),
-        "buyFeesEur": round(sum(d["buyFeesEur"] for d in disposals), 2),
-        "sellFeesEur": round(sum(d["sellFeesEur"] for d in disposals), 2),
-        "resultEur": result,
-        "computableResultEur": computable,
-        "deferredLossEur": round(sum(d["deferredLossEur"] for d in disposals), 2),
-        "reintegratedLossEur": round(sum(d["reintegratedLossEur"] for d in disposals), 2),
+        "disposalValueEur": total(d["disposalValueEur"] for d in disposals),
+        "buyFeesEur": total(d["buyFeesEur"] for d in disposals),
+        "sellFeesEur": total(d["sellFeesEur"] for d in disposals),
+        "resultEur": total(d["resultEur"] for d in disposals),
+        # Partial deferrals mean this is no longer "the disposals that aren't
+        # deferred" but a sum of per-disposal computable halves.
+        "computableResultEur": total(d["computableResultEur"] for d in disposals),
+        "deferredLossEur": total(d["deferredLossEur"] for d in disposals),
+        "reintegratedLossEur": total(d["reintegratedLossEur"] for d in disposals),
         "deferred": any(d.get("deferred") for d in disposals),
         "review": any(d.get("review") for d in disposals),
+        "incomplete": any(d.get("incomplete") for d in disposals),
         "disposals": disposals,
     }
+
+
+def pending_from_manual(entries: list[dict]) -> list[dict]:
+    """`pendingLosses` from manual_trades.json, normalised.
+
+    Each entry is one line of "Saldos netos negativos … pendientes de
+    compensación" from a filed return: the origin year, the block ("gp" for
+    ganancias y pérdidas, "rcm" for rendimientos del capital mobiliario), and
+    the amount still pending at 1 January of `pendingAt` — the year whose
+    return it is to be used in. Without `pendingAt` the amount is taken as
+    pending from the year after the origin.
+    """
+    out = []
+    for entry in entries:
+        try:
+            origin = int(entry.get("originYear") or entry.get("year"))
+        except (TypeError, ValueError):
+            continue
+        block = str(entry.get("block") or "").lower()
+        if block not in ("gp", "rcm"):
+            continue
+        amount = abs(dec(_num(entry.get("amountEur", entry.get("amount")))))
+        pending_at = int(entry.get("pendingAt") or origin + 1)
+        out.append({"origin": origin, "block": block, "amount": amount, "pendingAt": pending_at})
+    return out
+
+
+def integrate_savings(years: list[dict], manual_pending: list[dict]) -> None:
+    """Base del ahorro, cuota and doble imposición for every year, oldest first.
+
+    The balances each year leaves pending feed the next one, so this walks the
+    years in order. A balance written in manual_trades.json is what a filed
+    return says, so from its `pendingAt` year it overrides whatever was
+    computed here for that origin year and block.
+    """
+    state: dict[tuple[int, str], Decimal] = {}
+    unapplied = sorted(manual_pending, key=lambda e: e["pendingAt"])
+    for year_data in sorted(years, key=lambda y: y["year"]):
+        year = int(year_data["year"])
+        while unapplied and unapplied[0]["pendingAt"] <= year:
+            entry = unapplied.pop(0)
+            state[(entry["origin"], entry["block"])] = entry["amount"]
+
+        gains = dec(year_data["capitalGains"]["netEur"])
+        income_block = year_data["investmentIncome"]
+        income = dec(income_block["dividends"]["grossEur"]) + dec(income_block["staking"]["grossEur"])
+        pending = [Pending(o, b, a) for (o, b), a in state.items() if a > 0]
+        result = integrate(year, gains, income, pending)
+        state = {(p.origin, p.block): p.amount for p in result.carried}
+
+        base = result.gains + result.income
+        cuota = savings_tax(base, year)
+        dividends = income_block["dividends"]
+        foreign = dec(dividends["foreignGrossEur"])
+        # The foreign income left in the base after offsetting, reduced in the
+        # same proportion as the whole income block.
+        foreign_in_base = cents(foreign * result.income / income) if income > 0 else ZERO
+        if cuota is None:
+            avg = deduction = None
+            net_cuota = None
+        else:
+            avg = average_rate_pct(cuota, base)
+            deduction = double_tax_deduction(dividends["creditableEur"], foreign_in_base, avg)
+            net_cuota = cuota - deduction
+
+        notes = []
+        if cuota is None:
+            notes.append(notice("sin-reglas", "warn", year=str(year), what="la escala del ahorro"))
+        if dividends["withholdingEur"] and year not in TREATY_RATES:
+            notes.append(notice("sin-reglas", "warn", year=str(year), what="los convenios de doble imposición"))
+        for item in result.expired:
+            notes.append(
+                notice(
+                    "perdidas-caducadas",
+                    "warn",
+                    origin=item.origin,
+                    block=item.block,
+                    amountEur=float(item.amount),
+                    year=str(year),
+                )
+            )
+        year_data["warnings"].extend(notes)
+
+        year_data["savings"] = {
+            "gainsBlockEur": float(cents(gains)),
+            "incomeBlockEur": float(cents(income)),
+            "crossOffsetEur": float(result.cross_offset),
+            "pendingApplied": [
+                {
+                    "originYear": a["origin"],
+                    "block": a["block"],
+                    "ownBlockEur": float(a["ownEur"]),
+                    "otherBlockEur": float(a["otherEur"]),
+                }
+                for a in result.applied
+            ],
+            "pendingCarried": [
+                {"originYear": p.origin, "block": p.block, "amountEur": float(p.amount)}
+                for p in result.carried
+            ],
+            "pendingExpired": [
+                {"originYear": p.origin, "block": p.block, "amountEur": float(p.amount)}
+                for p in result.expired
+            ],
+            "gainsInBaseEur": float(result.gains),
+            "incomeInBaseEur": float(result.income),
+            "baseEur": float(base),
+            "scaleKnown": cuota is not None,
+            "cuotaEur": float(cuota) if cuota is not None else None,
+            "averageRatePct": float(avg) if avg is not None else None,
+            "foreignIncomeInBaseEur": float(foreign_in_base),
+            "creditableForeignTaxEur": dividends["creditableEur"],
+            "doubleTaxDeductionEur": float(deduction) if deduction is not None else None,
+            "cuotaAfterDeductionEur": float(net_cuota) if net_cuota is not None else None,
+            "treatySource": TREATY_SOURCE,
+        }
+        # The headline estimate: the whole savings base, offsets applied,
+        # less the double-taxation deduction. None rather than a guess for a
+        # year with no scale.
+        year_data["capitalGains"]["estimatedTaxEur"] = (
+            float(net_cuota) if net_cuota is not None else None
+        )
 
 
 def build_years(
@@ -1533,7 +1999,10 @@ def build_years(
     dividends: list[dict],
     rewards: list[dict],
     base_warnings: list[tuple[str, dict]],
+    manual: dict | None = None,
+    isins: dict[str, str] | None = None,
 ) -> list[dict]:
+    manual = manual or {}
     rows_by_year: dict[str, list[dict]] = defaultdict(list)
     warnings_by_year: dict[str, list[dict]] = defaultdict(list)
     for year, item in base_warnings:
@@ -1551,11 +2020,8 @@ def build_years(
         for disposal in disposals:
             grouped[disposal["date"][:4]].append(disposal)
         # Each year gets the position as *it* closed, not as it stands now.
-        # Anything else is both wrong and unserializable: selling the same line
-        # in two years used to hand the earlier one float("inf"), which json
-        # writes as a bare `Infinity` that no JSON parser will read back.
         for year, year_disposals in grouped.items():
-            left = sum(held_at_year_end(lot, disposals, year) for lot in asset.lots)
+            left = sum((held_at_year_end(lot, disposals, year) for lot in asset.lots), ZERO)
             rows_by_year[year].append(aggregate_asset_year(asset, year_disposals, left))
 
     # A year with only dividends, or only a staking reward, still has to show up.
@@ -1568,19 +2034,19 @@ def build_years(
     out = []
     for year in sorted(years, reverse=True):
         rows = sorted(rows_by_year.get(year, []), key=lambda r: r["resultEur"])
-        gains = round(sum(r["computableResultEur"] for r in rows if r["computableResultEur"] > 0), 2)
-        losses = round(sum(r["computableResultEur"] for r in rows if r["computableResultEur"] < 0), 2)
-        deferred = round(
-            sum(d["deferredLossEur"] for r in rows for d in r["disposals"]),
-            2,
-        )
+        gains = total(r["computableResultEur"] for r in rows if r["computableResultEur"] > 0)
+        losses = total(r["computableResultEur"] for r in rows if r["computableResultEur"] < 0)
+        deferred = total(d["deferredLossEur"] for r in rows for d in r["disposals"])
         # Losses an earlier year deferred and this one gets back, because the
         # repurchase that blocked them was sold. They never belonged to any
         # single sale's result, so they are their own line — but they are
         # unquestionably part of what the year nets out to.
-        reintegrated = round(sum(r["reintegratedLossEur"] for r in rows), 2)
-        net = round(gains + losses + reintegrated, 2)
-        dividend_block = dividends_for_year(dividends, year)
+        reintegrated = total(r["reintegratedLossEur"] for r in rows)
+        net = total([gains, losses, reintegrated])
+        dividend_block = dividends_for_year(
+            dividends, year, isins, manual.get("dividendCountries")
+        )
+        dividend_notes = dividend_block.pop("notes")
         staking_block = staking_for_year(rewards, year)
 
         out.append(
@@ -1594,7 +2060,9 @@ def build_years(
                     "netEur": net,
                     "deferredLossEur": deferred,
                     "reintegratedLossEur": reintegrated,
-                    "estimatedTaxEur": round(estimate_savings_tax(net), 2),
+                    # Set by integrate_savings once every year is known.
+                    "estimatedTaxEur": None,
+                    "incomplete": any(r["incomplete"] for r in rows),
                     "byAsset": rows,
                 },
                 "investmentIncome": {
@@ -1602,17 +2070,19 @@ def build_years(
                     "staking": staking_block,
                 },
                 "checks": build_checks(out_dir, year, year == this_year),
-                "warnings": warnings_by_year.get(year, []),
+                "warnings": warnings_by_year.get(year, []) + dividend_notes,
             }
         )
+    integrate_savings(out, pending_from_manual(manual.get("pendingLosses") or []))
     return out
 
 
 # ── Renta Web filing pack ──────────────────────────────────────────────────────
 
 # Section titles are the stable part of the form; box numbers are renumbered
-# almost every year, so none is hardcoded here as if it were fact. The agent
-# navigates by these titles and by the field labels, and verifies on screen.
+# almost every year, so none is hardcoded here as if it were fact. They are
+# looked up in the AEAT's dictionary of the year (renta_casillas.py) and, where
+# that fails, the agent navigates by these titles and the field labels.
 SECTIONS = {
     "acciones-cotizadas": (
         "Ganancias y pérdidas patrimoniales derivadas de la transmisión de acciones o "
@@ -1633,6 +2103,14 @@ SECTIONS = {
     "staking": (
         "Rendimientos del capital mobiliario. Rendimientos por la cesión a terceros de "
         "capitales propios"
+    ),
+    "doble-imposicion": (
+        "Deducción por doble imposición internacional por razón de las rentas obtenidas y "
+        "gravadas en el extranjero"
+    ),
+    "saldos-pendientes": (
+        "Saldos netos negativos de ejercicios anteriores pendientes de compensación, a "
+        "integrar en la base imponible del ahorro"
     ),
 }
 
@@ -1709,6 +2187,26 @@ def _split_deferral(disposal: dict, parcels: list[dict]) -> list[float]:
     return shares
 
 
+def _missing_text(row: dict, disposal: dict, parcel: dict | None = None) -> str | None:
+    """What the acquisition-value field says instead of a number when the
+    figure cannot be filed: the purchase is missing, or a conversion had no
+    official rate."""
+    unit = "monedas" if row["assetType"] == "crypto" else "acciones"
+    if parcel is not None:
+        if parcel["source"] == "uncovered":
+            return f"Faltan compras de {_es_qty(parcel['quantity'])} {unit}"
+        if parcel.get("incomplete"):
+            return "Falta el tipo de cambio oficial de la compra"
+        if disposal.get("incomplete") and "sin-tipo-de-cambio" in disposal["incompleteReasons"]:
+            return "Falta el tipo de cambio oficial de la venta"
+        return None
+    if not disposal.get("incomplete"):
+        return None
+    if disposal.get("missingQuantity"):
+        return f"Faltan compras de {_es_qty(disposal['missingQuantity'])} {unit}"
+    return "Falta el tipo de cambio oficial"
+
+
 def _gain_entries(row: dict) -> tuple[list[dict], list[dict]]:
     """One entry per sale, plus the per-parcel breakdown as the fallback.
 
@@ -1769,6 +2267,9 @@ def _gain_entries(row: dict) -> tuple[list[dict], list[dict]]:
                 {"label": "Fecha de adquisición", "value": acquired, "format": "date"},
                 {"label": "Valor de adquisición", "value": parcel["acquisitionValueEur"], "format": "eur"},
             ]
+            missing = _missing_text(row, disposal, parcel)
+            if missing:
+                fields[-1] = {"label": "Valor de adquisición", "value": missing, "format": "missing"}
             if row["assetType"] != "crypto":
                 fields.insert(1, {
                     "label": "Nº de valores transmitidos",
@@ -1789,6 +2290,7 @@ def _gain_entries(row: dict) -> tuple[list[dict], list[dict]]:
                         parcel["acquisitionValueEur"],
                         parcel["disposalValueEur"],
                     ),
+                    "incomplete": bool(missing),
                     "deferred": bool(disposal.get("deferred")),
                     "deferredLossEur": deferred_eur,
                     "partiallyDeferred": bool(
@@ -1831,6 +2333,9 @@ def _gain_entries(row: dict) -> tuple[list[dict], list[dict]]:
             },
             {"label": "Valor de adquisición", "value": disposal["acquisitionValueEur"], "format": "eur"},
         ]
+        missing = _missing_text(row, disposal)
+        if missing:
+            fields[-1] = {"label": "Valor de adquisición", "value": missing, "format": "missing"}
         if row["assetType"] != "crypto":
             fields.insert(1, {
                 "label": "Nº de valores transmitidos",
@@ -1844,6 +2349,7 @@ def _gain_entries(row: dict) -> tuple[list[dict], list[dict]]:
                 "asset": row["symbol"],
                 "isin": row["isin"],
                 "resultEur": disposal["resultEur"],
+                "incomplete": bool(missing),
                 "feesEur": fees(
                     disposal["buyFeesEur"],
                     disposal["sellFeesEur"],
@@ -1901,6 +2407,125 @@ FEE_NOTE = {
 }
 
 
+BLOCKED_NOTE = (
+    "⛔ NO RELLENES ESTE APARTADO hasta completar los datos: hay ventas sin la compra que "
+    "las cubre o sin tipo de cambio oficial (entradas con `incomplete: true`, cuyo valor de "
+    "adquisición dice qué falta). Con coste 0 la ganancia sale inflada y pagarías de más. "
+)
+
+
+# Cited once at the top of the annex, not under every sale.
+ANNEX_RULES = [
+    "Art. 35 LIRPF: valores de adquisición y de transmisión por su importe real, con los "
+    "gastos y tributos inherentes a la operación.",
+    "Art. 37.1.a LIRPF: transmisión de valores admitidos a negociación.",
+    "Art. 37.2 LIRPF: valores homogéneos — se transmiten primero los adquiridos antes (FIFO), "
+    "sumando todos los intermediarios.",
+    "Art. 33.5.f y g LIRPF: pérdidas no computables por recompra de valores homogéneos "
+    "(dos meses si cotizan, un año si no).",
+    "Art. 49 LIRPF: integración y compensación en la base imponible del ahorro.",
+    "CNMV, Guía informativa sobre la fiscalidad de los productos financieros.",
+]
+
+SOURCE_FILES = {
+    "DEGIRO": "historial de operaciones de DEGIRO (API, totalPlusAllFeesInBaseCurrency)",
+    "Bybit": "bybit.csv (export de operaciones spot de Bybit)",
+    "Revolut": "data/revolut_trades.json (ledger de Revolut)",
+    "manual": "manual_trades.json",
+}
+
+_FX_SOURCE_TEXT = {
+    "degiro": "conversión real del bróker",
+    "ecb": "tipo de referencia del BCE",
+    "ecb-file": "tipo de referencia del BCE",
+    "identity": None,
+}
+
+
+def _fx_text(rate, source, rate_day, currency) -> str | None:
+    if not currency or currency == "EUR" or source == "identity":
+        return None
+    if rate is None:
+        return "sin tipo de cambio oficial"
+    label = _FX_SOURCE_TEXT.get(source, source or "tipo de cambio")
+    when = f" del {_es_date(rate_day)}" if rate_day and source in ("ecb", "ecb-file") else ""
+    return f"{label}{when}: 1 {currency} = {_es_num(rate, 6)} EUR"
+
+
+def _es_num(value, places: int | None = None) -> str:
+    """A plain number with a decimal comma: prices, rates, quantities."""
+    text = f"{float(value):.{places}f}" if places is not None else f"{float(value):g}"
+    return text.replace(".", ",")
+
+
+def build_annex(year_data: dict) -> dict:
+    """How every figure of every sale was reached, for a requerimiento.
+
+    Foreign brokers don't report the acquisition cost to the AEAT, so proving
+    it is on the taxpayer. One block per sale: the transmission (price ×
+    quantity → conversion → less commissions), one line per FIFO lot of the
+    acquisition, the result, and the repurchase deferral if any.
+    """
+    sales = []
+    platforms: set[str] = set()
+    for row in year_data["capitalGains"]["byAsset"]:
+        for disposal in row["disposals"]:
+            platforms.add(disposal["platform"])
+            gross = total([disposal["disposalValueEur"], disposal["sellFeesEur"]])
+            lots = []
+            for number, parcel in enumerate(disposal["parcels"], start=1):
+                if parcel.get("platform"):
+                    platforms.add(parcel["platform"])
+                lots.append(
+                    {
+                        "number": number,
+                        "quantity": parcel["quantity"],
+                        "lotQuantity": parcel.get("lotQuantity"),
+                        "date": _es_date(parcel["acquisitionDate"]),
+                        "price": parcel.get("price"),
+                        "currency": parcel.get("currency"),
+                        "fx": _fx_text(
+                            parcel.get("fxRate"), parcel.get("fxSource"), None, parcel.get("currency")
+                        ),
+                        "valueEur": parcel["acquisitionValueEur"],
+                        "feesEur": parcel["buyFeesEur"],
+                        "source": parcel["source"],
+                        "platform": parcel.get("platform"),
+                        "missing": parcel["source"] == "uncovered",
+                    }
+                )
+            sales.append(
+                {
+                    "asset": row["symbol"],
+                    "name": row["name"],
+                    "isin": row["isin"],
+                    "platform": disposal["platform"],
+                    "date": _es_date(disposal["date"]),
+                    "quantity": disposal["quantity"],
+                    "price": disposal.get("price"),
+                    "currency": disposal.get("currency"),
+                    "fx": _fx_text(
+                        disposal.get("fxRate"),
+                        disposal.get("fxSource"),
+                        disposal.get("fxDate"),
+                        disposal.get("currency"),
+                    ),
+                    "grossEur": gross,
+                    "sellFeesEur": disposal["sellFeesEur"],
+                    "disposalValueEur": disposal["disposalValueEur"],
+                    "lots": lots,
+                    "acquisitionValueEur": disposal["acquisitionValueEur"],
+                    "resultEur": disposal["resultEur"],
+                    "deferredLossEur": disposal["deferredLossEur"],
+                    "deferredBecause": [_es_date(d) for d in disposal.get("deferredBecause", [])],
+                    "computableResultEur": disposal["computableResultEur"],
+                    "incomplete": disposal.get("incomplete", False),
+                }
+            )
+    sources = sorted({SOURCE_FILES.get(p, SOURCE_FILES["manual"]) for p in platforms})
+    return {"rules": ANNEX_RULES, "sources": sources, "sales": sales}
+
+
 def build_renta_pack(year_data: dict) -> dict:
     year = year_data["year"]
     sections = []
@@ -1920,6 +2545,7 @@ def build_renta_pack(year_data: dict) -> dict:
             per_sale, per_parcel = _gain_entries(row)
             entries.extend(per_sale)
             parcel_entries.extend(per_parcel)
+        blocked = any(e.get("incomplete") for e in entries)
         merged_note = (
             " Una entrada con `merged` incluye además todas las recompensas de staking que "
             "financiaron esa venta; el detalle recompensa a recompensa está en `taxes.json`."
@@ -1933,8 +2559,10 @@ def build_renta_pack(year_data: dict) -> dict:
                 "casillaHint": "verificar en pantalla",
                 "entries": entries,
                 "parcelEntries": parcel_entries,
+                "blocked": blocked,
                 "note": (
-                    "Rellena una entrada por cada línea de `entries`: una por venta, que es la "
+                    (BLOCKED_NOTE if blocked else "")
+                    + "Rellena una entrada por cada línea de `entries`: una por venta, que es la "
                     "unidad que se declara (una transmisión, una ganancia o pérdida). Cuando la "
                     "venta se cubrió con varias compras, la fecha de adquisición es 'varias' y "
                     "las tienes en `acquisitionDates`: hay que marcar en la pantalla 'valores "
@@ -2012,33 +2640,91 @@ def build_renta_pack(year_data: dict) -> dict:
         )
 
     dividends = year_data["investmentIncome"]["dividends"]
+    savings = year_data.get("savings") or {}
     if dividends["grossEur"]:
+        excess = dividends.get("excessByCountry") or []
         sections.append(
             {
                 "id": "dividendos",
                 "rentaLabel": SECTIONS["dividendos"],
                 "casillaHint": "verificar en pantalla",
+                "blocked": bool(dividends.get("incomplete")),
                 "entries": [
                     {
                         "id": "dividendos-total",
+                        "incomplete": bool(dividends.get("incomplete")),
                         "fields": [
                             {"label": "Ingresos íntegros", "value": dividends["grossEur"], "format": "eur"},
-                            {"label": "Retenciones (España)", "value": 0.0, "format": "eur"},
                             {
-                                "label": "Impuesto satisfecho en el extranjero",
-                                "value": dividends["withholdingEur"],
+                                "label": "Retenciones (España)",
+                                "value": dividends.get("spanishWithholdingEur", 0.0),
                                 "format": "eur",
                             },
                         ],
                     }
                 ],
                 "note": (
-                    "Suelen venir ya cargados en los datos fiscales. Contrasta el íntegro y, si "
-                    "no aparece, añade el impuesto extranjero en la deducción por doble "
+                    (
+                        "⛔ NO RELLENES ESTE APARTADO todavía: algún dividendo no tiene tipo de "
+                        "cambio oficial del BCE y su importe en euros no es definitivo. "
+                        if dividends.get("incomplete")
+                        else ""
+                    )
+                    + "Suelen venir ya cargados en los datos fiscales: contrasta el íntegro. Va "
+                    "en bruto; lo retenido fuera no se resta aquí, va en la deducción por doble "
                     "imposición internacional."
+                    + (
+                        " Lo retenido por encima del convenio no se deduce en España: "
+                        + "; ".join(
+                            f"{x['country']} {_es(x['amountEur'])} €" for x in excess
+                        )
+                        + ". Eso se reclama a cada país."
+                        if excess
+                        else ""
+                    )
                 ),
             }
         )
+        if dividends.get("foreignGrossEur") and dividends.get("creditableEur"):
+            deduction = savings.get("doubleTaxDeductionEur")
+            sections.append(
+                {
+                    "id": "doble-imposicion",
+                    "rentaLabel": SECTIONS["doble-imposicion"],
+                    "casillaHint": "verificar en pantalla",
+                    "blocked": bool(dividends.get("incomplete")),
+                    "entries": [
+                        {
+                            "id": "doble-imposicion-total",
+                            "fields": [
+                                {
+                                    "label": "Rendimientos netos obtenidos en el extranjero "
+                                    "incluidos en la base liquidable",
+                                    "value": savings.get("foreignIncomeInBaseEur", dividends["foreignGrossEur"]),
+                                    "format": "eur",
+                                },
+                                {
+                                    "label": "Impuesto satisfecho en el extranjero",
+                                    "value": dividends["creditableEur"],
+                                    "format": "eur",
+                                },
+                                {
+                                    "label": "Deducción por doble imposición internacional",
+                                    "value": deduction,
+                                    "format": "eur",
+                                },
+                            ],
+                        }
+                    ],
+                    "note": (
+                        "El impuesto extranjero que se teclea es el DEDUCIBLE: lo retenido, con "
+                        "el tope del convenio de cada país. No es lo retenido sin más. La "
+                        "deducción además no puede pasar de rendimientos extranjeros × tipo "
+                        f"medio del ahorro ({_es(savings['averageRatePct']) if savings.get('averageRatePct') is not None else '—'} %); "
+                        "Renta Web la calcula sola, la cifra de aquí es para comprobarla."
+                    ),
+                }
+            )
 
     staking = year_data["investmentIncome"]["staking"]
     if staking["grossEur"]:
@@ -2063,6 +2749,54 @@ def build_renta_pack(year_data: dict) -> dict:
             }
         )
 
+    applied = savings.get("pendingApplied") or []
+    if applied:
+        entries = []
+        for item in applied:
+            block_name = (
+                "ganancias y pérdidas patrimoniales"
+                if item["block"] == "gp"
+                else "rendimientos del capital mobiliario"
+            )
+            fields = []
+            for cross, amount in ((False, item["ownBlockEur"]), (True, item["otherBlockEur"])):
+                if not amount:
+                    continue
+                fields.append(
+                    {
+                        "label": (
+                            f"Saldo negativo de {block_name} de {item['originYear']} compensado "
+                            + ("con el otro bloque (límite del 25 %)" if cross else "con su propio bloque")
+                        ),
+                        "value": amount,
+                        "format": "eur",
+                        # What renta_casillas needs to find the box by label.
+                        "block": item["block"],
+                        "origin": item["originYear"],
+                        "cross": cross,
+                    }
+                )
+            entries.append(
+                {"id": f"saldo-{item['block']}-{item['originYear']}", "fields": fields}
+            )
+        sections.append(
+            {
+                "id": "saldos-pendientes",
+                "rentaLabel": SECTIONS["saldos-pendientes"],
+                "casillaHint": "verificar en pantalla",
+                "entries": entries,
+                "note": (
+                    "Lo que se aplica este año de los saldos negativos de años anteriores, el "
+                    "más antiguo primero. Comprueba que el saldo de partida coincide con el de "
+                    "la declaración del año pasado (apartado de saldos pendientes de "
+                    "compensación)."
+                ),
+            }
+        )
+
+    for section in sections:
+        section.setdefault("blocked", False)
+
     return {
         "fiscalYear": int(year),
         "filedIn": int(year_data["filedIn"]),
@@ -2073,6 +2807,9 @@ def build_renta_pack(year_data: dict) -> dict:
             "No son asesoramiento fiscal: revísalas antes de presentar nada."
         ),
         "sections": sections,
+        "blockedSections": [x["id"] for x in sections if x["blocked"]],
+        "savings": savings,
+        "annex": build_annex(year_data),
         "checks": year_data["checks"],
         "warnings": year_data["warnings"],
     }
@@ -2115,11 +2852,70 @@ def render_renta_markdown(pack: dict) -> str:
             "",
         ]
 
+    blocked = [s for s in pack["sections"] if s.get("blocked")]
+    if blocked:
+        lines += [
+            "## ⛔ Apartados bloqueados — no los rellenes todavía",
+            "",
+            "Faltan datos para dar estas cifras por buenas (una compra que no se conoce o un "
+            "tipo de cambio oficial que no se pudo obtener). Complétalos y vuelve a generar "
+            "el paquete antes de tocar estos apartados:",
+            "",
+        ]
+        lines += [f"- {s['rentaLabel']}" for s in blocked] + [""]
+
+    savings = pack.get("savings") or {}
+    if savings:
+        lines += ["## Base del ahorro (estimación)", ""]
+        lines += [
+            "| Concepto | Importe |",
+            "|---|---:|",
+            f"| Saldo de ganancias y pérdidas del año | {_es(savings['gainsBlockEur'])} € |",
+            f"| Saldo de rendimientos del capital mobiliario | {_es(savings['incomeBlockEur'])} € |",
+        ]
+        if savings["crossOffsetEur"]:
+            lines.append(
+                f"| Compensado entre bloques (máx. 25 %) | {_es(savings['crossOffsetEur'])} € |"
+            )
+        for item in savings["pendingApplied"]:
+            name = "G/P" if item["block"] == "gp" else "RCM"
+            lines.append(
+                f"| Saldo negativo {name} de {item['originYear']} aplicado | "
+                f"{_es(item['ownBlockEur'] + item['otherBlockEur'])} € |"
+            )
+        lines.append(f"| **Base imponible del ahorro** | **{_es(savings['baseEur'])} €** |")
+        if savings.get("cuotaEur") is not None:
+            lines += [
+                f"| Cuota (escala del ahorro de {pack['fiscalYear']}) | {_es(savings['cuotaEur'])} € |",
+                f"| Tipo medio | {_es(savings['averageRatePct'])} % |",
+                f"| Deducción por doble imposición | {_es(savings['doubleTaxDeductionEur'])} € |",
+                f"| **Cuota estimada** | **{_es(savings['cuotaAfterDeductionEur'])} €** |",
+            ]
+        else:
+            lines.append(f"| Cuota | sin reglas para {pack['fiscalYear']} |")
+        lines.append("")
+        for item in savings["pendingCarried"]:
+            name = "ganancias y pérdidas" if item["block"] == "gp" else "rendimientos del capital mobiliario"
+            lines.append(
+                f"- Queda pendiente para años siguientes: {_es(item['amountEur'])} € de "
+                f"{name} de {item['originYear']}."
+            )
+        if savings["pendingCarried"]:
+            lines.append("")
+
     lines += ["## Apartados", ""]
     for section in pack["sections"]:
         lines += [
             f"### {section['rentaLabel']}",
             "",
+        ]
+        if section.get("blocked"):
+            lines += [
+                "> ⛔ **No rellenes este apartado hasta añadir lo que falta.** Las entradas "
+                "marcadas como incompletas dicen qué es.",
+                "",
+            ]
+        lines += [
             f"_Casilla: {section['casillaHint']}._ {section.get('note', '')}".strip(),
             "",
         ]
@@ -2127,19 +2923,26 @@ def render_renta_markdown(pack: dict) -> str:
             title = entry.get("asset") or entry["id"]
             lines.append(f"**{title}** — entrada `{entry['id']}`")
             lines.append("")
-            lines.append("| Campo | Valor |")
-            lines.append("|---|---|")
+            has_boxes = any(f.get("casilla") for f in entry["fields"])
+            lines.append("| Campo | Casilla | Valor |" if has_boxes else "| Campo | Valor |")
+            lines.append("|---|---|---|" if has_boxes else "|---|---|")
             for f in entry["fields"]:
                 value = f["value"]
                 if f["format"] == "eur" and isinstance(value, (int, float)):
                     shown = f"{_es(value)} €"
                 elif f["format"] == "number" and isinstance(value, (int, float)):
                     shown = f"{value:g}"
+                elif f["format"] == "missing":
+                    shown = f"⛔ **{value}**"
                 else:
                     shown = "—" if value is None else str(value)
-                lines.append(f"| {f['label']} | {shown} |")
+                if has_boxes:
+                    lines.append(f"| {f['label']} | {f.get('casilla') or '—'} | {shown} |")
+                else:
+                    lines.append(f"| {f['label']} | {shown} |")
             if entry.get("resultEur") is not None:
-                lines.append(f"| _(resultado, no se teclea)_ | _{_es(entry['resultEur'])} €_ |")
+                gap = " |" if has_boxes else ""
+                lines.append(f"| _(resultado, no se teclea)_ |{gap} _{_es(entry['resultEur'])} €_ |")
             lines.append("")
             days = entry.get("acquisitionDates") or []
             if len(days) > 1:
@@ -2212,9 +3015,13 @@ def render_renta_markdown(pack: dict) -> str:
             for entry in section["parcelEntries"]:
                 f = {x["label"]: x["value"] for x in entry["fields"]}
                 flag = " ⚠️" if entry.get("deferred") else ""
+                acquisition = f["Valor de adquisición"]
+                acquisition = (
+                    f"{_es(acquisition)} €" if isinstance(acquisition, (int, float)) else f"⛔ {acquisition}"
+                )
                 lines.append(
                     f"| `{entry['id']}`{flag} | {entry['asset']} | "
-                    f"{f['Fecha de adquisición'] or '—'} | {_es(f['Valor de adquisición'])} € | "
+                    f"{f['Fecha de adquisición'] or '—'} | {acquisition} | "
                     f"{f['Fecha de transmisión']} | {_es(f['Valor de transmisión'])} € | "
                     f"{_es(entry['resultEur'])} € |"
                 )
@@ -2227,6 +3034,8 @@ def render_renta_markdown(pack: dict) -> str:
                     "",
                 ]
 
+    lines += render_annex(pack.get("annex"))
+
     if pack["warnings"]:
         lines += ["## Avisos — resuélvelos antes de presentar", ""]
         lines += [f"- {w['message']}" for w in pack["warnings"]] + [""]
@@ -2237,6 +3046,74 @@ def render_renta_markdown(pack: dict) -> str:
     lines += ["---", "", pack["disclaimer"], ""]
     return "\n".join(lines)
 
+
+
+def render_annex(annex: dict | None) -> list[str]:
+    """Anexo de justificación: one table per sale, for a requerimiento."""
+    if not annex or not annex["sales"]:
+        return []
+    lines = [
+        "## Anexo — justificación de cada venta",
+        "",
+        "No hace falta para rellenar la declaración. Sirve para contestar un requerimiento: "
+        "los brókers extranjeros no informan a Hacienda del coste de compra, así que "
+        "justificarlo es cosa del contribuyente.",
+        "",
+        "**Normativa aplicada:**",
+        "",
+    ]
+    lines += [f"- {rule}" for rule in annex["rules"]]
+    lines += ["", "**Datos de origen:** " + "; ".join(annex["sources"]) + ".", ""]
+    lines += [
+        "_Los importes de cada lote se muestran redondeados al céntimo; el valor de "
+        "adquisición de la venta se redondea una sola vez sobre la suma exacta, así que la "
+        "suma de las líneas puede diferir en un céntimo del total._",
+        "",
+    ]
+    for sale in annex["sales"]:
+        title = f"### {sale['name']} ({sale['asset']}) — venta del {sale['date']}"
+        lines += [title + (" ⛔ incompleta" if sale["incomplete"] else ""), ""]
+        if sale["isin"]:
+            lines += [f"ISIN {sale['isin']} · {sale['platform']}", ""]
+        lines += ["| Paso | Detalle | Importe |", "|---|---|---:|"]
+        if sale["price"] is not None and sale["currency"]:
+            detail = f"{_es_num(sale['quantity'])} × {_es_num(sale['price'])} {sale['currency']}"
+            if sale["fx"]:
+                detail += f" → {sale['fx']}"
+            lines.append(f"| Importe de la venta | {detail} | {_es(sale['grossEur'])} € |")
+        else:
+            lines.append(f"| Importe de la venta | {_es_num(sale['quantity'])} unidades | {_es(sale['grossEur'])} € |")
+        lines.append(f"| − Comisiones de venta | | {_es(sale['sellFeesEur'])} € |")
+        lines.append(f"| **Valor de transmisión** | | **{_es(sale['disposalValueEur'])} €** |")
+        for lot in sale["lots"]:
+            if lot["missing"]:
+                lines.append(
+                    f"| Lote {lot['number']} | ⛔ {_es_num(lot['quantity'])} sin compra conocida | — |"
+                )
+                continue
+            detail = _es_num(lot["quantity"])
+            if lot["lotQuantity"] and lot["lotQuantity"] != lot["quantity"]:
+                detail += f" de {_es_num(lot['lotQuantity'])}"
+            detail += f" compradas el {lot['date']}"
+            if lot["price"] is not None and lot["currency"]:
+                detail += f" a {_es_num(lot['price'])} {lot['currency']}"
+            if lot["fx"]:
+                detail += f" ({lot['fx']})"
+            if lot["feesEur"]:
+                detail += f", con {_es(lot['feesEur'])} € de comisiones proporcionales"
+            if lot["platform"]:
+                detail += f" · {lot['platform']}"
+            lines.append(f"| Lote {lot['number']} | {detail} | {_es(lot['valueEur'])} € |")
+        lines.append(f"| **Valor de adquisición** | | **{_es(sale['acquisitionValueEur'])} €** |")
+        lines.append(f"| **Resultado** | | **{_es(sale['resultEur'])} €** |")
+        if sale["deferredLossEur"]:
+            lines.append(
+                f"| Pérdida aplazada por recompra | recompra el {', '.join(sale['deferredBecause'])} "
+                f"| {_es(sale['deferredLossEur'])} € |"
+            )
+            lines.append(f"| Computable este año | | {_es(sale['computableResultEur'])} € |")
+        lines.append("")
+    return lines
 
 
 def previous_degiro_trades(out_dir: Path) -> list[dict]:
@@ -2358,9 +3235,17 @@ def main() -> None:
             )
         print()
 
+    fx_warnings = check_degiro_fx(degiro_trades)
+    if fx_warnings:
+        print(f"  DEGIRO: {len(fx_warnings)} operaciones con un cambio desviado del BCE; se usa el BCE")
+
     ledger = load_revolut_ledger(root)
     assets, warnings, rewards = build_assets(degiro_trades, bybit_trades, manual, ledger)
-    years = build_years(assets, root, load_dividends(root), rewards, warnings)
+    # Dividends only carry DEGIRO's product id; the trades know its ISIN.
+    isins = {str(t["productId"]): t["isin"] for t in degiro_trades if t.get("isin")}
+    years = build_years(
+        assets, root, load_dividends(root), rewards, fx_warnings + warnings, manual, isins
+    )
 
     payload = {
         "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -2378,9 +3263,11 @@ def main() -> None:
     for year in years:
         gains = year["capitalGains"]
         flag = " (ejercicio abierto)" if year["open"] else ""
+        estimate = gains["estimatedTaxEur"]
         print(
             f"  {year['year']}{flag}: {len(gains['byAsset'])} activos vendidos, "
-            f"neto €{gains['netEur']:,.2f}, cuota estimada €{gains['estimatedTaxEur']:,.2f}"
+            f"neto €{gains['netEur']:,.2f}, cuota estimada "
+            + (f"€{estimate:,.2f}" if estimate is not None else "sin reglas para ese año")
         )
         for warning in year["warnings"]:
             print(f"    ⚠ {warning['message']}")
@@ -2396,12 +3283,19 @@ def main() -> None:
     pack = build_renta_pack(year_data)
     renta_dir = out_dir / "renta"
     renta_dir.mkdir(parents=True, exist_ok=True)
+    # Box numbers from the AEAT's dictionary of that year, when it is out.
+    annotate_pack(pack, load_dictionary(target, renta_dir))
     (renta_dir / f"renta-{target}.json").write_text(
         json.dumps(pack, indent=2, ensure_ascii=False) + "\n"
     )
     (renta_dir / f"renta-{target}.md").write_text(render_renta_markdown(pack))
     entries = sum(len(s["entries"]) for s in pack["sections"])
     print(f"  Paquete Renta {target}: {entries} entradas en {renta_dir}/renta-{target}.{{json,md}}")
+    verified = [s["id"] for s in pack["sections"] if s.get("verified")]
+    if verified:
+        print(f"  Casillas verificadas con el diccionario de la AEAT: {', '.join(verified)}")
+    if pack["blockedSections"]:
+        print(f"  ⛔ Apartados bloqueados por datos incompletos: {', '.join(pack['blockedSections'])}")
 
 
 if __name__ == "__main__":

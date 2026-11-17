@@ -137,6 +137,8 @@ Revolut has no personal API, so `plout revolut` drives the Revolut web app with 
 
 Crypto positions carry two prices, because the two answer different questions: `lastPriceEur` drives the portfolio maths, while `lastPrice` (in USD, crypto's conventional quote currency) is what the Holdings table displays — it is the number every price site shows, and it sits ~13% above the EUR one.
 
+Revolut exposes no average buy price, so the starting point is hand-kept in `crypto_cost_basis.json` (gitignored): `{"BTC": {"avgPrice": 73345, "currency": "USD", "asOf": "2026-11-02"}}`. Buys and sells in Revolut's own ledger dated **after** `asOf` — in the regular app or in Revolut X — are blended in with the average-cost method (a buy adds what you paid, fee included; a sell leaves the average unchanged), so a new buy moves the average without touching the file. Without `asOf` the number is used as-is. When you do edit `avgPrice` by hand, move `asOf` to that day too.
+
 One-time setup: `.venv/bin/playwright install chromium` (see [Setup](#setup)). Then just run:
 
 ```bash
@@ -213,10 +215,19 @@ Three sources are merged into one FIFO queue per line of homogeneous securities:
 |---|---|---|
 | DEGIRO `get_transactions_history` | every buy and sell since the account opened | already denominated in EUR by DEGIRO (`totalInBaseCurrency`), which is what their statement shows |
 | `bybit.csv` | crypto bought on Bybit and later moved to Revolut | quoted in USDC, converted at the **ECB reference rate** of each trade date (via `frankfurter.dev`, no key). `Fees` there is charged in the coin bought, so the quantity acquired is `Filled Quantity − Fees` |
-| `manual_trades.json` | disposals made outside DEGIRO, staking rewards, stray lots | gitignored and hand-maintained, like `crypto_cost_basis.json` |
+| `manual_trades.json` | disposals made outside DEGIRO, staking rewards, stray lots, plus `pendingLosses` and `dividendCountries` (below) | gitignored and hand-maintained, like `crypto_cost_basis.json`. A lot or disposal with an `isin` joins the same queue as that security's DEGIRO trades |
 
-Moving crypto between your own wallets is not a disposal, so a Bybit purchase and a later Revolut
-sale share one queue — the acquisition date and value stay the original ones.
+Securities are queued by **ISIN**, not by broker or exchange: art. 37.2 sells the oldest first
+counting every broker together, so AAPL bought on NASDAQ and on Xetra, or at DEGIRO and at
+another broker, is one FIFO queue. Moving crypto between your own wallets is not a disposal, so a
+Bybit purchase and a later Revolut sale share one queue — the acquisition date and value stay the
+original ones.
+
+Amounts are `Decimal`, rounded half-up to the cent only on the figures that are declared — the
+acquisition value of a sale is rounded once on the exact sum of its lots, so it matches Renta Web
+to the cent. Conversions use the ECB reference rate (frankfurter, then a local copy of the ECB
+series in `data/ecb/`), never a market price: with no official rate the operation is left
+incomplete.
 
 What it works out for you:
 
@@ -227,7 +238,8 @@ What it works out for you:
   order they run 0.25–0.38% of the notional, because they include the 0.25% AutoFX charge DEGIRO
   takes inside the exchange rate instead of as a cash movement. `plout fees` reads the cash
   statement, so it never sees that part; for tax it counts.
-- **Regla de los dos meses** (art. 33.5 f): a loss on listed shares is deferred when homogeneous
+- **Regla de los dos meses** (art. 33.5 f; one year for unlisted securities, 33.5 g — mark a
+  manual lot or disposal `"listed": false`): a loss on listed shares is deferred when homogeneous
   securities were repurchased within two months either side — *proportionally*, so buying back 25
   of the 85 shares sold blocks 25/85 of the loss and the other 60/85 is computable straight away.
   Only shares still held on 31 December count as a repurchase: shares the sale itself consumed
@@ -239,14 +251,30 @@ What it works out for you:
 - **Dividends and staking rewards** as *rendimientos del capital mobiliario* — art. 25.1 and 25.2
   respectively, different sections of the form. A staking reward's EUR value on the day it was
   credited does double duty: taxed then, and the acquisition value of those coins when sold.
+- **Doble imposición internacional** (art. 80): the foreign withholding Spain credits is capped
+  at the treaty rate of the paying company's country — Switzerland keeps 35 %, Spain credits 15 %
+  and the other 20 % is reclaimed from Switzerland — and the total at foreign income × the average
+  savings rate. The country is the ISIN prefix; depositary receipts (ADR/GDR) are flagged because
+  theirs is the issuing bank's. Set the real one in `manual_trades.json`:
+  `"dividendCountries": {"ACME": "DK"}` (by symbol, ISIN or DEGIRO product id).
+- **Compensación de pérdidas** (art. 49): the gains block and the investment-income block net
+  separately, a negative one offsets up to 25 % of the other, and what is left carries forward
+  four years, oldest first. Years computed here feed each other; balances from returns filed
+  before go in `manual_trades.json` as
+  `"pendingLosses": [{"originYear": 2022, "block": "gp", "amountEur": 800, "pendingAt": 2025}]`
+  (`gp` ganancias y pérdidas, `rcm` capital mobiliario; `pendingAt` is the year whose return uses
+  it, and from then on it overrides what was computed for that origin year).
 - **Modelo 721** threshold check on crypto held abroad, and **Modelo 720** on everything else
   that is — cash and securities, measured per block rather than on the total, because each block
   has its own 50.000 € threshold and crypto belongs to the 721, not here. Both are prompts to go
   and check, not verdicts: what decides it is where the custodian sits, not which app you use.
-  Plus a savings-base tax estimate, which covers capital gains only — dividends and staking are
-  savings income too but are not in that figure.
-- A sale no lot covers is never given an invented cost: the uncovered slice is declared at zero
-  (the conservative reading) and named in the warnings so you can fix it in `manual_trades.json`.
+  Plus a savings-base tax estimate: gains and investment income after offsetting, at the scale
+  of that year (28 % top rate in 2023–2024, 30 % from 2025), less the double-taxation deduction.
+  A year with no known scale gets no estimate rather than a wrong one.
+- A sale no lot covers is never given an invented cost: it is marked `incomplete`, its section of
+  the filing pack is blocked and its acquisition value reads "Faltan compras de N acciones" until
+  the purchase is added to `manual_trades.json`. A cost of 0 would maximise the gain and make you
+  overpay.
 
 ### The filing pack
 
@@ -254,6 +282,13 @@ Each run also writes `data/renta/renta-<year>.json` and `.md`. The JSON has ever
 field by field under the form's own labels; the Markdown is the brief an agent reads before
 touching Renta Web — which section to open, in what order, and three standing rules: invent no
 figure, stop and ask if a label doesn't match, never submit the return.
+
+Box numbers come from the AEAT's own field dictionary of that year
+(`diccionarioXSD_<year>.properties`, published each spring and cached in `data/renta/`): fields
+are matched by XML path, which is stable, and a section is marked verified only when every one of
+its fields is found. Before the dictionary is out the pack says "verificar en pantalla". The
+Markdown ends with an annex justifying every sale — price × quantity, the conversion used, each
+FIFO lot — to answer a requerimiento, since foreign brokers don't report acquisition costs.
 
 Every disposal entry also carries `feesEur`: the buying commission and the selling one apart,
 plus the gross amounts they were folded into. Renta Web's own window has no box for them — the
