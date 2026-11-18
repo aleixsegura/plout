@@ -7,6 +7,7 @@ import TransactionsPage from "./TransactionsPage";
 import DividendsPage from "./DividendsPage";
 import TaxesPage from "./TaxesPage";
 import CorrelationPage from "./CorrelationPage";
+import AnalysisPage from "./AnalysisPage";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="dividends" element={<DividendsPage />} />
           <Route path="taxes" element={<TaxesPage />} />
           <Route path="correlation" element={<CorrelationPage />} />
+          <Route path="analysis" element={<AnalysisPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

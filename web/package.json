@@ -6,12 +6,13 @@
   "scripts": {
     "dev": "vite",
     "demo": "vite --config vite.demo.config.ts --mode demo",
-    "build:demo": "tsc -b && vite build --config vite.demo.config.ts --mode demo",
-    "build": "tsc -b && vite build",
+    "build:demo": "tsc -b && tsc -p tsconfig.node.json && vite build --config vite.demo.config.ts --mode demo",
+    "build": "tsc -b && tsc -p tsconfig.node.json && vite build",
     "preview": "vite preview",
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
     "@fontsource-variable/lora": "^5.3.0",
     "@fontsource-variable/manrope": "^5.3.0",
     "@tailwindcss/vite": "^4.3.2",
@@ -22,6 +23,7 @@
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

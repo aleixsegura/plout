@@ -1,5 +1,8 @@
 # Plout
 
+[![CI](https://github.com/aleixsegura/plout/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aleixsegura/plout/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A local personal-finance dashboard. A set of Python exporters pull your data straight from the
 sources — DEGIRO (positions, dividends, fees), Revolut (cash + crypto) and public market
 data — into plain JSON under `data/`, and a Vite + React app in
@@ -7,6 +10,10 @@ data — into plain JSON under `data/`, and a Vite + React app in
 (IRPF): FIFO capital gains, the two-month repurchase rule (art. 33.5 f LIRPF) and a filing pack.
 
 Nothing is uploaded anywhere and no data is committed: the exports stay on your machine.
+
+> **Not tax or financial advice.** The code is provided as-is under the [MIT license](LICENSE).
+> The tax figures and the AI-written analyses are a starting point to check, not a filing or a
+> recommendation.
 
 ## Try it without any account
 
@@ -397,6 +404,7 @@ you've run the exporter behind it.
 | **Correlation** (`/correlation`) | Diversification KPIs (portfolio volatility, diversification ratio, weighted correlation, independent bets), clustered correlation heatmap, market graph with a θ slider and its maximum independent set (the heaviest when several tie, after Hidaka et al., IEEE Access 2023), risk contribution per holding vs. its weight; the risk figures use a covariance shrunk toward the average correlation (Ledoit–Wolf target, Schäfer–Strimmer intensity), raised just enough to stay positive semi-definite | `plout prices` plus the broker exports |
 | **Dividends** | Net/gross totals, per-year table, upcoming and all payments | `plout dividends` |
 | **Tax return** | Per-fiscal-year capital gains (FIFO), investment income, filing pack | `plout taxes` |
+| **Analysis** (`/analysis`) | Claude's read on the portfolio's composition — concentration, look-through currency and geography, ETF overlap, cash, crypto, income, risks — streamed into the page; clicking a Holdings row opens the same kind of read for one asset in a side panel | Dev server + `ANTHROPIC_API_KEY` |
 
 ```bash
 cd web
@@ -406,3 +414,25 @@ npm run dev    # your real data from data/ (npm run demo for the synthetic one)
 
 Then open the printed local URL in your browser. Never deploy `npm run build`'s `dist/`: it
 bundles `data/`. Only `npm run build:demo` (→ `dist-demo/`) is meant to be published.
+
+### AI analysis
+
+The **Analysis** page and the per-row panel on **Holdings** send the current exports (weights,
+HHI, P/L, dividends, fees and watchlist symbols, computed in `web/server/portfolioContext.ts`) to
+Claude (`claude-opus-5-5`, with web search and web fetch) and stream the answer back. They only
+exist on the dev server (`npm run dev` / `npm run demo`): the key stays in the Vite process and is
+never a `VITE_` variable, so it can't reach the client bundle, and static builds have no endpoint.
+
+Put the key in the project's `.env`:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Nothing is stored — not on disk, not in a cache, not as a server-side session. Closing the panel or
+reloading the page drops the answer, and every click is a new, paid call (cents per run). Hovering
+a row never calls the API.
+
+## License
+
+[MIT](LICENSE). Provided as-is; not tax or financial advice.

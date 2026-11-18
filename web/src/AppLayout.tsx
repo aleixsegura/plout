@@ -68,6 +68,12 @@ const icons: Record<string, ReactNode> = {
       <path d="M8.3 8.4 10.8 15.8M15.9 7.6l-2.6 8.2" />
     </svg>
   ),
+  analysis: (
+    <svg {...iconProps}>
+      <path d="M12 3.5l1.6 4.2 4.4 1.6-4.4 1.6L12 15.1l-1.6-4.2L6 9.3l4.4-1.6L12 3.5Z" />
+      <path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2Z" />
+    </svg>
+  ),
   taxes: (
     <svg {...iconProps}>
       <path d="M4.5 20.5 19 6M7.5 4.5a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2ZM16.5 14.3a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2Z" />
@@ -115,6 +121,7 @@ export default function AppLayout() {
   ];
   const secondaryItems = [
     { to: "/correlation", label: t.nav.correlation, icon: icons.correlation },
+    { to: "/analysis", label: t.nav.analysis, icon: icons.analysis },
     { to: "/dividends", label: t.nav.dividends, icon: icons.dividends },
     { to: "/taxes", label: t.nav.taxes, icon: icons.taxes },
   ];

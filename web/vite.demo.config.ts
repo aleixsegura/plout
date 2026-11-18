@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { analysisPlugin } from "./server/analysisPlugin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -10,7 +11,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // of the real ../data, so the app can be demoed without touching or
 // exposing real broker/account data. Separate port from `npm run dev`.
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  // The analysis endpoints are dev-server only (apply: "serve"), so the
+  // static demo build carries no API key and no endpoint.
+  plugins: [react(), tailwindcss(), analysisPlugin()],
   publicDir: path.resolve(__dirname, "../demo-data"),
   server: { port: 5175 },
   // Its own folder, so a deploy can never pick up a `dist/` built from real data.

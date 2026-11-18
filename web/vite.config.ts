@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { analysisPlugin } from "./server/analysisPlugin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -78,6 +79,7 @@ export default defineConfig({
     tailwindcss(),
     backgroundExport("market caps", "marketcaps", "marketcaps.json"),
     backgroundExport("prices", "prices", "prices.json"),
+    analysisPlugin(),
   ],
   publicDir: path.resolve(__dirname, "../data"),
 });

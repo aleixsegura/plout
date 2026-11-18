@@ -91,7 +91,16 @@ interface Props {
     posBySymbol: Map<string, Position>;
     revolutPosBySymbol: Map<string, RevolutPosition>;
   };
+  /** Click handler for a row (per-asset analysis). Absent ⇒ rows are inert. */
+  onAnalyse?: (stock: Stock) => void;
 }
+
+const analyseIcon = (
+  <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3.5l1.6 4.2 4.4 1.6-4.4 1.6L12 15.1l-1.6-4.2L6 9.3l4.4-1.6L12 3.5Z" />
+    <path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2Z" />
+  </svg>
+);
 
 function SortableTh({
   label,
@@ -133,6 +142,7 @@ export default function StocksTable({
   activeSector = null,
   sectorColor = () => "var(--sector-other)",
   positionsData,
+  onAnalyse,
 }: Props) {
   const { t } = useTranslation();
   const showPositions = positionsData !== undefined;
@@ -229,6 +239,11 @@ export default function StocksTable({
                 />
               </>
             )}
+            {onAnalyse && (
+              <th className={TH}>
+                <span className="sr-only">{t.analysis.title}</span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -250,10 +265,21 @@ export default function StocksTable({
             return (
               <tr
                 key={s.symbol}
-                className={`transition-[background-color,box-shadow] duration-150 hover:bg-hover ${
+                className={`group transition-[background-color,box-shadow] duration-150 hover:bg-hover ${
                   isActive ? "sector-active" : ""
-                }`}
+                } ${onAnalyse ? "cursor-pointer" : ""}`}
                 style={isActive ? ({ "--row-tint": tint } as CSSProperties) : undefined}
+                onClick={
+                  onAnalyse
+                    ? (e) => {
+                        // Selecting a figure to copy it is not a request for
+                        // an analysis, and nested controls keep their own click.
+                        if (window.getSelection()?.toString()) return;
+                        if ((e.target as HTMLElement).closest("a, button, input")) return;
+                        onAnalyse(s);
+                      }
+                    : undefined
+                }
               >
                 <td className={`${TD} whitespace-normal`}>
                   <span className="font-semibold text-primary">{s.name}</span>{" "}
@@ -305,6 +331,19 @@ export default function StocksTable({
                       {plPct !== null ? `${pctSignedFormat.format(plPct)}%` : "—"}
                     </td>
                   </>
+                )}
+                {onAnalyse && (
+                  <td className={`${TD} w-px text-right`}>
+                    <button
+                      type="button"
+                      onClick={() => onAnalyse(s)}
+                      aria-label={t.analysis.analyseRow(s.name)}
+                      title={t.analysis.analyseRow(s.name)}
+                      className="rounded-md p-1 text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-accent focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-focus"
+                    >
+                      {analyseIcon}
+                    </button>
+                  </td>
                 )}
               </tr>
             );

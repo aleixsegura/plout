@@ -23,6 +23,7 @@ const en = {
     dividends: "Dividends",
     taxes: "Tax return",
     correlation: "Correlation",
+    analysis: "Analysis",
   },
   sidebar: {
     collapse: "Collapse sidebar",
@@ -82,6 +83,26 @@ const en = {
     excludedNote: (count: number) => `; ${count} holdings without position data excluded`,
     equalWeighted:
       "Equal-weighted by holding count — allocation weights coming once amounts are exported.",
+  },
+  analysis: {
+    title: "Portfolio analysis",
+    intro:
+      "Ask Claude what the shape of this portfolio means: concentration, real currency and geography exposure once the ETFs are looked through, overlap, cash, crypto, income and the risks this composition carries.",
+    analyse: "Analyse my portfolio composition",
+    again: "Analyse again",
+    stop: "Stop",
+    disclaimer:
+      "Written by an AI model from your exports and the web. For information only: not financial advice and not a recommendation to buy, sell or hold anything. It can be wrong — check the figures before acting on them.",
+    ephemeral: "Nothing is saved: closing or reloading discards the answer, and every run is a new paid API call.",
+    thinking: "Thinking…",
+    searching: "Searching the web…",
+    fetching: "Reading a page…",
+    error: (message: string) => `Analysis failed: ${message}`,
+    usage: (model: string, input: number, output: number) =>
+      `${model} · ${input.toLocaleString("es-ES")} input / ${output.toLocaleString("es-ES")} output tokens`,
+    unavailable: "Analysis runs on the dev server (npm run dev) with ANTHROPIC_API_KEY in the project's .env.",
+    analyseRow: (name: string) => `Analyse ${name}`,
+    close: "Close",
   },
   holdings: {
     sectorDistribution: "Sector distribution",

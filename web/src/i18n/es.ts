@@ -22,6 +22,7 @@ const es: Translations = {
     dividends: "Dividendos",
     taxes: "Renta",
     correlation: "Correlación",
+    analysis: "Análisis",
   },
   sidebar: {
     collapse: "Contraer barra lateral",
@@ -81,6 +82,26 @@ const es: Translations = {
     excludedNote: (count: number) => `; ${count} posiciones sin datos de posición excluidas`,
     equalWeighted:
       "Ponderado por igual según el número de posiciones — las ponderaciones de asignación llegarán cuando se exporten los importes.",
+  },
+  analysis: {
+    title: "Análisis de la cartera",
+    intro:
+      "Pregunta a Claude qué significa la forma de esta cartera: concentración, exposición real por divisa y geografía una vez se mira dentro de los ETF, solapamientos, efectivo, cripto, ingresos y los riesgos que conlleva esta composición.",
+    analyse: "Analizar la composición de la cartera",
+    again: "Volver a analizar",
+    stop: "Detener",
+    disclaimer:
+      "Escrito por un modelo de IA a partir de tus exportaciones y de la web. Solo informativo: no es asesoramiento financiero ni una recomendación de comprar, vender o mantener nada. Puede equivocarse — comprueba las cifras antes de actuar.",
+    ephemeral: "No se guarda nada: cerrar o recargar descarta la respuesta, y cada ejecución es una nueva llamada de pago a la API.",
+    thinking: "Pensando…",
+    searching: "Buscando en la web…",
+    fetching: "Leyendo una página…",
+    error: (message: string) => `El análisis ha fallado: ${message}`,
+    usage: (model: string, input: number, output: number) =>
+      `${model} · ${input.toLocaleString("es-ES")} tokens de entrada / ${output.toLocaleString("es-ES")} de salida`,
+    unavailable: "El análisis funciona con el servidor de desarrollo (npm run dev) y ANTHROPIC_API_KEY en el .env del proyecto.",
+    analyseRow: (name: string) => `Analizar ${name}`,
+    close: "Cerrar",
   },
   holdings: {
     sectorDistribution: "Distribución por sectores",

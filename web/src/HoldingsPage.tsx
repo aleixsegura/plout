@@ -1,15 +1,17 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAppData } from "./data";
 import { useTranslation } from "./i18n/LanguageContext";
 import PortfolioChart from "./PortfolioChart";
 import PortfolioKpis from "./PortfolioKpis";
 import SectorDonut from "./SectorDonut";
 import StocksTable from "./StocksTable";
+import AssetAnalysisPanel from "./AssetAnalysisPanel";
+import { analysisAvailable } from "./useAnalysisStream";
 import { sectorBreakdown, sectorVar, type Sector } from "./sectors";
 import { useHoldings } from "./useHoldings";
 import { eurSigned, gainLoss, shortDate } from "./format";
 import { depositsInBenchmark } from "./performance";
-import type { BenchmarkSeries, DepositsFile, PositionsFile } from "./types";
+import type { BenchmarkSeries, DepositsFile, PositionsFile, Stock } from "./types";
 
 export default function HoldingsPage() {
   const { history, prices, deposits } = useAppData();
@@ -28,6 +30,8 @@ export default function HoldingsPage() {
     totalCashEur,
   } = useHoldings();
   const [activeSector, setActiveSector] = useState<Sector | null>(null);
+  const [analysed, setAnalysed] = useState<Stock | null>(null);
+  const closeAnalysis = useCallback(() => setAnalysed(null), []);
   const { t } = useTranslation();
   // Same slices the donut renders, so a highlighted row takes its slice's color.
   const sectorSlices = useMemo(
@@ -86,7 +90,9 @@ export default function HoldingsPage() {
           return sectorVar(slice ? slice.colorSlot : 0);
         }}
         positionsData={showPositions ? { posBySymbol, revolutPosBySymbol } : undefined}
+        onAnalyse={analysisAvailable ? setAnalysed : undefined}
       />
+      {analysed && <AssetAnalysisPanel key={analysed.symbol} stock={analysed} onClose={closeAnalysis} />}
       {showPositions && positions && <UpdatedNote updatedAt={positions.updatedAt} />}
     </>
   );
