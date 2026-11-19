@@ -92,14 +92,14 @@ const ca: Translations = {
     stop: "Atura",
     disclaimer:
       "Escrit per un model d'IA a partir de les teves exportacions i del web. Només informatiu: no és assessorament financer ni una recomanació de comprar, vendre o mantenir res. Pot equivocar-se — comprova les xifres abans d'actuar.",
-    ephemeral: "No es desa res: tancar o recarregar descarta la resposta, i cada execució és una nova crida de pagament a l'API.",
+    ephemeral: "No es desa res: tancar o recarregar descarta la resposta, i cada execució és una nova petició que compta en el teu pla de Claude.",
     thinking: "Pensant…",
     searching: "Cercant al web…",
     fetching: "Llegint una pàgina…",
     error: (message: string) => `L'anàlisi ha fallat: ${message}`,
     usage: (model: string, input: number, output: number) =>
       `${model} · ${input.toLocaleString("es-ES")} tokens d'entrada / ${output.toLocaleString("es-ES")} de sortida`,
-    unavailable: "L'anàlisi funciona amb el servidor de desenvolupament (npm run dev) i ANTHROPIC_API_KEY al .env del projecte.",
+    unavailable: "L'anàlisi funciona amb el servidor de desenvolupament (npm run dev) i la CLI de Claude Code (claude) instal·lada i amb la sessió iniciada.",
     analyseRow: (name: string) => `Analitza ${name}`,
     close: "Tanca",
   },

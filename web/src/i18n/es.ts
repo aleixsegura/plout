@@ -92,14 +92,14 @@ const es: Translations = {
     stop: "Detener",
     disclaimer:
       "Escrito por un modelo de IA a partir de tus exportaciones y de la web. Solo informativo: no es asesoramiento financiero ni una recomendación de comprar, vender o mantener nada. Puede equivocarse — comprueba las cifras antes de actuar.",
-    ephemeral: "No se guarda nada: cerrar o recargar descarta la respuesta, y cada ejecución es una nueva llamada de pago a la API.",
+    ephemeral: "No se guarda nada: cerrar o recargar descarta la respuesta, y cada ejecución es una nueva petición que cuenta en tu plan de Claude.",
     thinking: "Pensando…",
     searching: "Buscando en la web…",
     fetching: "Leyendo una página…",
     error: (message: string) => `El análisis ha fallado: ${message}`,
     usage: (model: string, input: number, output: number) =>
       `${model} · ${input.toLocaleString("es-ES")} tokens de entrada / ${output.toLocaleString("es-ES")} de salida`,
-    unavailable: "El análisis funciona con el servidor de desarrollo (npm run dev) y ANTHROPIC_API_KEY en el .env del proyecto.",
+    unavailable: "El análisis funciona con el servidor de desarrollo (npm run dev) y la CLI de Claude Code (claude) instalada y con la sesión iniciada.",
     analyseRow: (name: string) => `Analizar ${name}`,
     close: "Cerrar",
   },

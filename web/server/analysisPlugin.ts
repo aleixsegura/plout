@@ -4,20 +4,15 @@
 //   POST /__analysis/portfolio  { lang }          → composition analysis (#1)
 //   POST /__analysis/asset      { symbol, lang }  → one holding / watchlist row (#2)
 //
-// Nothing is persisted on either side: the exports are read per request, the
-// answer goes straight to the response, and a plain Messages API call keeps no
-// session at Anthropic. The API key is read here, server-side, and never
-// reaches the client bundle (it is not a VITE_ variable).
+// Each request runs the local Claude Code CLI (`claude -p`, see claudeCli.ts),
+// so it counts against the logged-in Claude plan and needs no API key. Nothing
+// is persisted: the exports are read per request, the CLI runs with
+// --no-session-persistence, and the answer goes straight to the response.
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import Anthropic from "@anthropic-ai/sdk";
-import { loadEnv, type Plugin } from "vite";
+import type { Plugin } from "vite";
+import { runClaudeAnalysis, type AnalysisEvent } from "./claudeCli";
 import { assetContext, loadExports, portfolioContext } from "./portfolioContext";
-
-const MODEL = "claude-opus-5-5";
-// A paused server-tool turn (long web research) is resumed by sending it back;
-// cap how many times so a runaway turn can't bill indefinitely.
-const MAX_CONTINUATIONS = 4;
 
 const LANGUAGE_NAMES = { en: "English", ca: "Catalan", es: "Spanish" } as const;
 type Lang = keyof typeof LANGUAGE_NAMES;
@@ -60,12 +55,6 @@ Adapt to the asset type:
 
 Aim for 350–550 words.`;
 
-type AnalysisEvent =
-  | { type: "status"; tool: string }
-  | { type: "text"; text: string }
-  | { type: "error"; message: string }
-  | { type: "done"; model: string; inputTokens: number; outputTokens: number };
-
 function send(res: ServerResponse, event: AnalysisEvent) {
   res.write(`data: ${JSON.stringify(event)}\n\n`);
 }
@@ -84,82 +73,11 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
 
 const asLang = (v: unknown): Lang => (v === "ca" || v === "es" ? v : "en");
 
-/** Run one analysis and stream its text to `res`. Resolves when the stream is
- * done (or the client went away). */
-async function streamAnalysis(
-  client: Anthropic,
-  res: ServerResponse,
-  signal: AbortSignal,
-  system: string,
-  userContent: string,
-) {
-  const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: userContent }];
-  let inputTokens = 0;
-  let outputTokens = 0;
-
-  for (let turn = 0; turn <= MAX_CONTINUATIONS; turn++) {
-    const stream = client.beta.messages.stream(
-      {
-        model: MODEL,
-        max_tokens: 32000,
-        system,
-        messages,
-        thinking: { type: "adaptive" },
-        output_config: { effort: "medium" },
-        tools: [
-          { type: "web_search_20260209", name: "web_search", max_uses: 8 },
-          { type: "web_fetch_20260209", name: "web_fetch", max_uses: 4 },
-        ],
-        // On a safety-classifier decline, the API re-runs the request on a
-        // fallback model inside the same call instead of stopping.
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
-      },
-      { signal },
-    );
-
-    for await (const event of stream) {
-      if (event.type === "content_block_start" && event.content_block.type === "server_tool_use") {
-        send(res, { type: "status", tool: event.content_block.name });
-      } else if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        send(res, { type: "text", text: event.delta.text });
-      }
-    }
-
-    const message = await stream.finalMessage();
-    inputTokens += message.usage.input_tokens;
-    outputTokens += message.usage.output_tokens;
-
-    if (message.stop_reason === "pause_turn") {
-      messages.push({ role: "assistant", content: message.content });
-      continue;
-    }
-    if (message.stop_reason === "refusal") {
-      send(res, { type: "error", message: "The model declined to answer this request." });
-      return;
-    }
-    if (message.stop_reason === "max_tokens") {
-      send(res, { type: "error", message: "The answer was cut off at the output limit." });
-    }
-    send(res, { type: "done", model: message.model, inputTokens, outputTokens });
-    return;
-  }
-  send(res, { type: "error", message: "The research ran too long and was stopped." });
-}
-
 export function analysisPlugin(): Plugin {
   return {
     name: "plout:analysis",
     apply: "serve",
     configureServer(server) {
-      // .env sits at the project root (beside .env.example), not in web/.
-      // Only ANTHROPIC_-prefixed keys are loaded, and only into this process.
-      const env = loadEnv(server.config.mode, `${server.config.root}/..`, "ANTHROPIC_");
-      const apiKey = env.ANTHROPIC_API_KEY || undefined;
-      // Without a key in .env the SDK still resolves the shell's
-      // ANTHROPIC_API_KEY or an `ant auth login` profile.
-      let client: Anthropic | null = null;
-      const getClient = () => (client ??= new Anthropic({ apiKey }));
       const dataDir = server.config.publicDir;
 
       server.middlewares.use(async (req, res, next) => {
@@ -171,9 +89,9 @@ export function analysisPlugin(): Plugin {
           return;
         }
 
-        // Closing the panel aborts the fetch; stop paying for tokens nobody
-        // reads. Registered first, so a request dropped while its body is
-        // still being read never reaches the API at all.
+        // Closing the panel aborts the fetch; kill the CLI so it stops using
+        // the plan for an answer nobody reads. Registered first, so a request
+        // dropped while its body is still being read never starts it at all.
         const abort = new AbortController();
         res.on("close", () => abort.abort());
 
@@ -227,25 +145,10 @@ export function analysisPlugin(): Plugin {
         });
 
         try {
-          await streamAnalysis(getClient(), res, abort.signal, system, userContent);
-        } catch (err) {
-          if (!abort.signal.aborted) {
-            const message =
-              // No credentials at all fails client-side, before any request,
-              // with a plain Error rather than an AuthenticationError.
-              err instanceof Anthropic.AuthenticationError ||
-              (!(err instanceof Anthropic.APIError) && err instanceof Error && /authentication/i.test(err.message))
-                ?"No valid ANTHROPIC_API_KEY: add it to the project's .env and restart the dev server."
-                : err instanceof Anthropic.RateLimitError
-                  ? "Rate limited by the API; try again in a minute."
-                  : err instanceof Anthropic.APIError
-                    ? `API error: ${err.message}`
-                    : err instanceof Error
-                      ? err.message
-                      : String(err);
-            server.config.logger.warn(`  analysis: ${message}`);
-            send(res, { type: "error", message });
-          }
+          await runClaudeAnalysis(system, userContent, abort.signal, (event) => {
+            if (event.type === "error") server.config.logger.warn(`  analysis: ${event.message}`);
+            send(res, event);
+          });
         } finally {
           res.end();
         }

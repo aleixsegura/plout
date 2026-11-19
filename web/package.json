@@ -12,7 +12,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.10.0",
     "@fontsource-variable/lora": "^5.3.0",
     "@fontsource-variable/manrope": "^5.3.0",
     "@tailwindcss/vite": "^4.3.2",
