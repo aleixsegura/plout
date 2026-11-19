@@ -13,3 +13,4 @@ manual_trades.json
 *.egg-info/
 build/
 uv.lock
+/.claude/
