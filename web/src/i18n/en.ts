@@ -336,7 +336,6 @@ const en = {
   },
   transactions: {
     title: "Transactions",
-    description: "Your Revolut current account, by month and category, plus the Boosted account's daily interest.",
     noDataIntro: "No transactions yet. Run",
     noDataOutro: "to pull your Revolut statement into",
     allTime: "All time",
@@ -349,7 +348,6 @@ const en = {
     avgPerDay: "Avg. per day",
     vsPrev: (delta: string) => `${delta} vs previous month`,
     monthlyExpenses: "Monthly expenses",
-    last12Months: "Last 12 months, by category — click a bar to open that month.",
     byCategory: "By category",
     breakdown: "Category breakdown",
     share: "share",
@@ -359,8 +357,6 @@ const en = {
     expensesOnly: "Expenses",
     incomeOnly: "Income",
     internal: "Internal moves",
-    showAll: (n: number) => `Show all ${n}`,
-    showFewer: "Show fewer",
     date: "Date",
     merchant: "Merchant",
     category: "Category",
@@ -401,7 +397,6 @@ const en = {
     },
     interest: {
       title: "Boosted account interest",
-      description: (name: string, since: string) => `Daily interest credited to ${name} since ${since}.`,
       thisMonth: "This month",
       last30: "Last 30 days",
       total: "Total earned",

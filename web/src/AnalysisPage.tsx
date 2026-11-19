@@ -30,7 +30,7 @@ export default function AnalysisPage() {
           </div>
           <AnalysisDisclaimer />
           {state.status !== "idle" && (
-            <div className="card px-5 py-4">
+            <div className="card py-4">
               <AnalysisBody state={state} />
             </div>
           )}

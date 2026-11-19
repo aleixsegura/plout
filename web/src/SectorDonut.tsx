@@ -65,7 +65,7 @@ export default function SectorDonut({
     : String(hovered ? hovered.count : totalCount);
 
   return (
-    <figure className="m-0 grid w-fit max-w-full grid-cols-[auto_1fr] items-center gap-x-8 gap-y-2 card px-6 py-5 max-[560px]:grid-cols-1 max-[560px]:justify-items-center">
+    <figure className="m-0 grid w-fit max-w-full grid-cols-[auto_1fr] items-center gap-x-8 gap-y-2 card pt-5 pb-2 max-[560px]:grid-cols-1 max-[560px]:justify-items-center">
       <div>
         <svg
           viewBox={`0 0 ${SIZE} ${SIZE}`}

@@ -17,7 +17,7 @@ import type { BenchmarkSeries, HistoryDay, HistoryFile } from "./types";
 
 const LOCALE = { en: "en-GB", ca: "ca-ES", es: "es-ES" } as const;
 
-const CARD = "h-full card px-6 py-5";
+const CARD = "h-full card pt-4 pb-2";
 
 /** lightweight-charts paints to canvas, so CSS variables can't be passed
  * through — resolve them to literals. */

@@ -337,7 +337,6 @@ const ca: Translations = {
   },
   transactions: {
     title: "Moviments",
-    description: "El teu compte corrent de Revolut, per mes i categoria, més els interessos diaris del compte Boosted.",
     noDataIntro: "Encara no hi ha moviments. Executa",
     noDataOutro: "per portar l'extracte de Revolut a",
     allTime: "Tot el període",
@@ -350,7 +349,6 @@ const ca: Translations = {
     avgPerDay: "Mitjana diària",
     vsPrev: (delta: string) => `${delta} respecte al mes anterior`,
     monthlyExpenses: "Despeses mensuals",
-    last12Months: "Últims 12 mesos, per categoria — fes clic en una barra per obrir aquell mes.",
     byCategory: "Per categoria",
     breakdown: "Desglossament per categoria",
     share: "pes",
@@ -360,8 +358,6 @@ const ca: Translations = {
     expensesOnly: "Despeses",
     incomeOnly: "Ingressos",
     internal: "Moviments interns",
-    showAll: (n: number) => `Mostra'ls tots (${n})`,
-    showFewer: "Mostra'n menys",
     date: "Data",
     merchant: "Comerç",
     category: "Categoria",
@@ -402,7 +398,6 @@ const ca: Translations = {
     },
     interest: {
       title: "Interessos del compte Boosted",
-      description: (name: string, since: string) => `Interessos diaris abonats a ${name} des del ${since}.`,
       thisMonth: "Aquest mes",
       last30: "Últims 30 dies",
       total: "Total guanyat",

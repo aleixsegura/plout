@@ -8,7 +8,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13.5px] font-medium",
     "md:group-data-[collapsed=true]:justify-center md:group-data-[collapsed=true]:px-0",
     "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus",
-    isActive ? "bg-accent-subtle text-accent" : "text-secondary hover:bg-hover hover:text-primary",
+    isActive ? "bg-nav-active text-primary shadow-[inset_2px_0_0_var(--brand)]" : "text-secondary hover:bg-hover hover:text-primary",
   ].join(" ");
 
 // Secondary items get a lighter, smaller treatment — same rule as the
@@ -18,7 +18,7 @@ const secondaryNavLinkClass = ({ isActive }: { isActive: boolean }) =>
     "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium",
     "md:group-data-[collapsed=true]:justify-center md:group-data-[collapsed=true]:px-0",
     "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus",
-    isActive ? "bg-accent-subtle text-accent" : "text-muted hover:bg-hover hover:text-secondary",
+    isActive ? "bg-nav-active text-primary shadow-[inset_2px_0_0_var(--brand)]" : "text-muted hover:bg-hover hover:text-secondary",
   ].join(" ");
 
 const iconProps = {
@@ -136,14 +136,14 @@ export default function AppLayout() {
           browsers then zoom out to fit — shrinking the page into a column. */}
       <aside
         data-collapsed={collapsed}
-        className={`group fixed inset-y-0 left-0 flex flex-col gap-6 overflow-y-auto border-r border-hairline-strong py-5 transition-[width] duration-200 ease-out max-md:static max-md:w-auto max-md:flex-row max-md:flex-wrap max-md:items-center max-md:gap-x-4 max-md:gap-y-2 max-md:overflow-visible max-md:border-r-0 max-md:border-b max-md:border-hairline-strong max-md:px-4 max-md:py-3 ${
+        className={`group fixed inset-y-0 left-0 flex flex-col gap-6 overflow-y-auto border-r border-hairline bg-sidebar py-5 transition-[width] duration-200 ease-out max-md:static max-md:w-auto max-md:flex-row max-md:flex-wrap max-md:items-center max-md:gap-x-4 max-md:gap-y-2 max-md:overflow-visible max-md:border-r-0 max-md:border-b max-md:border-hairline-strong max-md:px-4 max-md:py-3 ${
           collapsed ? "w-14 px-2" : "w-60 px-3"
         }`}
       >
         <div className="flex items-center gap-1 max-md:contents">
           <Link
             to="/"
-            className="truncate px-2.5 font-display text-[19px] font-semibold tracking-tight text-primary md:group-data-[collapsed=true]:hidden max-md:px-0"
+            className="truncate px-2.5 font-display text-[19px] font-bold tracking-tight text-brand md:group-data-[collapsed=true]:hidden max-md:px-0"
           >
             {t.app.brand}
           </Link>

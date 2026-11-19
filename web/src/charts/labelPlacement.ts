@@ -92,7 +92,7 @@ export function textWidth(text: string, weight: 400 | 600 = 400): number {
   if (context === undefined) context = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
   let width = text.length * (weight === 600 ? 6.8 : 6.4);
   if (context) {
-    context.font = `${weight} 11px "Manrope Variable", system-ui, sans-serif`;
+    context.font = `${weight} 11px "Inter Variable", system-ui, sans-serif`;
     width = context.measureText(text).width;
   }
   widths.set(key, width);

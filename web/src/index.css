@@ -1,68 +1,76 @@
 @import "tailwindcss";
-@import "@fontsource-variable/manrope";
-@import "@fontsource-variable/lora";
+@import "@fontsource-variable/inter";
 
-/* Design tokens — one palette ("Woad": blue as a dye rather than a UI color,
-   pale dyed-cloth canvas, indigo ink, desaturated earth semantics). There is
+/* Design tokens — one palette ("Warm ink"): an ivory paper canvas, warm
+   near-black ink for text, the hero chart and data bars, and clay kept for the
+   brand alone (logo and the active nav item). Green and red mean gain and loss
+   and nothing else, so no other element may be red-orange. There is
    deliberately no dark theme. */
 :root {
   color-scheme: light;
 
-  /* Surfaces — faintly dyed cloth canvas, near-white data cards, a whisper
-     lighter "elevated" surface for popovers, table heads and hover. */
-  --bg-base: #e6e7f0;
-  --bg-surface: #fbfbfe;
-  --bg-elevated: #f3f3fa;
-  --bg-hover: rgba(35, 38, 55, 0.05);
+  /* Surfaces — one ivory for canvas and sections (structure comes from
+     hairlines, not from filled cards); "elevated" is a step darker for
+     popovers, table heads and hover; the sidebar sits a half-step darker. */
+  --bg-base: #faf9f5;
+  --bg-surface: #faf9f5;
+  --bg-elevated: #f2f0e9;
+  --bg-hover: rgba(20, 20, 19, 0.045);
+  --bg-sidebar: #f5f3ec;
+  --nav-active: #ebe7dc;
 
-  /* Text tiers — indigo-black and cool slate, never pure black. */
-  --text-primary: #232637;
-  --text-secondary: #64677c;
-  --text-muted: #8b8d9f;
+  /* Text tiers — warm black and warm greys, never pure black. */
+  --text-primary: #141413;
+  --text-secondary: #5e5d58;
+  --text-muted: #8a877e;
 
-  /* Hairlines — dyed grey, opaque so cards stack cleanly on the canvas. */
-  --hairline: #d7d8e4;
-  --hairline-strong: #c2c4d3;
+  /* Hairlines — warm greys; the only thing that separates sections. */
+  --hairline: #e8e4d8;
+  --hairline-strong: #d9d4c5;
 
-  /* Semantic — gain is pulled to a sea green so it never reads as "a lighter
-     blue" next to the accent; loss is a soft madder. The accent is the woad
-     dye at full strength: active nav, hero line chart, links and focus. */
-  --gain: #4d7560;
-  --loss: #a45f5f;
-  --gain-subtle: rgba(77, 117, 96, 0.13);
-  --loss-subtle: rgba(164, 95, 95, 0.13);
-  --accent: #46528f;
-  --accent-subtle: rgba(70, 82, 143, 0.12);
+  /* Semantic — a sober green and a brick red, both muted to sit on ivory.
+     The accent is the ink itself: hero line chart, weight bars, links and
+     focus. Clay is the brand, never data. */
+  --gain: #3f7a4a;
+  --loss: #a8423a;
+  --gain-subtle: rgba(63, 122, 74, 0.12);
+  --loss-subtle: rgba(168, 66, 58, 0.11);
+  --accent: #141413;
+  --accent-subtle: rgba(20, 20, 19, 0.06);
+  --brand: #c96442;
 
-  --focus-ring: rgba(70, 82, 143, 0.45);
+  --focus-ring: rgba(20, 20, 19, 0.35);
 
-  /* Shadows — indigo at low alpha; on this canvas a black shadow reads dirty. */
-  --elevation-card: 0 1px 2px rgba(35, 38, 55, 0.06);
-  --elevation-pop: 0 8px 24px rgba(35, 38, 55, 0.14);
+  /* Shadows — warm ink at low alpha, only for popovers. */
+  --elevation-card: none;
+  --elevation-pop: 0 8px 24px rgba(20, 20, 19, 0.12);
 
-  /* Categorical palette as a hue gradient: slots are handed out by rank
+  /* Categorical palette as a muted hue gradient: slots are handed out by rank
      (largest slice first), so the biggest slices get neighbouring, related
-     tones: indigo -> violet -> pink -> coral -> amber -> green -> teal -> blue.
+     tones: navy -> blue -> sky -> teal -> sage -> olive -> ochre -> apricot ->
+     mauve -> dusk. No brick or clay, which belong to loss and the brand.
      Identity is never colour-alone: every chart also carries a legend, direct
      labels and 2px gaps. */
-  --chart-1: #5a5fe0; /* Indigo */
-  --chart-2: #8b5cf6; /* Violet */
-  --chart-3: #c084fc; /* Orchid */
-  --chart-4: #ec4899; /* Fuchsia */
-  --chart-5: #ff7a66; /* Coral */
-  --chart-6: #f5a524; /* Amber */
-  --chart-7: #22c58b; /* Green */
-  --chart-8: #14b8a6; /* Teal */
-  --chart-9: #2d9cdb; /* Azure */
-  --chart-10: #3b4cca; /* Cobalt */
-  --chart-other: #9fa1b0;
+  --chart-1: #2e3a52; /* Navy */
+  --chart-2: #4a6a96; /* Blue */
+  --chart-3: #6f93bf; /* Sky */
+  --chart-4: #5f9a94; /* Teal */
+  --chart-5: #7f9c6b; /* Sage */
+  --chart-6: #b3a15a; /* Olive */
+  --chart-7: #d4a04a; /* Ochre */
+  --chart-8: #d39a78; /* Apricot */
+  --chart-9: #a07a9c; /* Mauve */
+  --chart-10: #6d6a8e; /* Dusk */
+  --chart-other: #b8b4a8;
+  /* --chart-2 at ~28% on the ivory canvas: the months not open on the expenses bars. */
+  --chart-2-soft: #c9d1da;
 
-  /* Correlation (diverging): madder where two holdings move together, woad
-     where they offset each other, a neutral dyed grey at zero — never a hue
+  /* Correlation (diverging): brick where two holdings move together, blue
+     where they offset each other, a neutral warm grey at zero — never a hue
      at the midpoint. The heatmap mixes towards each pole by |ρ|. */
   --corr-pos: var(--loss);
-  --corr-neg: var(--accent);
-  --corr-mid: #ecedf3;
+  --corr-neg: #4a6a96;
+  --corr-mid: #efece3;
 
   /* Sector slots: slot N is the N-th largest slice (see sectorBreakdown), so
      they map straight onto the gradient above. */
@@ -83,15 +91,11 @@
    reset): utilities like bg-surface / text-gain resolve to the palette. */
 @theme inline {
   --color-*: initial;
-  /* Manrope sets the whole interface: it carries a real tabular figure set
-     (verified in the binary, unlike DM Sans or Source Sans), and its
-     semi-condensed build fits more holdings on screen than Inter did at the
-     same legibility. Lora takes the display role Outfit had — the only serif
-     considered that also ships tabular figures, which matters because the
-     dashboard's 40px hero number is set in it. */
-  --font-sans:
-    "Manrope Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Lora Variable", Georgia, "Times New Roman", serif;
+  /* Inter sets the whole interface, display figures included: it ships
+     tabular figures (tnum), which the hero number and every table column rely
+     on. Hierarchy comes from size and weight, not from a second family. */
+  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* Named "canvas", not "base": text-base (the font-size utility) would
      otherwise resolve to this color. */
@@ -113,6 +117,9 @@
   --color-loss-subtle: var(--loss-subtle);
   --color-accent: var(--accent);
   --color-accent-subtle: var(--accent-subtle);
+  --color-brand: var(--brand);
+  --color-sidebar: var(--bg-sidebar);
+  --color-nav-active: var(--nav-active);
   --color-focus: var(--focus-ring);
 
   --shadow-card: var(--elevation-card);
@@ -150,29 +157,20 @@
   }
 }
 
-/* The card recipe every page shares: a square, ink-ruled panel on the dyed
-   canvas. No radius, no shadow; structure comes from the 1px ink rules. */
+/* The section recipe every page shares: no box, no fill. A section is a run
+   of content under a single hairline; spacing and that rule do the separating.
+   Components add vertical padding only, so content stays flush with the rule. */
 @utility card {
-  border: 1px solid var(--text-primary);
-  background: var(--bg-surface);
+  border-top: 1px solid var(--hairline-strong);
+  background: transparent;
 }
 
-/* A run of cards fused into one continuous panel: the container draws the top
-   and left rules, each card its own right and bottom, so neighbours share a
-   single line instead of floating apart. Ragged last rows just stay open. */
+/* A run of sections laid out on a grid: open gutters between them, each one
+   keeping its own top rule, so a row of KPI figures reads as columns of a
+   report rather than a row of tiles. */
 @utility panel-grid {
-  border-top: 1px solid var(--text-primary);
-  border-left: 1px solid var(--text-primary);
-  & > .card {
-    border-width: 0 1px 1px 0;
-    border-color: var(--text-primary);
-  }
-}
-
-/* Card header strip: the label sits on a slightly lifted band above a rule. */
-@utility card-head {
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--hairline-strong);
+  column-gap: 2.5rem;
+  row-gap: 2rem;
 }
 
 /* Active-sector table row: the tint is data-driven (each row sets --row-tint

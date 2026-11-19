@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 
-const CARD = "flex flex-col gap-1 card px-4 py-3.5";
+const CARD = "flex flex-col gap-1 card pt-3 pb-1";
 // Dense strip: same tile, tightened so a row of summary figures reads as one
 // row instead of taking a screenful.
-const CARD_DENSE = "flex flex-col gap-0.5 card px-3 py-2";
+const CARD_DENSE = "flex flex-col gap-0.5 card pt-2";
 const LABEL = "text-xs font-semibold uppercase tracking-[0.03em] text-muted";
 const LABEL_DENSE = "text-[0.65rem] font-semibold uppercase tracking-[0.04em] text-muted";
 const VALUE = "text-[1.35rem] font-semibold leading-tight tabular-nums";

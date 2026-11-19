@@ -3,7 +3,7 @@ import { useAppData } from "./data";
 import { useTranslation } from "./i18n/LanguageContext";
 import type { DividendPayment } from "./types";
 
-const CARD = "flex flex-col gap-1 card px-4 py-3.5";
+const CARD = "flex flex-col gap-1 card pt-3 pb-1";
 const LABEL = "text-xs font-semibold uppercase tracking-[0.03em] text-muted";
 const VALUE = "text-[1.35rem] font-semibold leading-tight tabular-nums";
 const SUB = "text-[0.85rem] tabular-nums text-secondary";

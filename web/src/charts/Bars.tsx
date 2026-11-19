@@ -17,13 +17,16 @@ export interface Bar {
   color?: string;
   /** Stacked segments, bottom first. */
   segments?: BarSegment[];
+  /** Tooltip-only breakdown for a single-colour bar (largest first). */
+  breakdown?: BarSegment[];
 }
 
 interface Props {
   bars: Bar[];
   height?: number;
-  /** Bar drawn with the accent colour (e.g. the selected month). */
+  /** Bar drawn with `highlightColor` (e.g. the selected month). */
   highlightKey?: string | null;
+  highlightColor?: string;
   onSelect?: (key: string) => void;
   formatValue: (v: number) => string;
   /** Tooltip title per bar (defaults to the label). */
@@ -35,7 +38,7 @@ interface Props {
 
 const PAD_TOP = 12;
 const PAD_BOTTOM = 22;
-const PAD_X = 6;
+const PAD_X = 0;
 const PAD_LEFT = 52; // gutter for the tick labels, so they never sit on a bar
 const GAP_PX = 2; // surface gap between stacked segments
 
@@ -76,6 +79,7 @@ export default function Bars({
   bars,
   height = 200,
   highlightKey = null,
+  highlightColor = "var(--accent)",
   onSelect,
   formatValue,
   tooltipTitle,
@@ -86,13 +90,14 @@ export default function Bars({
   const [hover, setHover] = useState<string | null>(null);
   const id = useId();
   const width = useContainerWidth(wrapRef);
-  const plotH = height - PAD_TOP - PAD_BOTTOM;
+  const padTop = showValues ? PAD_TOP + 10 : PAD_TOP;
+  const plotH = height - padTop - PAD_BOTTOM;
   const max = Math.max(...bars.map(total), 0);
   const niceMax = niceCeil(max);
   const n = bars.length;
   const slot = (width - PAD_LEFT - PAD_X) / Math.max(n, 1);
   const barW = Math.min(slot * 0.62, 48);
-  const y = (v: number) => PAD_TOP + plotH - (niceMax > 0 ? (v / niceMax) * plotH : 0);
+  const y = (v: number) => padTop + plotH - (niceMax > 0 ? (v / niceMax) * plotH : 0);
   const ticks = [niceMax / 3, (2 * niceMax) / 3, niceMax];
   const hovered = bars.find((b) => b.key === hover) ?? null;
   const shownLabels = visibleLabels(bars, slot, highlightKey);
@@ -112,7 +117,7 @@ export default function Bars({
           ticks.map((t) => (
             <g key={t}>
               <line x1={PAD_LEFT} x2={width - PAD_X} y1={y(t)} y2={y(t)} stroke="var(--hairline)" strokeWidth={1} />
-              <text x={PAD_LEFT - 8} y={y(t) + 3.5} textAnchor="end" className="fill-muted tabular-nums" style={{ fontSize: 10 }}>
+              <text x={0} y={y(t) + 3.5} textAnchor="start" className="fill-muted tabular-nums" style={{ fontSize: 10 }}>
                 {formatValue(t)}
               </text>
             </g>
@@ -136,7 +141,7 @@ export default function Bars({
               onClick={onSelect ? () => onSelect(bar.key) : undefined}
             >
               {/* hit target wider than the bar */}
-              <rect x={PAD_LEFT + slot * i} y={PAD_TOP} width={slot} height={plotH + PAD_BOTTOM} fill="transparent" />
+              <rect x={PAD_LEFT + slot * i} y={padTop} width={slot} height={plotH + PAD_BOTTOM} fill="transparent" />
               <clipPath id={clip}>
                 <rect x={x} y={topY} width={barW} height={Math.max(y(0) - topY, 0)} rx={4} ry={4} />
               </clipPath>
@@ -153,18 +158,24 @@ export default function Bars({
                       y={y1 + (h > 0 ? GAP_PX / 2 : 0)}
                       width={barW}
                       height={h}
-                      fill={isHi && !bar.segments ? "var(--accent)" : seg.color}
+                      fill={isHi && !bar.segments ? highlightColor : seg.color}
                     />
                   );
                 })}
               </g>
               {/* the bottom edge stays square: only the data end is rounded */}
-              <rect x={x} y={Math.max(y(0) - 4, topY)} width={barW} height={Math.min(4, y(0) - topY)} fill={isHi && !bar.segments ? "var(--accent)" : segs[0]?.color} />
+              <rect x={x} y={Math.max(y(0) - 4, topY)} width={barW} height={Math.min(4, y(0) - topY)} fill={isHi && !bar.segments ? highlightColor : segs[0]?.color} />
               {isHi && (
                 <line x1={x - 4} x2={x + barW + 4} y1={y(0) + 3} y2={y(0) + 3} stroke="var(--accent)" strokeWidth={2} strokeLinecap="round" />
               )}
-              {showValues && sum > 0 && (
-                <text x={x + barW / 2} y={topY - 6} textAnchor="middle" className="fill-secondary tabular-nums" style={{ fontSize: 10 }}>
+              {showValues && sum > 0 && labelWidth(formatValue(sum)) * 0.9 <= slot - 4 && (
+                <text
+                  x={x + barW / 2}
+                  y={topY - 6}
+                  textAnchor="middle"
+                  className={isHi ? "fill-primary font-semibold tabular-nums" : "fill-secondary tabular-nums"}
+                  style={{ fontSize: 10.5 }}
+                >
                   {formatValue(sum)}
                 </text>
               )}
@@ -190,7 +201,7 @@ export default function Bars({
           role="tooltip"
         >
           <div className="mb-1 font-semibold text-primary">{tooltipTitle ? tooltipTitle(hovered) : hovered.label}</div>
-          {(hovered.segments ?? []).filter((s) => s.value > 0).slice().reverse().map((s) => (
+          {(hovered.segments ? hovered.segments.slice().reverse() : hovered.breakdown ?? []).filter((s) => s.value > 0).map((s) => (
             <div key={s.key} className="flex items-center justify-between gap-4">
               <span className="flex items-center gap-1.5 text-secondary">
                 <span className="inline-block size-2 rounded-[2px]" style={{ background: s.color }} />
@@ -199,7 +210,7 @@ export default function Bars({
               <span className="tabular-nums text-primary">{formatValue(s.value)}</span>
             </div>
           ))}
-          <div className={`flex items-center justify-between gap-4 ${hovered.segments ? "mt-1 border-t border-hairline pt-1" : ""}`}>
+          <div className={`flex items-center justify-between gap-4 ${hovered.segments || hovered.breakdown?.length ? "mt-1 border-t border-hairline pt-1" : ""}`}>
             <span className="text-secondary">Total</span>
             <span className="font-semibold tabular-nums text-primary">{formatValue(total(hovered))}</span>
           </div>
@@ -210,7 +221,7 @@ export default function Bars({
 }
 
 /** Round a maximum up to a "nice" tick ceiling (1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8 × 10^n). */
-function niceCeil(v: number): number {
+export function niceCeil(v: number): number {
   if (v <= 0) return 0;
   const exp = Math.floor(Math.log10(v));
   const base = Math.pow(10, exp);

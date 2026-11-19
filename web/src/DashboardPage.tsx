@@ -40,7 +40,7 @@ const LABEL = "text-[11.5px] font-semibold uppercase tracking-[0.04em] text-mute
 function Chip({ value, pct, label }: { value: number; pct: number | null; label: string }) {
   const tone = value >= 0 ? "bg-gain-subtle text-gain" : "bg-loss-subtle text-loss";
   return (
-    <span className={`inline-flex items-baseline gap-1.5 rounded-full px-2.5 py-1 text-[12.5px] font-medium tabular-nums ${tone}`}>
+    <span className={`inline-flex items-baseline gap-1.5 rounded px-2 py-0.5 text-[12.5px] font-medium tabular-nums ${tone}`}>
       {eurSigned.format(value)}
       {pct !== null && <span className="opacity-80">({pctSigned.format(pct)}%)</span>}
       <span className="font-normal opacity-70">{label}</span>

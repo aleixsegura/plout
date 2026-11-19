@@ -3,6 +3,8 @@ import Card from "./Card";
 import Bars, { type Bar } from "./charts/Bars";
 import Donut from "./charts/Donut";
 import HBar from "./charts/HBar";
+import StepArea from "./charts/StepArea";
+import useContainerHeight from "./charts/useContainerHeight";
 import { useAppData } from "./data";
 import { capFirst, eur, eur0, eurSigned, monthLabel, monthTick, pct1, pctSigned } from "./format";
 import { useTranslation } from "./i18n/LanguageContext";
@@ -26,9 +28,15 @@ import type { RevolutTransaction, TransactionMonth } from "./types";
 
 const LOCALE = { en: "en-GB", ca: "ca-ES", es: "es-ES" } as const;
 const ALL = "all";
-const ROWS_PREVIEW = 30;
 const BAR_MONTHS = 12;
+/** Fewest months the bar chart shows, even when the history is shorter. */
+const MIN_BAR_MONTHS = 6;
+/** Monthly bars: the open month in full colour, the rest in a pale tint. */
+const BAR_ON = "var(--chart-2)";
+const BAR_OFF = "var(--chart-2-soft)";
 const INTEREST_DAYS = 90;
+/** Daily-interest chart height when it can't borrow the table's (stacked layout). */
+const INTEREST_CHART_MIN = 180;
 
 type KindFilter = "all" | "expense" | "income" | "internal";
 
@@ -36,7 +44,10 @@ const TH =
   "border-b border-hairline-strong px-2.5 py-2.5 text-left text-[11.5px] font-semibold uppercase tracking-[0.04em] text-muted whitespace-nowrap";
 const TD = "border-b border-hairline px-2.5 py-2";
 const NUM = "text-right tabular-nums";
-const TABLE_WRAP = "overflow-x-auto card";
+/** The transaction list scrolls inside a box this tall (about 12 rows) so a
+ * long month never stretches the page; the header row stays pinned. */
+const LIST_WRAP = "max-h-[34rem] overflow-auto card";
+const TH_STICKY = "sticky top-0 z-[1] bg-surface";
 const TABLE = "w-full border-collapse text-[13.5px] [&_tr>*:first-child]:pl-4 [&_tr>*:last-child]:pr-4";
 
 const chipClass = (active: boolean) =>
@@ -68,8 +79,8 @@ export default function TransactionsPage() {
   const [category, setCategory] = useState<string | null>(null);
   const [kind, setKind] = useState<KindFilter>("all");
   const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [interestChartRef, interestChartHeight] = useContainerHeight(INTEREST_CHART_MIN);
 
   const isAll = period === ALL;
   const monthIndex = months.indexOf(period);
@@ -107,35 +118,52 @@ export default function TransactionsPage() {
     for (const m of file?.months ?? []) for (const c of Object.keys(m.byCategory)) if (!known.has(c) && !out.includes(c)) out.push(c);
     return out;
   }, [file]);
-  // Colors are dealt out by this period's spend (largest first); categories
-  // with no spend in the period follow, so the bars keep a stable color each.
+
+  // Months on the bar chart: the last twelve, minus the empty ones before the
+  // history starts, so a short history doesn't leave half the plot blank.
+  const barMonths = useMemo(() => {
+    const keys = monthsBack(BAR_MONTHS, isAll ? monthKey() : period > monthKey() ? period : monthKey());
+    const spent = (k: string) => (file?.months.find((m) => m.month === k)?.expenses ?? 0) > 0;
+    const first = keys.findIndex(spent);
+    return keys.slice(Math.min(first < 0 ? keys.length : first, keys.length - MIN_BAR_MONTHS));
+  }, [file, period, isAll]);
+
+  // Colors are dealt out by spend over the chart's months (largest first), so a
+  // category keeps its color when another month is opened; categories with no
+  // spend in that window follow.
   const ranking = useMemo(() => {
-    const spent = categoryRows.map((c) => c.category);
+    const totals = new Map<string, number>();
+    for (const key of barMonths) {
+      const m = file?.months.find((x) => x.month === key);
+      for (const [c, v] of Object.entries(m?.byCategory ?? {})) if (v > 0) totals.set(c, (totals.get(c) ?? 0) + v);
+    }
+    const spent = [...totals.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c);
     return [...spent, ...[...CATEGORY_ORDER, ...extraCategories].filter((c) => !spent.includes(c))];
-  }, [categoryRows, extraCategories]);
+  }, [file, barMonths, extraCategories]);
   const color = (c: string) => categoryColorVar(c, ranking);
 
   const legendCategories = useMemo(() => {
     const seen = new Set<string>();
     for (const m of file?.months ?? []) for (const c of Object.keys(m.byCategory)) seen.add(c);
-    const ordered = [...CATEGORY_ORDER, ...extraCategories].filter((c) => seen.has(c));
-    return ordered;
-  }, [file, extraCategories]);
-
+    return ranking.filter((c) => seen.has(c));
+  }, [file, ranking]);
+  // One bar per month (the per-category split lives in the donut and the
+  // breakdown below, and in each bar's tooltip). A category chip narrows the
+  // bars to that category.
   const bars: Bar[] = useMemo(() => {
-    const keys = monthsBack(BAR_MONTHS, isAll ? monthKey() : period > monthKey() ? period : monthKey());
-    return keys.map((key, i) => {
+    return barMonths.map((key, i) => {
       const m = file?.months.find((x) => x.month === key);
       const label = monthTick(key, locale, i === 0);
-      if (category) {
-        return { key, label, value: m?.byCategory[category] ?? 0, color: color(category) };
-      }
-      const segments = legendCategories
-        .map((c) => ({ key: c, value: m?.byCategory[c] ?? 0, color: color(c), label: categoryLabel(t, c) }))
-        .filter((s) => s.value > 0);
-      return { key, label, segments };
+      const on = !isAll && key === period;
+      const fill = on ? BAR_ON : BAR_OFF;
+      if (category) return { key, label, value: m?.byCategory[category] ?? 0, color: fill };
+      const breakdown = Object.entries(m?.byCategory ?? {})
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1])
+        .map(([c, v]) => ({ key: c, value: v, color: categoryColorVar(c, ranking), label: categoryLabel(t, c) }));
+      return { key, label, value: m?.expenses ?? 0, color: fill, breakdown };
     });
-  }, [file, period, isAll, category, legendCategories, ranking, locale, t]);
+  }, [file, barMonths, category, period, isAll, ranking, locale, t]);
 
   const tableRows = useMemo(() => {
     return periodRows.filter((tx) => {
@@ -147,12 +175,11 @@ export default function TransactionsPage() {
       return matchesQuery(tx, query);
     });
   }, [periodRows, kind, category, query]);
-  const visibleRows = showAll ? tableRows : tableRows.slice(0, ROWS_PREVIEW);
 
   // Group the visible rows by day with a day subtotal of what was spent.
   const groups = useMemo(() => {
     const out: { day: string; rows: RevolutTransaction[]; spent: number }[] = [];
-    for (const tx of visibleRows) {
+    for (const tx of tableRows) {
       const day = tx.date.slice(0, 10);
       let g = out[out.length - 1];
       if (!g || g.day !== day) {
@@ -163,7 +190,7 @@ export default function TransactionsPage() {
       if (tx.kind === "expense" || tx.kind === "refund" || tx.kind === "fee") g.spent -= tx.amountEur;
     }
     return out;
-  }, [visibleRows]);
+  }, [tableRows]);
 
   // Interest section.
   const interest = file?.interest;
@@ -206,7 +233,6 @@ export default function TransactionsPage() {
       <header className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div>
           <h1 className="font-display text-[26px] font-semibold tracking-tight">{t.transactions.title}</h1>
-          <p className="mt-1 max-w-prose text-sm text-secondary">{t.transactions.description}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -255,11 +281,12 @@ export default function TransactionsPage() {
 
       <div className="panel-grid grid grid-cols-12">
         <Card className="col-span-12" title={t.transactions.monthlyExpenses}>
-          <p className="-mt-2 mb-3 text-xs text-secondary">{t.transactions.last12Months}</p>
           <Bars
             bars={bars}
-            height={220}
+            height={240}
+            showValues
             highlightKey={isAll ? null : period}
+            highlightColor={BAR_ON}
             onSelect={(key) => setPeriod(key)}
             formatValue={(v) => eur0.format(v)}
             tooltipTitle={(b) => monthLabel(b.key, locale)}
@@ -274,7 +301,11 @@ export default function TransactionsPage() {
                 onClick={() => setCategory(category === c ? null : c)}
                 aria-pressed={category === c}
               >
-                <span className="size-2 rounded-[2px]" style={{ background: color(c) }} aria-hidden />
+                <span
+                  className="size-2 rounded-[2px]"
+                  style={{ background: color(c) }}
+                  aria-hidden
+                />
                 {categoryLabel(t, c)}
               </button>
             ))}
@@ -340,7 +371,6 @@ export default function TransactionsPage() {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              setShowAll(false);
             }}
             placeholder={t.transactions.searchPlaceholder}
             aria-label={t.transactions.search}
@@ -359,17 +389,17 @@ export default function TransactionsPage() {
               </button>
             )}
           </div>
-          <span className="ml-auto text-xs tabular-nums text-muted">{t.transactions.rowsShown(visibleRows.length, tableRows.length)}</span>
+          <span className="ml-auto text-xs tabular-nums text-muted">{t.transactions.rowsShown(tableRows.length, periodRows.length)}</span>
         </div>
 
-        <div className={TABLE_WRAP}>
+        <div className={LIST_WRAP}>
           <table className={TABLE}>
             <thead>
               <tr>
-                <th className={TH}>{t.transactions.date}</th>
-                <th className={TH}>{t.transactions.merchant}</th>
-                <th className={TH}>{t.transactions.category}</th>
-                <th className={`${TH} ${NUM}`}>{t.transactions.amount}</th>
+                <th className={`${TH} ${TH_STICKY}`}>{t.transactions.date}</th>
+                <th className={`${TH} ${TH_STICKY}`}>{t.transactions.merchant}</th>
+                <th className={`${TH} ${TH_STICKY}`}>{t.transactions.category}</th>
+                <th className={`${TH} ${TH_STICKY} ${NUM}`}>{t.transactions.amount}</th>
               </tr>
             </thead>
             <tbody>
@@ -386,26 +416,9 @@ export default function TransactionsPage() {
             </tbody>
           </table>
         </div>
-        {tableRows.length > ROWS_PREVIEW && (
-          <button
-            type="button"
-            className="mt-3 text-sm font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-focus"
-            onClick={() => setShowAll((v) => !v)}
-          >
-            {showAll ? t.transactions.showFewer : t.transactions.showAll(tableRows.length)}
-          </button>
-        )}
       </section>
 
       <Card className="mt-6" title={t.transactions.interest.title}>
-        {savings && (
-          <p className="-mt-2 mb-4 text-xs text-secondary">
-            {t.transactions.interest.description(
-              savings.name,
-              savings.since ? new Date(savings.since).toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" }) : "—",
-            )}
-          </p>
-        )}
         {!interest || interest.daily.length === 0 ? (
           <p className="text-sm text-secondary">{t.transactions.interest.noInterest}</p>
         ) : (
@@ -429,25 +442,32 @@ export default function TransactionsPage() {
               {savings && <KpiCard dense label={t.transactions.interest.balance} value={eur.format(savings.balanceEur)} />}
             </div>
             <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
-              <div className="min-w-0 lg:col-span-7">
+              <div className="flex min-w-0 flex-col lg:col-span-7">
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{t.transactions.interest.daily}</h3>
-                <Bars
-                  bars={interestDaily.map((d, i) => ({
-                    key: d.date,
-                    label: (i + 1) % 15 === 0 ? new Date(d.date).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "",
-                    value: d.amount,
-                    color: "var(--gain)",
-                  }))}
-                  height={180}
-                  formatValue={(v) => eur.format(v)}
-                  tooltipTitle={(b) => new Date(b.key).toLocaleDateString(locale, { day: "numeric", month: "long" })}
-                  ariaLabel={t.transactions.interest.dailyAria}
-                />
+                {/* The chart fills whatever height the month table beside it
+                    takes, so both start and end on the same line. It is drawn
+                    absolutely so it never props the row open itself. */}
+                <div ref={interestChartRef} className="relative flex-1" style={{ minHeight: INTEREST_CHART_MIN }}>
+                  <div className="absolute inset-0">
+                    <StepArea
+                      points={interestDaily.map((d, i) => ({
+                        key: d.date,
+                        label: (i + 1) % 15 === 0 ? new Date(d.date).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "",
+                        value: d.amount,
+                      }))}
+                      height={interestChartHeight}
+                      formatValue={(v) => eur.format(v)}
+                      tooltipTitle={(p) => new Date(p.key).toLocaleDateString(locale, { day: "numeric", month: "long" })}
+                      ariaLabel={t.transactions.interest.dailyAria}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="min-w-0 lg:col-span-5">
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{t.transactions.interest.byMonth}</h3>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-[13px]">
+                  {/* outer cells flush with the heading, like the chart beside it */}
+                  <table className="w-full border-collapse text-[13px] [&_tr>*:first-child]:pl-0 [&_tr>*:last-child]:pr-0">
                     <thead>
                       <tr>
                         <th className={TH}>{t.transactions.interest.month}</th>
