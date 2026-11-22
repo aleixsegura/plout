@@ -21,16 +21,15 @@ def names(steps):
 
 
 class SelectStepsTest(unittest.TestCase):
-    def test_defaults_leave_taxes_out_and_start_with_revolut(self):
+    def test_defaults_include_taxes_and_start_with_revolut(self):
         self.assertEqual(
             names(select_steps()),
-            ["revolut", "degiro", "deposits", "dividends", "fees", "prices", "marketcaps"],
+            ["revolut", "degiro", "deposits", "dividends", "fees", "taxes", "prices", "marketcaps"],
         )
 
-    def test_taxes_flag_runs_it_before_the_keyless_exports(self):
-        steps = names(select_steps(taxes=True))
-        self.assertIn("taxes", steps)
-        self.assertLess(steps.index("taxes"), steps.index("prices"))
+    def test_taxes_flag_is_harmless_and_skip_leaves_it_out(self):
+        self.assertEqual(names(select_steps(taxes=True)), names(select_steps()))
+        self.assertNotIn("taxes", names(select_steps(skip="taxes")))
 
     def test_only_and_skip(self):
         self.assertEqual(names(select_steps(only="dividends,degiro")), ["degiro", "dividends"])

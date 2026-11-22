@@ -71,13 +71,13 @@ data/                your exports (gitignored); demo-data/ holds the synthetic o
 
 | Command | Writes | Feeds |
 |---|---|---|
-| `plout sync` | everything below except `taxes.json` (add `--taxes`) | — runs the others in one go |
+| `plout sync` | everything below | — runs the others in one go |
 | `plout degiro` | `positions.json` | Holdings |
 | `plout deposits` | `deposits.json` | Holdings (net deposits) |
 | `plout revolut` | `revolut.json`, `revolut_trades.json`, `revolut_transactions.json` | Dashboard, Holdings, Transactions |
 | `plout dividends` | `dividends.json` | Dividends |
 | `plout fees` | `fees.json` | Tax return (the non-deductible-fees notice) |
-| `plout taxes` | `taxes.json`, `renta/renta-<year>.{json,md}` | Tax return |
+| `plout taxes` | `taxes.json`, `renta/renta-<year>.{json,md}` | Tax return, purchase lots on Holdings |
 | `plout marketcaps` | `marketcaps.json` | The Market Cap column, everywhere (runs itself on `npm run dev`) |
 | `plout prices` | `prices.json` | Correlation (runs itself on `npm run dev`) |
 | `plout history` | `history.json` (normally written by the broker exporters) | The portfolio chart on Holdings |
@@ -85,8 +85,8 @@ data/                your exports (gitignored); demo-data/ holds the synthetic o
 ## Refresh everything in one step
 
 ```bash
-plout sync            # Revolut, DEGIRO (positions, deposits, dividends, fees), prices, market caps
-plout sync --taxes    # …and the tax return
+plout sync            # Revolut, DEGIRO (positions, deposits, dividends, fees, taxes), prices, market caps
+plout sync --skip taxes
 plout sync --skip revolut
 plout sync --only degiro,dividends
 ```

@@ -1,7 +1,7 @@
 """
 The `plout` command: one entry point for the sync and every exporter.
 
-  plout sync [--taxes]       refresh everything (see plout.sync)
+  plout sync                 refresh everything (see plout.sync)
   plout <exporter> [args]    run one exporter, e.g. `plout degiro --logout`
   plout <command> --help     that command's own options
 

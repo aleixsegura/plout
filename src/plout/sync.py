@@ -10,12 +10,13 @@ after it runs unattended. The DEGIRO exporters share one session (see
 plout.exporters.degiro.SESSION_FILE), so the batch logs in to DEGIRO once — and with
 DEGIRO_TOTP_SECRET in .env, without the phone.
 
-The tax return is left out unless --taxes is passed: it is a once-a-year job
-and refuses to run without its manual inputs.
+The tax export runs too: besides the return, its trade ledger (taxes.json) is
+what the Holdings page splits each position into purchase lots with, so it has
+to keep pace with positions.json. `--skip taxes` leaves it out.
 
 Examples:
   plout sync
-  plout sync --taxes
+  plout sync --skip taxes
   plout sync --skip revolut
   plout sync --only degiro,dividends
 """
@@ -52,7 +53,7 @@ STEPS: tuple[Step, ...] = (
     Step("deposits", degiro=True),
     Step("dividends", degiro=True),
     Step("fees", degiro=True),
-    Step("taxes", degiro=True, default=False),
+    Step("taxes", degiro=True),
     # After the brokers: both read the holdings the steps above just wrote.
     Step("prices", ("--max-age-hours", KEYLESS_MAX_AGE_HOURS)),
     Step("marketcaps", ("--max-age-hours", KEYLESS_MAX_AGE_HOURS)),
@@ -71,8 +72,9 @@ def _names(value: str | None) -> set[str]:
 
 
 def select_steps(only: str | None = None, skip: str | None = None, taxes: bool = False) -> list[Step]:
-    """The steps to run, in STEPS order. --only overrides the defaults (so it
-    can name taxes too); --skip and --taxes adjust them."""
+    """The steps to run, in STEPS order. --only overrides the defaults; --skip
+    and --taxes adjust them (--taxes is a no-op now that taxes is a default,
+    kept so existing scripts keep working)."""
     only_names, skip_names = _names(only), _names(skip)
     selected = []
     for step in STEPS:
@@ -128,7 +130,7 @@ def print_summary(results: list[tuple[Step, str, float]]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
-    parser.add_argument("--taxes", action="store_true", help="Also run the tax return (plout taxes)")
+    parser.add_argument("--taxes", action="store_true", help="Run the tax export (the default now; kept for compatibility)")
     parser.add_argument("--only", help=f"Comma-separated steps to run instead of the defaults ({', '.join(STEP_NAMES)})")
     parser.add_argument("--skip", help="Comma-separated steps to leave out")
     parser.add_argument(
