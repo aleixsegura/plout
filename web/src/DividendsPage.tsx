@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useAppData } from "./data";
 import { useTranslation } from "./i18n/LanguageContext";
+import { forecastDividends, localToday, type DividendForecast } from "./dividendForecast";
 import type { DividendPayment } from "./types";
 
 const CARD = "flex flex-col gap-1 card pt-3 pb-1";
@@ -64,7 +65,7 @@ function addPayment(t: Totals, p: DividendPayment): void {
 }
 
 export default function DividendsPage() {
-  const { dividends } = useAppData();
+  const { dividends, positions, taxes } = useAppData();
   const { t } = useTranslation();
   const payments = dividends?.payments ?? [];
   const upcoming = (dividends?.upcoming ?? []).filter((u) => u.payDate);
@@ -96,6 +97,14 @@ export default function DividendsPage() {
       payerCount: payers.size,
     };
   }, [payments]);
+
+  const forecast = useMemo(
+    () =>
+      dividends && positions
+        ? forecastDividends(positions.positions, dividends, taxes?.trades ?? [], localToday())
+        : null,
+    [dividends, positions, taxes],
+  );
 
   // Not exported yet — mirror the silent-degrade guidance elsewhere.
   if (dividends === null) {
@@ -157,6 +166,13 @@ export default function DividendsPage() {
             {payerCount} {payerCount === 1 ? t.dividends.payer : t.dividends.payers}
           </span>
         </div>
+        {forecast && forecast.annualGrossEur > 0 && (
+          <div className={CARD}>
+            <span className={LABEL}>{t.dividends.projectedKpi}</span>
+            <span className={`${VALUE} text-gain`}>{eur.format(forecast.annualNetEur)}</span>
+            <span className={SUB}>{t.dividends.projectedSub(eur.format(forecast.annualGrossEur))}</span>
+          </div>
+        )}
         {nextPayment && (
           <div className={CARD}>
             <span className={LABEL}>{t.dividends.nextPayment}</span>
@@ -167,6 +183,8 @@ export default function DividendsPage() {
           </div>
         )}
       </section>
+
+      {forecast && <ProjectedSection forecast={forecast} />}
 
       <h2 className="mb-1 text-base font-semibold">{t.dividends.upcoming}</h2>
       {upcoming.length > 0 ? (
@@ -289,5 +307,127 @@ function UpdatedNote({ updatedAt }: { updatedAt: string }) {
         updated.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
       )}
     </p>
+  );
+}
+
+const qtyFormat = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 4, useGrouping: true });
+const pctFormat = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 });
+
+/** What the shares held today should pay over the next twelve months, per
+ * holding and payment by payment (see dividendForecast.ts). */
+function ProjectedSection({ forecast }: { forecast: DividendForecast }) {
+  const { t } = useTranslation();
+  const TABLE =
+    "w-full border-collapse text-[13.5px] [&_tbody_tr:last-child>td]:border-b-0 [&_tr>*:first-child]:pl-4 [&_tr>*:last-child]:pr-4";
+  return (
+    <section aria-label={t.dividends.projectedAria}>
+      <h2 className="mb-1 text-base font-semibold">{t.dividends.projected}</h2>
+      <p className="mb-3 max-w-prose text-sm text-secondary">{t.dividends.projectedDescription}</p>
+      {forecast.holdings.length === 0 ? (
+        <p className="mb-7 text-sm text-muted">{t.dividends.noProjection}</p>
+      ) : (
+        <>
+          <div className="mb-5 overflow-x-auto card">
+            <table className={TABLE}>
+              <thead>
+                <tr>
+                  <th className={TH}>{t.dividends.stock}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.shares}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.lastPerShare}</th>
+                  <th className={TH}>{t.dividends.frequency}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.annualPerShare}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.annualGross}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.estNet}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.yieldOnValue}</th>
+                  <th className={TH}>{t.dividends.next}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {forecast.holdings.map((h) => (
+                  <tr key={h.symbol} className="hover:bg-hover">
+                    <td className={TD}>
+                      <span className="font-semibold text-primary">{h.name}</span>{" "}
+                      <span className="text-xs text-muted">({h.symbol})</span>
+                    </td>
+                    <td className={`${TD} ${NUM}`}>{qtyFormat.format(h.quantity)}</td>
+                    <td className={`${TD} ${NUM}`}>{money(h.lastPerShare, h.currency)}</td>
+                    <td className={`${TD} text-secondary`}>
+                      {t.dividends.frequencies[h.frequency]}
+                      {h.frequencyAssumed && (
+                        <span className="ml-1 cursor-help text-muted" title={t.dividends.frequencyAssumed}>
+                          *
+                        </span>
+                      )}
+                    </td>
+                    <td className={`${TD} ${NUM}`}>{money(h.annualPerShare, h.currency)}</td>
+                    <td className={`${TD} ${NUM}`}>
+                      {eur.format(h.annualGrossEur)}
+                      {h.currency !== "EUR" && (
+                        <span className="ml-1.5 text-xs text-muted">{money(h.annualGross, h.currency)}</span>
+                      )}
+                    </td>
+                    <td className={`${TD} ${NUM} font-medium text-gain`}>{eur.format(h.annualNetEur)}</td>
+                    <td className={`${TD} ${NUM} text-secondary`}>
+                      {h.yieldPct !== null ? `${pctFormat.format(h.yieldPct)}%` : "—"}
+                    </td>
+                    <td className={`${TD} tabular-nums text-secondary`}>
+                      {h.nextDate ? formatDate(h.nextDate) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="mb-3 text-sm font-semibold">{t.dividends.projectedPayments}</h3>
+          <div className="mb-7 overflow-x-auto card">
+            <table className={TABLE}>
+              <thead>
+                <tr>
+                  <th className={TH}>{t.dividends.payDate}</th>
+                  <th className={TH}>{t.dividends.stock}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.perShare}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.gross}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.estNet}</th>
+                  <th className={TH}>
+                    <span className="sr-only">{t.dividends.estimated}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {forecast.payments.map((p, i) => (
+                  <tr key={`${p.symbol}-${p.date}-${i}`} className="hover:bg-hover">
+                    <td className={`${TD} tabular-nums text-secondary`}>{formatDate(p.date)}</td>
+                    <td className={TD}>
+                      <span className="font-semibold text-primary">{p.name}</span>{" "}
+                      <span className="text-xs text-muted">({p.symbol})</span>
+                    </td>
+                    <td className={`${TD} ${NUM} text-secondary`}>
+                      {money(p.perShare, p.currency)} × {qtyFormat.format(p.quantity)}
+                    </td>
+                    <td className={`${TD} ${NUM}`}>
+                      {eur.format(p.grossEur)}
+                      {p.currency !== "EUR" && (
+                        <span className="ml-1.5 text-xs text-muted">{money(p.gross, p.currency)}</span>
+                      )}
+                    </td>
+                    <td className={`${TD} ${NUM} font-medium text-gain`}>{eur.format(p.netEur)}</td>
+                    <td className={`${TD} text-xs`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 ${
+                          p.announced ? "bg-gain-subtle text-gain" : "bg-elevated text-muted"
+                        }`}
+                      >
+                        {p.announced ? t.dividends.announced : t.dividends.estimated}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
   );
 }

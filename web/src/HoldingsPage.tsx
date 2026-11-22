@@ -23,6 +23,7 @@ export default function HoldingsPage() {
     showPositions,
     posBySymbol,
     revolutPosBySymbol,
+    lotsBySymbol,
     valueBySymbol,
     revolutValueEur,
     revolutPl,
@@ -89,7 +90,7 @@ export default function HoldingsPage() {
           const slice = sectorSlices.find((s) => s.sector === sector);
           return sectorVar(slice ? slice.colorSlot : 0);
         }}
-        positionsData={showPositions ? { posBySymbol, revolutPosBySymbol } : undefined}
+        positionsData={showPositions ? { posBySymbol, revolutPosBySymbol, lotsBySymbol } : undefined}
         onAnalyse={analysisAvailable ? setAnalysed : undefined}
       />
       {analysed && <AssetAnalysisPanel key={analysed.symbol} stock={analysed} onClose={closeAnalysis} />}

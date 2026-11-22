@@ -538,6 +538,9 @@ export interface TaxTrade {
   platform: string;
   date: string;
   side: "buy" | "sell";
+  /** DEGIRO product id — the join key to positions.json. Absent on crypto. */
+  productId?: string | number | null;
+  isin?: string | null;
   symbol: string;
   name: string;
   assetType: string;

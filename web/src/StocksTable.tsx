@@ -1,5 +1,6 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { Fragment, useMemo, useState, type CSSProperties } from "react";
 import type { Position, RevolutPosition, Stock } from "./types";
+import type { LotBreakdown } from "./lots";
 import TypeIcon from "./TypeIcon";
 import { useTranslation } from "./i18n/LanguageContext";
 import { sectorFor, type Sector } from "./sectors";
@@ -90,10 +91,19 @@ interface Props {
   positionsData?: {
     posBySymbol: Map<string, Position>;
     revolutPosBySymbol: Map<string, RevolutPosition>;
+    /** Open purchase lots per symbol; a row with lots expands on click. */
+    lotsBySymbol?: Map<string, LotBreakdown>;
   };
-  /** Click handler for a row (per-asset analysis). Absent ⇒ rows are inert. */
+  /** Per-asset analysis, from the row's sparkle button (and from a click on a
+   * row that has no lots to expand). Absent ⇒ no analysis. */
   onAnalyse?: (stock: Stock) => void;
 }
+
+const chevronIcon = (
+  <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 6l6 6-6 6" />
+  </svg>
+);
 
 const analyseIcon = (
   <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -144,8 +154,20 @@ export default function StocksTable({
   positionsData,
   onAnalyse,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const showPositions = positionsData !== undefined;
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const toggleExpanded = (symbol: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(symbol)) next.delete(symbol);
+      else next.add(symbol);
+      return next;
+    });
+  const locale = { en: "en-GB", ca: "ca-ES", es: "es-ES" }[lang];
+  const lotDate = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
+  const columnCount = 4 + (showPositions ? 5 : 0) + (onAnalyse ? 1 : 0);
   // `chosenSort` is what the user clicked; until then the table shows the
   // heaviest position first. Derived rather than seeded into state because the
   // positions load after the first render, when there's no value to sort by.
@@ -262,26 +284,43 @@ export default function StocksTable({
             const plPct =
               plEur !== null && costEur && costEur > 0 ? (plEur / costEur) * 100 : null;
             const plClass = plEur === null ? "" : plEur >= 0 ? "text-gain" : "text-loss";
+            const lots = p ? positionsData?.lotsBySymbol?.get(s.symbol) : undefined;
+            const isOpen = lots !== undefined && expanded.has(s.symbol);
+            const onRowClick = lots ? () => toggleExpanded(s.symbol) : onAnalyse ? () => onAnalyse(s) : undefined;
             return (
+              <Fragment key={s.symbol}>
               <tr
-                key={s.symbol}
                 className={`group transition-[background-color,box-shadow] duration-150 hover:bg-hover ${
                   isActive ? "sector-active" : ""
-                } ${onAnalyse ? "cursor-pointer" : ""}`}
+                } ${onRowClick ? "cursor-pointer" : ""} ${isOpen ? "bg-hover" : ""}`}
                 style={isActive ? ({ "--row-tint": tint } as CSSProperties) : undefined}
                 onClick={
-                  onAnalyse
+                  onRowClick
                     ? (e) => {
-                        // Selecting a figure to copy it is not a request for
-                        // an analysis, and nested controls keep their own click.
+                        // Selecting a figure to copy it is not a click on the
+                        // row, and nested controls keep their own click.
                         if (window.getSelection()?.toString()) return;
                         if ((e.target as HTMLElement).closest("a, button, input")) return;
-                        onAnalyse(s);
+                        onRowClick();
                       }
                     : undefined
                 }
               >
                 <td className={`${TD} whitespace-normal`}>
+                  {lots && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(s.symbol)}
+                      aria-expanded={isOpen}
+                      aria-label={t.stocksTable.lotsToggle(s.name)}
+                      title={t.stocksTable.lotsToggle(s.name)}
+                      className={`-ml-1 mr-1 inline-flex align-[-2px] rounded p-0.5 text-muted transition-transform duration-150 hover:text-primary focus-visible:outline-2 focus-visible:outline-focus ${
+                        isOpen ? "rotate-90" : ""
+                      }`}
+                    >
+                      {chevronIcon}
+                    </button>
+                  )}
                   <span className="font-semibold text-primary">{s.name}</span>{" "}
                   <span className="text-xs text-muted">({s.symbol})</span>
                 </td>
@@ -346,10 +385,82 @@ export default function StocksTable({
                   </td>
                 )}
               </tr>
+              {isOpen && p && (
+                <LotRows
+                  breakdown={lots}
+                  position={p}
+                  showAnalyse={onAnalyse !== undefined}
+                  columnCount={columnCount}
+                  lotDate={lotDate}
+                />
+              )}
+              </Fragment>
             );
           })}
         </tbody>
       </table>
     </div>
+  );
+}
+
+const LOT_CELL = "border-b border-hairline bg-elevated/60 px-2.5 py-1.5 text-[12.5px]";
+const LOT_TD = `${LOT_CELL} whitespace-nowrap`;
+
+/** One sub-row per open purchase lot, aligned under the position's columns,
+ * plus a note when the ledger and DEGIRO don't account for the same shares. */
+function LotRows({
+  breakdown,
+  position,
+  showAnalyse,
+  columnCount,
+  lotDate,
+}: {
+  breakdown: LotBreakdown;
+  position: Position;
+  showAnalyse: boolean;
+  columnCount: number;
+  lotDate: (iso: string) => string;
+}) {
+  const { t } = useTranslation();
+  const notes = [
+    breakdown.unmatchedQuantity > 0 && t.stocksTable.lotsUnmatched(numberFormat.format(breakdown.unmatchedQuantity)),
+    breakdown.soldSinceLedger > 0 && t.stocksTable.lotsSoldSince(numberFormat.format(breakdown.soldSinceLedger)),
+    breakdown.hadSells && Math.abs(breakdown.lots.reduce((sum, l) => sum + l.plEur, 0) - position.plEur) > 1 &&
+      t.stocksTable.lotsFifo,
+  ].filter((n): n is string => typeof n === "string");
+  return (
+    <>
+      {breakdown.lots.map((lot, i) => {
+        const cls = lot.plEur >= 0 ? "text-gain" : "text-loss";
+        return (
+          <tr key={`${lot.date}-${i}`} className="text-secondary">
+            <td className={`${LOT_TD} pl-10!`} colSpan={4}>
+              <span className="text-muted">{t.stocksTable.lotBought}</span>{" "}
+              <span className="tabular-nums text-primary">{lotDate(lot.date)}</span>
+              {lot.feesEur > 0 && (
+                <span className="ml-2 text-xs text-muted">· {t.stocksTable.lotFees(eurFormat.format(lot.feesEur))}</span>
+              )}
+            </td>
+            <td className={`${LOT_TD} ${NUM}`}>{numberFormat.format(lot.quantity)}</td>
+            <td className={`${LOT_TD} ${NUM}`}>{formatInCurrency(lot.price, lot.currency)}</td>
+            <td className={`${LOT_TD} ${NUM}`}>{eurFormat.format(lot.valueEur)}</td>
+            <td className={`${LOT_TD} ${NUM} ${cls}`}>{eurSignedFormat.format(lot.plEur)}</td>
+            <td className={`${LOT_TD} ${NUM} ${cls}`}>
+              {lot.plPct !== null ? `${pctSignedFormat.format(lot.plPct * 100)}%` : "—"}
+            </td>
+            {showAnalyse && <td className={LOT_TD} />}
+          </tr>
+        );
+      })}
+      {notes.length > 0 && (
+        <tr>
+          <td className={`${LOT_CELL} pl-10! text-xs text-muted`} colSpan={columnCount}>
+            {notes.map((n) => (
+              <p key={n}>{n}</p>
+            ))}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

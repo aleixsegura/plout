@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { Position, RevolutPosition, Stock } from "./types";
 import { useAppData, useMarketCap } from "./data";
 import { externalRealizedByPlatform } from "./realized";
+import { buildLots, type LotBreakdown } from "./lots";
 
 // DEGIRO's `productType` → the `symbolType` vocabulary that TypeIcon and
 // sectorFor speak. An unmapped or missing type (files from an export before
@@ -68,6 +69,18 @@ export function useHoldings() {
     return map;
   }, [positions]);
 
+  // Open purchase lots per DEGIRO position, from the taxes.json trade ledger.
+  const lotsBySymbol = useMemo(() => {
+    const map = new Map<string, LotBreakdown>();
+    const trades = taxes?.trades ?? [];
+    if (trades.length === 0) return map;
+    for (const p of positions?.positions ?? []) {
+      const lots = buildLots(trades, p);
+      if (lots) map.set(p.symbol, lots);
+    }
+    return map;
+  }, [positions, taxes]);
+
   const revolutPosBySymbol = useMemo(() => {
     const map = new Map<string, RevolutPosition>();
     for (const p of revolut?.positions ?? []) map.set(p.symbol, p);
@@ -112,6 +125,7 @@ export function useHoldings() {
     showPositions,
     posBySymbol,
     revolutPosBySymbol,
+    lotsBySymbol,
     valueBySymbol,
     revolutValueEur,
     revolutPl,
