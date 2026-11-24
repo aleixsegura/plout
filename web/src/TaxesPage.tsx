@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent } from "react";
 import { useAppData } from "./data";
 import { useTranslation } from "./i18n/LanguageContext";
-import type { TaxAsset, TaxNotice, TaxStakingReward, TaxYear } from "./types";
+import type { TaxAsset, TaxNotice, TaxSavings, TaxStakingReward, TaxYear } from "./types";
 
 /** Which fiscal year was last open, so the page comes back where you left it. */
 const YEAR_KEY = "taxesYear";
@@ -36,10 +36,13 @@ const eur = new Intl.NumberFormat("es-ES", {
 });
 
 function formatDate(iso: string): string {
+  // A bare ISO date parses as UTC midnight; formatting it in a zone west of
+  // Greenwich would show the day before.
   return new Date(iso).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -262,10 +265,16 @@ function YearPanel({ year }: { year: TaxYear }) {
   const { t } = useTranslation();
   const gains = year.capitalGains;
   const { dividends, staking } = year.investmentIncome;
+  const hasCredit = dividends.payments.some((p) => p.creditableEur !== undefined);
   const hasIncome = dividends.payments.length > 0 || staking.rewards.length > 0;
 
   return (
     <>
+      {year.open && (
+        <p className="mb-4 max-w-prose rounded-xl border border-hairline bg-surface px-4 py-2.5 text-[13.5px] text-secondary">
+          {t.taxes.openYearNote}
+        </p>
+      )}
 
       <section
         className="panel-grid mb-6 grid [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))]"
@@ -344,8 +353,11 @@ function YearPanel({ year }: { year: TaxYear }) {
                     <tr>
                       <th className={TH}>{t.taxes.date}</th>
                       <th className={TH}>{t.taxes.payer}</th>
+                      {hasCredit && <th className={TH}>{t.taxes.country}</th>}
                       <th className={`${TH} ${NUM}`}>{t.taxes.gross}</th>
                       <th className={`${TH} ${NUM}`}>{t.taxes.withholding}</th>
+                      {hasCredit && <th className={`${TH} ${NUM}`}>{t.taxes.creditable}</th>}
+                      {hasCredit && <th className={`${TH} ${NUM}`}>{t.taxes.excess}</th>}
                       <th className={`${TH} ${NUM}`}>{t.taxes.net}</th>
                     </tr>
                   </thead>
@@ -357,13 +369,34 @@ function YearPanel({ year }: { year: TaxYear }) {
                           <span className="text-primary">{p.name}</span>
                           {p.symbol && <span className="ml-1.5 text-xs text-muted">({p.symbol})</span>}
                         </td>
+                        {hasCredit && (
+                          <td className={`${TD} text-secondary`}>
+                            {p.country ?? "—"}
+                            {p.treatyRatePct != null && (
+                              <span className="ml-1.5 text-xs text-muted">
+                                {t.taxes.treatyNote(p.treatyRatePct)}
+                              </span>
+                            )}
+                          </td>
+                        )}
                         <td className={`${TD} ${NUM}`}>{eur.format(p.grossEur)}</td>
                         <td className={`${TD} ${NUM} text-loss`}>{eur.format(p.withholdingEur)}</td>
+                        {hasCredit && (
+                          <td className={`${TD} ${NUM}`}>{eur.format(p.creditableEur ?? 0)}</td>
+                        )}
+                        {hasCredit && (
+                          <td className={`${TD} ${NUM} ${p.excessEur ? "text-loss" : "text-muted"}`}>
+                            {eur.format(p.excessEur ?? 0)}
+                          </td>
+                        )}
                         <td className={`${TD} ${NUM}`}>{eur.format(p.netEur)}</td>
                       </tr>
                     ))}
                     <tr className="bg-elevated">
-                      <td className={`${TD} border-b-0 font-semibold text-primary`} colSpan={2}>
+                      <td
+                        className={`${TD} border-b-0 font-semibold text-primary`}
+                        colSpan={hasCredit ? 3 : 2}
+                      >
                         {t.taxes.total}
                       </td>
                       <td className={`${TD} ${NUM} border-b-0 font-semibold`}>
@@ -372,6 +405,16 @@ function YearPanel({ year }: { year: TaxYear }) {
                       <td className={`${TD} ${NUM} border-b-0 font-semibold text-loss`}>
                         {eur.format(dividends.withholdingEur)}
                       </td>
+                      {hasCredit && (
+                        <td className={`${TD} ${NUM} border-b-0 font-semibold`}>
+                          {eur.format(dividends.creditableEur ?? 0)}
+                        </td>
+                      )}
+                      {hasCredit && (
+                        <td className={`${TD} ${NUM} border-b-0 font-semibold`}>
+                          {eur.format(dividends.excessEur ?? 0)}
+                        </td>
+                      )}
                       <td className={`${TD} ${NUM} border-b-0 font-semibold`}>
                         {eur.format(dividends.netEur)}
                       </td>
@@ -389,6 +432,8 @@ function YearPanel({ year }: { year: TaxYear }) {
         </>
       )}
 
+      {year.savings && <SavingsSection savings={year.savings} />}
+
       <h2 className="mt-7 mb-1 text-base font-semibold">{t.taxes.packTitle}</h2>
       <p className="mb-3 max-w-prose text-sm text-secondary">{t.taxes.packDescription}</p>
       <div className="flex flex-wrap gap-2">
@@ -397,6 +442,76 @@ function YearPanel({ year }: { year: TaxYear }) {
       </div>
 
       <p className="mt-7 max-w-prose text-[13px] text-muted">{t.taxes.feesNote}</p>
+    </>
+  );
+}
+
+/** How the year's gains and income become the taxed base and the estimate on
+ * the cards above, line by line, so the figure can be checked against the
+ * return. Losses carried forward are listed with the last year they can be
+ * used — the four-year clock is the thing people lose track of. */
+function SavingsSection({ savings }: { savings: TaxSavings }) {
+  const { t } = useTranslation();
+  const applied = savings.pendingApplied.reduce((s, a) => s + a.ownBlockEur + a.otherBlockEur, 0);
+  const row = (label: string, value: number, opts: { strong?: boolean; negate?: boolean } = {}) => {
+    const shown = opts.negate ? -value : value;
+    return (
+      <tr key={label} className={opts.strong ? "bg-elevated" : undefined}>
+        <td className={`${TD} ${opts.strong ? "font-semibold text-primary" : "text-secondary"}`}>
+          {label}
+        </td>
+        <td className={`${TD} ${NUM} ${opts.strong ? "font-semibold" : ""}`}>{eur.format(shown)}</td>
+      </tr>
+    );
+  };
+  const block = (b: "gp" | "rcm") => (b === "gp" ? t.taxes.blockGp : t.taxes.blockRcm);
+
+  return (
+    <>
+      <h2 className="mt-7 mb-1 text-base font-semibold">{t.taxes.savingsTitle}</h2>
+      <p className="mb-3 max-w-prose text-sm text-secondary">{t.taxes.savingsDescription}</p>
+      <div className={`mb-3 max-w-xl ${TABLE_WRAP}`}>
+        <table className={`${TABLE} [&_tbody_tr:last-child>td]:border-b-0`}>
+          <tbody>
+            {row(t.taxes.savingsGains, savings.gainsBlockEur)}
+            {row(t.taxes.savingsIncome, savings.incomeBlockEur)}
+            {savings.crossOffsetEur !== 0 &&
+              row(t.taxes.savingsCross, savings.crossOffsetEur, { negate: true })}
+            {applied !== 0 && row(t.taxes.savingsPending, applied, { negate: true })}
+            {row(t.taxes.savingsBase, savings.baseEur, { strong: true })}
+            {savings.scaleKnown && savings.cuotaEur != null && row(t.taxes.savingsCuota, savings.cuotaEur)}
+            {savings.scaleKnown &&
+              savings.doubleTaxDeductionEur != null &&
+              savings.doubleTaxDeductionEur !== 0 &&
+              row(
+                t.taxes.savingsDeduction((savings.averageRatePct ?? 0).toFixed(2)),
+                savings.doubleTaxDeductionEur,
+                { negate: true },
+              )}
+            {savings.scaleKnown &&
+              savings.cuotaAfterDeductionEur != null &&
+              row(t.taxes.savingsNet, savings.cuotaAfterDeductionEur, { strong: true })}
+          </tbody>
+        </table>
+      </div>
+      {!savings.scaleKnown && (
+        <p className="mb-3 max-w-prose text-[13px] text-muted">{t.taxes.savingsNoScale}</p>
+      )}
+      {savings.pendingCarried.length > 0 && (
+        <>
+          <h3 className="mb-2 mt-4 text-[13.5px] font-semibold text-secondary">
+            {t.taxes.carriedTitle}
+          </h3>
+          <ul className="mb-3 flex max-w-xl flex-col gap-1 text-[13.5px] text-secondary">
+            {savings.pendingCarried.map((p) => (
+              <li key={`${p.originYear}-${p.block}`} className="flex justify-between gap-4">
+                <span>{t.taxes.carriedLine(p.originYear, block(p.block), p.originYear + 4)}</span>
+                <span className="tabular-nums text-primary">{eur.format(p.amountEur)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </>
   );
 }
