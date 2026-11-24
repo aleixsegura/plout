@@ -351,6 +351,13 @@ div_payments_2025 = [
          grossEur=48.60, withholdingEur=9.23, netEur=39.37),
 ]
 
+for _p in div_payments_2025:
+    _c = "US" if _p["currency"] == "USD" else "IE"
+    _cap = round(_p["grossEur"] * 0.15, 2)
+    _cred = min(_p["withholdingEur"], _cap)
+    _p.update(country=_c, treatyRatePct=15.0, creditableEur=_cred,
+              excessEur=round(_p["withholdingEur"] - _cred, 2), spanishWithholdingEur=0.0)
+
 tax_year_2025 = dict(
     year="2025", filedIn="2026", open=False,
     capitalGains=dict(
@@ -400,6 +407,13 @@ div_payments_2026 = [
     dict(date="2026-05-16", symbol="O", name="Realty Income Corp", currency="USD",
          grossEur=204.90, withholdingEur=30.74, netEur=174.16),
 ]
+for _p in div_payments_2026:
+    _c = "US" if _p["currency"] == "USD" else "IE"
+    _cap = round(_p["grossEur"] * 0.15, 2)
+    _cred = min(_p["withholdingEur"], _cap)
+    _p.update(country=_c, treatyRatePct=15.0, creditableEur=_cred,
+              excessEur=round(_p["withholdingEur"] - _cred, 2), spanishWithholdingEur=0.0)
+
 tax_year_2026 = dict(
     year="2026", filedIn="2027", open=True,
     capitalGains=dict(
@@ -420,6 +434,32 @@ tax_year_2026 = dict(
     ),
     checks=[], warnings=[],
 )
+
+def savings_block(year):
+    gains = year["capitalGains"]["netEur"]
+    div = year["investmentIncome"]["dividends"]
+    income = round(div["grossEur"] + year["investmentIncome"]["staking"]["grossEur"], 2)
+    base = round(gains + income, 2)
+    cuota = round(base * 0.19, 2)
+    foreign = round(sum(p["grossEur"] for p in div["payments"] if p["country"] != "ES"), 2)
+    credit = round(sum(p["creditableEur"] for p in div["payments"]), 2)
+    deduction = min(credit, round(foreign * 0.19, 2))
+    div.update(foreignGrossEur=foreign, creditableEur=credit,
+               excessEur=round(sum(p["excessEur"] for p in div["payments"]), 2),
+               spanishWithholdingEur=0.0)
+    year["capitalGains"]["estimatedTaxEur"] = round(cuota - deduction, 2)
+    return dict(
+        gainsBlockEur=gains, incomeBlockEur=income, crossOffsetEur=0.0,
+        pendingApplied=[], pendingCarried=[], pendingExpired=[],
+        gainsInBaseEur=gains, incomeInBaseEur=income, baseEur=base, scaleKnown=True,
+        cuotaEur=cuota, averageRatePct=19.0, foreignIncomeInBaseEur=foreign,
+        creditableForeignTaxEur=credit, doubleTaxDeductionEur=deduction,
+        cuotaAfterDeductionEur=round(cuota - deduction, 2), treatySource="",
+    )
+
+
+for _y in (tax_year_2025, tax_year_2026):
+    _y["savings"] = savings_block(_y)
 
 trades = []
 tid = 1

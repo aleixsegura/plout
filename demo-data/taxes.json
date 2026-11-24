@@ -15,7 +15,7 @@
         "netEur": 362.4,
         "deferredLossEur": 0.0,
         "reintegratedLossEur": 0.0,
-        "estimatedTaxEur": 68.86,
+        "estimatedTaxEur": 81.11,
         "byAsset": [
           {
             "key": "aapl-2026",
@@ -98,7 +98,12 @@
               "currency": "USD",
               "grossEur": 101.4,
               "withholdingEur": 15.21,
-              "netEur": 86.19
+              "netEur": 86.19,
+              "country": "US",
+              "treatyRatePct": 15.0,
+              "creditableEur": 15.21,
+              "excessEur": 0.0,
+              "spanishWithholdingEur": 0.0
             },
             {
               "date": "2026-05-16",
@@ -107,9 +112,18 @@
               "currency": "USD",
               "grossEur": 204.9,
               "withholdingEur": 30.74,
-              "netEur": 174.16
+              "netEur": 174.16,
+              "country": "US",
+              "treatyRatePct": 15.0,
+              "creditableEur": 30.73,
+              "excessEur": 0.01,
+              "spanishWithholdingEur": 0.0
             }
-          ]
+          ],
+          "foreignGrossEur": 306.3,
+          "creditableEur": 45.94,
+          "excessEur": 0.01,
+          "spanishWithholdingEur": 0.0
         },
         "staking": {
           "grossEur": 0.0,
@@ -118,7 +132,26 @@
         }
       },
       "checks": [],
-      "warnings": []
+      "warnings": [],
+      "savings": {
+        "gainsBlockEur": 362.4,
+        "incomeBlockEur": 306.3,
+        "crossOffsetEur": 0.0,
+        "pendingApplied": [],
+        "pendingCarried": [],
+        "pendingExpired": [],
+        "gainsInBaseEur": 362.4,
+        "incomeInBaseEur": 306.3,
+        "baseEur": 668.7,
+        "scaleKnown": true,
+        "cuotaEur": 127.05,
+        "averageRatePct": 19.0,
+        "foreignIncomeInBaseEur": 306.3,
+        "creditableForeignTaxEur": 45.94,
+        "doubleTaxDeductionEur": 45.94,
+        "cuotaAfterDeductionEur": 81.11,
+        "treatySource": ""
+      }
     },
     {
       "year": "2025",
@@ -130,7 +163,7 @@
         "netEur": 850.8,
         "deferredLossEur": 430.0,
         "reintegratedLossEur": 0.0,
-        "estimatedTaxEur": 161.65,
+        "estimatedTaxEur": 183.39,
         "byAsset": [
           {
             "key": "aapl-2025",
@@ -347,7 +380,12 @@
               "currency": "USD",
               "grossEur": 95.2,
               "withholdingEur": 14.28,
-              "netEur": 80.92
+              "netEur": 80.92,
+              "country": "US",
+              "treatyRatePct": 15.0,
+              "creditableEur": 14.28,
+              "excessEur": 0.0,
+              "spanishWithholdingEur": 0.0
             },
             {
               "date": "2025-05-16",
@@ -356,7 +394,12 @@
               "currency": "USD",
               "grossEur": 196.4,
               "withholdingEur": 29.46,
-              "netEur": 166.94
+              "netEur": 166.94,
+              "country": "US",
+              "treatyRatePct": 15.0,
+              "creditableEur": 29.46,
+              "excessEur": 0.0,
+              "spanishWithholdingEur": 0.0
             },
             {
               "date": "2025-08-15",
@@ -365,9 +408,18 @@
               "currency": "EUR",
               "grossEur": 48.6,
               "withholdingEur": 9.23,
-              "netEur": 39.37
+              "netEur": 39.37,
+              "country": "IE",
+              "treatyRatePct": 15.0,
+              "creditableEur": 7.29,
+              "excessEur": 1.94,
+              "spanishWithholdingEur": 0.0
             }
-          ]
+          ],
+          "foreignGrossEur": 340.2,
+          "creditableEur": 51.03,
+          "excessEur": 1.94,
+          "spanishWithholdingEur": 0.0
         },
         "staking": {
           "grossEur": 42.8,
@@ -405,7 +457,26 @@
           },
           "message": "Pérdida de 430,00 € en NVDA diferida por la regla de los dos meses."
         }
-      ]
+      ],
+      "savings": {
+        "gainsBlockEur": 850.8,
+        "incomeBlockEur": 383.0,
+        "crossOffsetEur": 0.0,
+        "pendingApplied": [],
+        "pendingCarried": [],
+        "pendingExpired": [],
+        "gainsInBaseEur": 850.8,
+        "incomeInBaseEur": 383.0,
+        "baseEur": 1233.8,
+        "scaleKnown": true,
+        "cuotaEur": 234.42,
+        "averageRatePct": 19.0,
+        "foreignIncomeInBaseEur": 340.2,
+        "creditableForeignTaxEur": 51.03,
+        "doubleTaxDeductionEur": 51.03,
+        "cuotaAfterDeductionEur": 183.39,
+        "treatySource": ""
+      }
     }
   ],
   "trades": [
