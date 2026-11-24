@@ -34,6 +34,7 @@ export function AnalysisBody({ state }: { state: AnalysisState }) {
         </p>
       )}
       {state.error && <p className="mt-3 text-[13px] text-loss">{t.analysis.error(state.error)}</p>}
+      {state.status === "stopped" && <p className="mt-3 text-[12.5px] text-muted">{t.analysis.stopped}</p>}
       {state.usage && state.status === "done" && (
         <p className="mt-4 text-[11px] tabular-nums text-muted">
           {t.analysis.usage(state.usage.model, state.usage.inputTokens, state.usage.outputTokens)}

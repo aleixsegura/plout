@@ -7,6 +7,12 @@ import { tmpdir } from "node:os";
 
 export const MODEL = "claude-opus-5-5";
 
+/** A run that has produced no result after this long is killed (hung CLI,
+ * stalled network): it would otherwise hold a plan slot until the page closes. */
+export const RUN_TIMEOUT_MS = 10 * 60_000;
+/** After SIGTERM, how long a CLI that ignores it gets before SIGKILL. */
+const KILL_GRACE_MS = 3000;
+
 export type AnalysisEvent =
   | { type: "status"; tool: string }
   | { type: "text"; text: string }
@@ -106,10 +112,24 @@ export function runClaudeAnalysis(
     let stdoutBuf = "";
     let stderr = "";
     let failed = false;
+    let timedOut = false;
 
-    const onAbort = () => child.kill("SIGTERM");
+    let killTimer: NodeJS.Timeout | undefined;
+    const terminate = () => {
+      if (child.exitCode !== null || child.signalCode !== null) return;
+      child.kill("SIGTERM");
+      killTimer ??= setTimeout(() => child.kill("SIGKILL"), KILL_GRACE_MS);
+    };
+    const onAbort = terminate;
     if (signal.aborted) onAbort();
     else signal.addEventListener("abort", onAbort, { once: true });
+
+    const runTimer = setTimeout(() => {
+      if (!state.finished && !signal.aborted) {
+        timedOut = true;
+        terminate();
+      }
+    }, RUN_TIMEOUT_MS);
 
     const handleLine = (raw: string) => {
       if (!raw.trim()) return;
@@ -139,6 +159,7 @@ export function runClaudeAnalysis(
 
     child.on("error", (err: NodeJS.ErrnoException) => {
       failed = true;
+      clearTimeout(runTimer);
       if (signal.aborted) return;
       emit({
         type: "error",
@@ -151,8 +172,12 @@ export function runClaudeAnalysis(
 
     child.on("close", (code) => {
       signal.removeEventListener("abort", onAbort);
+      clearTimeout(runTimer);
+      clearTimeout(killTimer);
       handleLine(stdoutBuf);
-      if (!failed && !signal.aborted && !state.finished) {
+      if (timedOut && !state.finished) {
+        emit({ type: "error", message: `Claude Code timed out after ${RUN_TIMEOUT_MS / 60_000} minutes.` });
+      } else if (!failed && !signal.aborted && !state.finished) {
         const tail = stderr.trim().split("\n").slice(-3).join(" ");
         emit({
           type: "error",
