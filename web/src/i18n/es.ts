@@ -517,7 +517,6 @@ const es: Translations = {
       `Volatilidad, diversificación, apuestas y contribuciones usan correlaciones contraídas un ${lambda} hacia su media (${target}) para filtrar ruido de estimación (Ledoit-Wolf); la matriz y el grafo muestran las observadas.`,
     excluded: (list: string, share: string) => `Sin historial de precios suficiente en esta ventana: ${list} (${share} de la cartera, fuera de todas las cifras).`,
     stale: (list: string) => `Sus precios se detienen mucho antes de la última fecha, así que se omiten sus rentabilidades recientes: ${list}.`,
-    pairs: "Pares más cercanos y más lejanos",
     pairsHighest: "Se mueven más parecido",
     pairsLowest: "Más se compensan",
     pairWeight: (w: string) => `${w} de la cartera entre los dos`,

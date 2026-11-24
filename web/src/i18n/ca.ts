@@ -519,7 +519,6 @@ const ca: Translations = {
       `Volatilitat, diversificació, apostes i contribucions fan servir correlacions contretes un ${lambda} cap a la seva mitjana (${target}) per filtrar soroll d'estimació (Ledoit-Wolf); la matriu i el graf mostren les observades.`,
     excluded: (list: string, share: string) => `Sense prou historial de preus en aquesta finestra: ${list} (${share} de la cartera, fora de totes les xifres).`,
     stale: (list: string) => `Els seus preus s'aturen molt abans de l'última data, així que s'ometen els rendiments recents: ${list}.`,
-    pairs: "Parells més propers i més llunyans",
     pairsHighest: "Es mouen més igual",
     pairsLowest: "Més es compensen",
     pairWeight: (w: string) => `${w} de la cartera entre els dos`,
