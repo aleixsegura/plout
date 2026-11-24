@@ -189,6 +189,13 @@ function marketCapFor(ex: Exports, symbol: string) {
   return hit ? { marketCap: hit.marketCap, currency: hit.currency, source: hit.source, at: hit.at } : null;
 }
 
+const WATCHLIST_CAP = 60;
+
+/** Keep a long list from bloating the prompt: first `max` items plus a count. */
+export function capList(items: string[], max: number): string[] {
+  return items.length <= max ? items : [...items.slice(0, max), `… and ${items.length - max} more`];
+}
+
 // --- portfolio context (#1) ------------------------------------------------
 
 export function portfolioContext(ex: Exports) {
@@ -301,7 +308,7 @@ export function portfolioContext(ex: Exports) {
     watchlists: Object.fromEntries(
       Object.entries(ex.watchlists).map(([slug, w]) => [
         w.name ?? slug,
-        (w.stocks ?? []).map((s: Json) => `${s.symbol} (${s.symbolType ?? "?"})`),
+        capList((w.stocks ?? []).map((s: Json) => `${s.symbol} (${s.symbolType ?? "?"})`), WATCHLIST_CAP),
       ]),
     ),
   };

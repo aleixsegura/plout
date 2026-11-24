@@ -7,6 +7,7 @@ import Sparkline from "./charts/Sparkline";
 import { useAppData } from "./data";
 import { capFirst, eur, eur0, eurSigned, gainLoss, monthLabel, pctSigned, shortDate } from "./format";
 import { useTranslation } from "./i18n/LanguageContext";
+import { spentThroughDay, upcomingSummary } from "./dashboardMath";
 import PortfolioChart from "./PortfolioChart";
 import { portfolioTotals, revolutInputs, type CashSource } from "./portfolioMath";
 import {
@@ -15,6 +16,7 @@ import {
   interestInMonth,
   interestSeries,
   monthKey,
+  previousMonth,
   topCategories,
 } from "./transactions";
 import TypeIcon from "./TypeIcon";
@@ -104,6 +106,15 @@ export default function DashboardPage() {
   const savings = transactions?.accounts.savings;
   const boosted = revolut?.cash.find((c) => c.kind === "savings");
   const aer = savings?.aer ?? boosted?.aer;
+  const aerText = aer !== undefined ? t.dashboard.aer(aer.toLocaleString(locale, { maximumFractionDigits: 2 })) : null;
+
+  // Spending so far against the same stretch of last month, not its total.
+  const spendDelta = useMemo(() => {
+    if (spent <= 0) return null;
+    const txs = transactions?.transactions ?? [];
+    const prev = spentThroughDay(txs, previousMonth(month), new Date().getDate());
+    return prev > 0 ? ((spent - prev) / prev) * 100 : null;
+  }, [transactions, month, spent]);
 
   // Every hero figure that has history scrubs with the chart. The two chips
   // (today's P/L, open P/L) have none — they recede instead.
@@ -115,7 +126,7 @@ export default function DashboardPage() {
     () => (transactions?.transactions ?? []).filter((tx) => tx.kind !== "transfer" && tx.kind !== "interest").slice(0, RECENT_ROWS),
     [transactions],
   );
-  const upcoming = (dividends?.upcoming ?? []).filter((u) => u.payDate);
+  const upcoming = useMemo(() => upcomingSummary(dividends?.upcoming), [dividends]);
 
   const updatedAt = positions?.updatedAt ?? revolut?.updatedAt ?? transactions?.updatedAt;
 
@@ -192,16 +203,14 @@ export default function DashboardPage() {
                     <div className="text-sm font-medium text-primary">{sourceLabel(s)}</div>
                     {s.key === "boosted" && (
                       <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-secondary">
-                        {aer !== undefined && (
-                          <span className="rounded-full bg-gain-subtle px-1.5 py-0.5 font-medium text-gain">
-                            {t.dashboard.aer(aer.toLocaleString("es-ES", { maximumFractionDigits: 2 }))}
-                          </span>
+                        {aerText && (
+                          <span className="rounded-full bg-gain-subtle px-1.5 py-0.5 font-medium text-gain">{aerText}</span>
                         )}
                       </div>
                     )}
                     {s.key === "degiro" && s.currency !== "EUR" && (
                       <div className="mt-0.5 text-xs text-secondary">
-                        {new Intl.NumberFormat("es-ES", { style: "currency", currency: s.currency }).format(s.amount)}
+                        {new Intl.NumberFormat(locale, { style: "currency", currency: s.currency }).format(s.amount)}
                       </div>
                     )}
                   </div>
@@ -258,6 +267,13 @@ export default function DashboardPage() {
               <div className="flex items-baseline gap-3">
                 <span className="text-2xl font-semibold tabular-nums">{eur.format(spent)}</span>
               </div>
+              {spendDelta !== null && (
+                <p className="mt-1 text-xs text-secondary">
+                  <span className={`font-medium tabular-nums ${gainLoss(-spendDelta)}`}>
+                    {t.dashboard.vsLastMonthSoFar(`${pctSigned.format(spendDelta)}%`)}
+                  </span>
+                </p>
+              )}
               {refunded > 0 && (
                 <p className="mt-1 text-xs text-secondary">{t.dashboard.includesRefunds(eur0.format(refunded))}</p>
               )}
@@ -313,11 +329,7 @@ export default function DashboardPage() {
                   <span className="font-medium tabular-nums text-primary">{eur.format(transactions.interest.total)}</span>{" "}
                   {t.dashboard.totalEarned}
                 </span>
-                {aer !== undefined && (
-                  <span className="font-medium text-gain">
-                    {t.dashboard.aer(aer.toLocaleString("es-ES", { maximumFractionDigits: 2 }))}
-                  </span>
-                )}
+                {aerText && <span className="font-medium text-gain">{aerText}</span>}
               </div>
               <div className="mt-3">
                 <Sparkline points={interestPoints} bars stroke="var(--gain)" height={48} ariaLabel={t.dashboard.last30Days} />
@@ -329,7 +341,7 @@ export default function DashboardPage() {
 
         {/* Recent transactions */}
         <Card
-          className={`col-span-12 ${upcoming.length > 0 ? "lg:col-span-7" : ""}`}
+          className={`col-span-12 ${upcoming.rows.length > 0 ? "lg:col-span-7" : ""}`}
           title={t.dashboard.recentTransactions}
           action={{ to: "/transactions", label: t.dashboard.seeAll }}
         >
@@ -344,10 +356,10 @@ export default function DashboardPage() {
           )}
         </Card>
 
-        {upcoming.length > 0 && (
+        {upcoming.rows.length > 0 && (
           <Card className="col-span-12 lg:col-span-5" title={t.dashboard.upcomingDividends} action={{ to: "/dividends", label: t.dashboard.seeAll }}>
             <ul className="m-0 flex list-none flex-col divide-y divide-hairline p-0">
-              {upcoming.slice(0, RECENT_ROWS).map((u, i) => (
+              {upcoming.rows.slice(0, RECENT_ROWS).map((u, i) => (
                 <li key={`${u.name}-${u.payDate}-${i}`} className="flex items-center justify-between gap-3 py-2 text-sm first:pt-0 last:pb-0">
                   <div className="min-w-0">
                     <div className="truncate font-medium">{u.name}</div>
@@ -359,6 +371,13 @@ export default function DashboardPage() {
                 </li>
               ))}
             </ul>
+            <div className="mt-3 flex items-baseline justify-between border-t border-hairline pt-3 text-sm">
+              <span className="text-secondary">{t.dashboard.totalExpected}</span>
+              <span className="font-semibold tabular-nums text-gain">
+                {upcoming.hasUnknown ? "≥ " : ""}
+                {eur.format(upcoming.totalEur)}
+              </span>
+            </div>
           </Card>
         )}
       </div>
@@ -366,7 +385,7 @@ export default function DashboardPage() {
       {updatedAt && (
         <p className="mt-6 text-xs tabular-nums text-muted">
           {t.dashboard.updated(
-            `${shortDate(updatedAt, locale)} · ${new Date(updatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`,
+            `${shortDate(updatedAt, locale)} · ${new Date(updatedAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}`,
           )}
         </p>
       )}

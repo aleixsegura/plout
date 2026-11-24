@@ -4,6 +4,8 @@ import type { LotBreakdown } from "./lots";
 import TypeIcon from "./TypeIcon";
 import { useTranslation } from "./i18n/LanguageContext";
 import { sectorFor, type Sector } from "./sectors";
+import { gainLoss } from "./format";
+import { holdingsTotals, rowFigures } from "./holdingsTotals";
 
 const numberFormat = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
@@ -24,6 +26,8 @@ const eurSignedFormat = new Intl.NumberFormat("es-ES", {
   useGrouping: true,
   signDisplay: "exceptZero",
 });
+
+const weightFormat = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
 const pctSignedFormat = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
@@ -167,7 +171,7 @@ export default function StocksTable({
   const locale = { en: "en-GB", ca: "ca-ES", es: "es-ES" }[lang];
   const lotDate = (iso: string) =>
     new Date(`${iso}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
-  const columnCount = 4 + (showPositions ? 5 : 0) + (onAnalyse ? 1 : 0);
+  const columnCount = 4 + (showPositions ? 6 : 0) + (onAnalyse ? 1 : 0);
   // `chosenSort` is what the user clicked; until then the table shows the
   // heaviest position first. Derived rather than seeded into state because the
   // positions load after the first render, when there's no value to sort by.
@@ -178,7 +182,7 @@ export default function StocksTable({
     setChosenSort(
       sort !== null && sort.key === key
         ? { key, dir: sort.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: "asc" },
+        : { key, dir: key === "type" ? "asc" : "desc" },
     );
   };
 
@@ -216,6 +220,18 @@ export default function StocksTable({
     });
   }, [stocks, sort, positionsData]);
 
+  // Weight is the share of the listed positions' value (cash excluded, as the
+  // table lists no cash row).
+  const { figuresBySymbol, totals } = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof rowFigures>>();
+    if (positionsData)
+      for (const s of stocks) {
+        const p = positionsData.posBySymbol.get(s.symbol);
+        map.set(s.symbol, rowFigures(p, p ? undefined : positionsData.revolutPosBySymbol.get(s.symbol)));
+      }
+    return { figuresBySymbol: map, totals: holdingsTotals([...map.values()]) };
+  }, [stocks, positionsData]);
+
   return (
     // Every data cell is nowrap, so the table can't shrink below its min-content
     // width — scroll it inside the card instead of letting row borders spill past
@@ -245,6 +261,7 @@ export default function StocksTable({
                   onSort={toggleSort}
                   numeric
                 />
+                <th className={`${TH} ${NUM}`}>{t.stocksTable.weight}</th>
                 <SortableTh
                   label={t.stocksTable.plEur}
                   sortKey="pl"
@@ -284,6 +301,7 @@ export default function StocksTable({
             const plPct =
               plEur !== null && costEur && costEur > 0 ? (plEur / costEur) * 100 : null;
             const plClass = plEur === null ? "" : plEur >= 0 ? "text-gain" : "text-loss";
+            const fig = figuresBySymbol.get(s.symbol) ?? rowFigures(undefined, undefined);
             const lots = p ? positionsData?.lotsBySymbol?.get(s.symbol) : undefined;
             const isOpen = lots !== undefined && expanded.has(s.symbol);
             const onRowClick = lots ? () => toggleExpanded(s.symbol) : onAnalyse ? () => onAnalyse(s) : undefined;
@@ -363,6 +381,11 @@ export default function StocksTable({
                           ? eurFormat.format(rp.valueEur)
                           : "—"}
                     </td>
+                    <td className={`${TD} ${NUM} text-secondary`}>
+                      {fig.value !== null && totals.value > 0
+                        ? `${weightFormat.format((fig.value / totals.value) * 100)}%`
+                        : "—"}
+                    </td>
                     <td className={`${TD} ${NUM} ${plClass}`}>
                       {plEur !== null ? eurSignedFormat.format(plEur) : "—"}
                     </td>
@@ -398,6 +421,24 @@ export default function StocksTable({
             );
           })}
         </tbody>
+        {showPositions && (
+          <tfoot>
+            <tr className="font-semibold">
+              <td className={`${TD} border-t border-hairline-strong`} colSpan={6}>
+                {t.stocksTable.total}
+              </td>
+              <td className={`${TD} ${NUM} border-t border-hairline-strong`}>{eurFormat.format(totals.value)}</td>
+              <td className={`${TD} border-t border-hairline-strong`} />
+              <td className={`${TD} ${NUM} border-t border-hairline-strong ${gainLoss(totals.pl)}`}>
+                {eurSignedFormat.format(totals.pl)}
+              </td>
+              <td className={`${TD} ${NUM} border-t border-hairline-strong ${gainLoss(totals.pl)}`}>
+                {totals.plPct !== null ? `${pctSignedFormat.format(totals.plPct)}%` : "—"}
+              </td>
+              {onAnalyse && <td className={TD} />}
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );
@@ -444,6 +485,7 @@ function LotRows({
             <td className={`${LOT_TD} ${NUM}`}>{numberFormat.format(lot.quantity)}</td>
             <td className={`${LOT_TD} ${NUM}`}>{formatInCurrency(lot.price, lot.currency)}</td>
             <td className={`${LOT_TD} ${NUM}`}>{eurFormat.format(lot.valueEur)}</td>
+            <td className={LOT_TD} />
             <td className={`${LOT_TD} ${NUM} ${cls}`}>{eurSignedFormat.format(lot.plEur)}</td>
             <td className={`${LOT_TD} ${NUM} ${cls}`}>
               {lot.plPct !== null ? `${pctSignedFormat.format(lot.plPct * 100)}%` : "—"}

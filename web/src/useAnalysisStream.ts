@@ -13,7 +13,7 @@ type ServerEvent =
   | { type: "error"; message: string }
   | { type: "done"; model: string; inputTokens: number; outputTokens: number };
 
-export type AnalysisStatus = "idle" | "streaming" | "done" | "error";
+export type AnalysisStatus = "idle" | "streaming" | "done" | "error" | "stopped";
 
 export interface AnalysisState {
   status: AnalysisStatus;
@@ -22,6 +22,23 @@ export interface AnalysisState {
   activity: string | null;
   error: string | null;
   usage: { model: string; inputTokens: number; outputTokens: number } | null;
+}
+
+/** Split an SSE buffer into the `data:` payloads of its complete frames and
+ * the unfinished tail. Accepts \n or \r\n line endings. */
+export function parseSseChunk(buffer: string): { events: string[]; rest: string } {
+  const frames = buffer.replace(/\r\n/g, "\n").split("\n\n");
+  const rest = frames.pop() ?? "";
+  const events: string[] = [];
+  for (const frame of frames) {
+    const data = frame
+      .split("\n")
+      .filter((l) => l.startsWith("data:"))
+      .map((l) => l.slice(5).replace(/^ /, ""))
+      .join("\n");
+    if (data) events.push(data);
+  }
+  return { events, rest };
 }
 
 const IDLE: AnalysisState = { status: "idle", text: "", activity: null, error: null, usage: null };
@@ -34,6 +51,12 @@ export function useAnalysisStream(url: string) {
     controller.current?.abort();
     controller.current = null;
   }, []);
+
+  /** User-requested stop: keep the partial answer and leave the "streaming" state. */
+  const cancel = useCallback(() => {
+    stop();
+    setState((s) => (s.status === "streaming" ? { ...s, status: "stopped", activity: null } : s));
+  }, [stop]);
 
   const start = useCallback(
     async (body: Record<string, unknown>) => {
@@ -74,16 +97,14 @@ export function useAnalysisStream(url: string) {
           const { value, done } = await reader.read();
           if (done) break;
           buffer += value;
-          // SSE frames are separated by a blank line; keep any partial frame.
-          const frames = buffer.split("\n\n");
-          buffer = frames.pop() ?? "";
-          for (const frame of frames) {
-            const data = frame
-              .split("\n")
-              .filter((l) => l.startsWith("data: "))
-              .map((l) => l.slice(6))
-              .join("\n");
-            if (data) apply(JSON.parse(data) as ServerEvent);
+          const parsed = parseSseChunk(buffer);
+          buffer = parsed.rest;
+          for (const data of parsed.events) {
+            try {
+              apply(JSON.parse(data) as ServerEvent);
+            } catch {
+              // A garbled frame must not abort the whole answer.
+            }
           }
         }
         // The server always ends with done or error; a bare close means it dropped.
@@ -113,5 +134,5 @@ export function useAnalysisStream(url: string) {
   // Leaving the page cancels the request, so the server stops generating.
   useEffect(() => stop, [stop]);
 
-  return { state, start, stop, reset };
+  return { state, start, stop: cancel, reset };
 }
