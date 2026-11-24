@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAppData } from "./data";
 import { useTranslation } from "./i18n/LanguageContext";
 import { forecastDividends, localToday, type DividendForecast } from "./dividendForecast";
+import { monthlyIncome, payerTotals, type MonthBucket, type PayerTotal } from "./dividendStats";
 import type { DividendPayment } from "./types";
 
 const CARD = "flex flex-col gap-1 card pt-3 pb-1";
@@ -33,7 +34,8 @@ function money(value: number, currency: string, signed = false): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -68,7 +70,14 @@ export default function DividendsPage() {
   const { dividends, positions, taxes } = useAppData();
   const { t } = useTranslation();
   const payments = dividends?.payments ?? [];
-  const upcoming = (dividends?.upcoming ?? []).filter((u) => u.payDate);
+  const upcoming = useMemo(
+    () =>
+      (dividends?.upcoming ?? [])
+        .filter((u) => u.payDate)
+        .sort((a, b) => a.payDate!.localeCompare(b.payDate!)),
+    [dividends],
+  );
+  const [showAll, setShowAll] = useState(false);
   const nextPayment = upcoming[0];
 
   const { total, thisYearNet, byYear, payerCount } = useMemo(() => {
@@ -98,12 +107,19 @@ export default function DividendsPage() {
     };
   }, [payments]);
 
+  const payers = useMemo(() => payerTotals(payments), [payments]);
+
   const forecast = useMemo(
     () =>
       dividends && positions
         ? forecastDividends(positions.positions, dividends, taxes?.trades ?? [], localToday())
         : null,
     [dividends, positions, taxes],
+  );
+
+  const monthly = useMemo(
+    () => monthlyIncome(payments, forecast?.payments ?? [], localToday()),
+    [payments, forecast],
   );
 
   // Not exported yet — mirror the silent-degrade guidance elsewhere.
@@ -184,6 +200,8 @@ export default function DividendsPage() {
         )}
       </section>
 
+      {monthly.some((m) => m.paid > 0 || m.projected > 0) && <MonthlyChart months={monthly} />}
+
       {forecast && <ProjectedSection forecast={forecast} />}
 
       <h2 className="mb-1 text-base font-semibold">{t.dividends.upcoming}</h2>
@@ -234,24 +252,44 @@ export default function DividendsPage() {
                   <th className={`${TH} ${NUM}`}>{t.dividends.gross}</th>
                   <th className={`${TH} ${NUM}`}>{t.dividends.tax}</th>
                   <th className={`${TH} ${NUM}`}>{t.dividends.net}</th>
+                  <th className={`${TH} ${NUM}`}>{t.dividends.vsPrevYear}</th>
                   <th className={`${TH} ${NUM}`}>{t.dividends.payments}</th>
                 </tr>
               </thead>
               <tbody>
-                {byYear.map(([year, totals]) => (
+                {byYear.map(([year, totals], idx) => {
+                  const prev = byYear[idx + 1];
+                  const isCurrent = year === String(new Date().getFullYear());
+                  // Only a complete year against a complete year is a fair comparison.
+                  const delta =
+                    prev && !isCurrent && prev[1].net > 0 ? totals.net / prev[1].net - 1 : null;
+                  return (
                   <tr key={year} className="hover:bg-hover">
-                    <td className={`${TD} font-semibold text-primary`}>{year}</td>
+                    <td className={`${TD} font-semibold text-primary`}>
+                      {year}
+                      {isCurrent && <span className="ml-1.5 text-xs font-normal text-muted">{t.dividends.ytd}</span>}
+                    </td>
                     <td className={`${TD} ${NUM}`}>{eur.format(totals.gross)}</td>
                     <td className={`${TD} ${NUM} ${totals.tax !== 0 ? "text-loss" : "text-muted"}`}>
                       {totals.tax !== 0 ? eur.format(totals.tax) : "—"}
                     </td>
                     <td className={`${TD} ${NUM} text-gain`}>{eur.format(totals.net)}</td>
+                    <td
+                      className={`${TD} ${NUM} ${
+                        delta === null ? "text-muted" : delta >= 0 ? "text-gain" : "text-loss"
+                      }`}
+                    >
+                      {delta === null ? "—" : `${delta >= 0 ? "+" : ""}${pctFormat.format(delta * 100)}%`}
+                    </td>
                     <td className={`${TD} ${NUM} text-secondary`}>{totals.count}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          {payers.length > 1 && <PayerBreakdown payers={payers} />}
 
           <h2 className="mb-3 text-base font-semibold">{t.dividends.allPayments}</h2>
           <div className="overflow-x-auto card">
@@ -266,7 +304,7 @@ export default function DividendsPage() {
                 </tr>
               </thead>
               <tbody>
-                {payments.map((p, i) => (
+                {(showAll ? payments : payments.slice(0, PAYMENTS_PREVIEW)).map((p, i) => (
                   <tr key={`${p.productId}-${p.date}-${i}`} className="hover:bg-hover">
                     <td className={`${TD} tabular-nums text-secondary`}>{formatDate(p.date)}</td>
                     <td className={TD}>
@@ -288,9 +326,17 @@ export default function DividendsPage() {
               </tbody>
             </table>
           </div>
+          {payments.length > PAYMENTS_PREVIEW && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-3 cursor-pointer text-sm font-medium text-accent hover:underline"
+            >
+              {showAll ? t.dividends.showFewer : t.dividends.showAll(payments.length)}
+            </button>
+          )}
         </>
       )}
-
 
       <UpdatedNote updatedAt={dividends.updatedAt} />
     </div>
@@ -310,6 +356,7 @@ function UpdatedNote({ updatedAt }: { updatedAt: string }) {
   );
 }
 
+const PAYMENTS_PREVIEW = 30;
 const qtyFormat = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 4, useGrouping: true });
 const pctFormat = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 });
 
@@ -428,6 +475,104 @@ function ProjectedSection({ forecast }: { forecast: DividendForecast }) {
           </div>
         </>
       )}
+    </section>
+  );
+}
+
+const MONTH_FMT = new Intl.DateTimeFormat("en-GB", { month: "short", year: "2-digit", timeZone: "UTC" });
+const monthLabel = (key: string) => MONTH_FMT.format(new Date(`${key}-01T00:00:00Z`));
+
+/** Net income per month: what landed over the last year next to what the
+ * current holdings should pay over the next. */
+function MonthlyChart({ months }: { months: MonthBucket[] }) {
+  const { t } = useTranslation();
+  const max = Math.max(...months.map((m) => m.paid + m.projected), 1);
+  const nowKey = localToday().slice(0, 7);
+  return (
+    <section className="mb-7" aria-label={t.dividends.monthlyAria}>
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4">
+        <h2 className="text-base font-semibold">{t.dividends.monthly}</h2>
+        <div className="flex gap-3 text-xs text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-sm bg-gain" />
+            {t.dividends.received}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-sm border border-gain bg-gain-subtle" />
+            {t.dividends.projectedLegend}
+          </span>
+        </div>
+      </div>
+      <div className="card overflow-x-auto px-4 pb-3 pt-4">
+        <div className="flex h-36 min-w-[34rem] items-end gap-1.5">
+          {months.map((m) => {
+            const total = m.paid + m.projected;
+            return (
+              <div
+                key={m.month}
+                className="flex h-full flex-1 flex-col justify-end"
+                title={`${monthLabel(m.month)}: ${eur.format(total)}`}
+              >
+                <div className="flex flex-col justify-end" style={{ height: `${(total / max) * 100}%` }}>
+                  {m.projected > 0 && (
+                    <div
+                      className="rounded-t-sm border border-b-0 border-gain bg-gain-subtle"
+                      style={{ flexGrow: m.projected }}
+                    />
+                  )}
+                  {m.paid > 0 && (
+                    <div
+                      className={`bg-gain ${m.projected > 0 ? "" : "rounded-t-sm"}`}
+                      style={{ flexGrow: m.paid }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-1.5 flex min-w-[34rem] gap-1.5 text-[10.5px] tabular-nums text-muted">
+          {months.map((m) => (
+            <span
+              key={m.month}
+              className={`flex-1 truncate text-center ${m.month === nowKey ? "font-semibold text-primary" : ""}`}
+            >
+              {monthLabel(m.month).split(" ")[0]}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Who pays the income: net received per stock, with its share of the total. */
+function PayerBreakdown({ payers }: { payers: PayerTotal[] }) {
+  const { t } = useTranslation();
+  const top = payers[0].net || 1;
+  return (
+    <section className="mb-7" aria-label={t.dividends.byStockAria}>
+      <h2 className="mb-3 text-base font-semibold">{t.dividends.byStock}</h2>
+      <ul className="card divide-y divide-hairline px-4">
+        {payers.map((p) => (
+          <li key={p.symbol} className="flex items-center gap-3 py-2 text-[13.5px]">
+            <span className="w-40 shrink-0 truncate sm:w-56" title={p.name}>
+              <span className="font-semibold text-primary">{p.name}</span>{" "}
+              <span className="text-xs text-muted">({p.symbol})</span>
+            </span>
+            <span className="h-2 flex-1 rounded-sm bg-elevated" aria-hidden="true">
+              <span
+                className="block h-full rounded-sm bg-gain"
+                style={{ width: `${Math.max((p.net / top) * 100, 1)}%` }}
+              />
+            </span>
+            <span className="w-24 shrink-0 text-right font-medium tabular-nums text-gain">{eur.format(p.net)}</span>
+            <span className="w-12 shrink-0 text-right tabular-nums text-secondary">
+              {pctFormat.format(p.share * 100)}%
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
