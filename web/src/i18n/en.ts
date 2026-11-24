@@ -499,7 +499,12 @@ const en = {
     scope: "Weights cover the holdings with price history; cash is left out.",
     shrinkage: (lambda: string, target: string) =>
       `Volatility, diversification, bets and risk shares use correlations pulled ${lambda} toward their average (${target}) to filter out estimation noise (Ledoit–Wolf); the matrix and the graph show the observed ones.`,
-    excluded: (list: string) => `Not enough price history in this window: ${list}.`,
+    excluded: (list: string, share: string) => `Not enough price history in this window: ${list} (${share} of the portfolio, left out of every figure).`,
+    stale: (list: string) => `Prices stop well before the latest date, so their recent returns are left out: ${list}.`,
+    pairs: "Closest and furthest pairs",
+    pairsHighest: "Move most alike",
+    pairsLowest: "Offset each other most",
+    pairWeight: (w: string) => `${w} of the portfolio together`,
     unresolved: (list: string) => `No prices found for: ${list}.`,
     empty: "No price history yet. Run .venv/bin/plout prices (the dev server also runs it on start).",
     tooFew: "At least two holdings with price history are needed to correlate anything.",

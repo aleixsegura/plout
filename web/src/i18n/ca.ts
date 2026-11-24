@@ -500,7 +500,12 @@ const ca: Translations = {
     scope: "Els pesos cobreixen les posicions amb historial de preus; l'efectiu queda fora.",
     shrinkage: (lambda: string, target: string) =>
       `Volatilitat, diversificació, apostes i contribucions fan servir correlacions contretes un ${lambda} cap a la seva mitjana (${target}) per filtrar soroll d'estimació (Ledoit-Wolf); la matriu i el graf mostren les observades.`,
-    excluded: (list: string) => `Sense prou historial de preus en aquesta finestra: ${list}.`,
+    excluded: (list: string, share: string) => `Sense prou historial de preus en aquesta finestra: ${list} (${share} de la cartera, fora de totes les xifres).`,
+    stale: (list: string) => `Els seus preus s'aturen molt abans de l'última data, així que s'ometen els rendiments recents: ${list}.`,
+    pairs: "Parells més propers i més llunyans",
+    pairsHighest: "Es mouen més igual",
+    pairsLowest: "Més es compensen",
+    pairWeight: (w: string) => `${w} de la cartera entre els dos`,
     unresolved: (list: string) => `No s'han trobat preus per a: ${list}.`,
     empty: "Encara no hi ha historial de preus. Executa .venv/bin/plout prices (el servidor de desenvolupament també ho fa en arrencar).",
     tooFew: "Calen almenys dues posicions amb historial de preus per poder correlacionar res.",
