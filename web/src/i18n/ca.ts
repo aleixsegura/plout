@@ -356,6 +356,8 @@ const ca: Translations = {
     recentTransactions: "Moviments recents",
     seeAll: "Veure'ls tots",
     upcomingDividends: "Dividends propers",
+    totalExpected: "Total previst",
+    vsLastMonthSoFar: (delta: string) => `${delta} respecte al mes passat en aquest punt`,
     portfolioValue: "Valor de la cartera",
     noTransactionsIntro: "Encara no hi ha moviments. Executa",
     noTransactionsOutro: "per portar l'extracte de Revolut a",
