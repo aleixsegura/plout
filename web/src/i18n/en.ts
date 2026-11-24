@@ -397,6 +397,7 @@ const en = {
     noRows: "No transactions match.",
     dayTotal: "day total",
     rowsShown: (shown: number, total: number) => `${shown} of ${total}`,
+    showMore: (n: number) => `Show ${n} more`,
     barsAria: "Monthly expenses by category",
     donutAria: (month: string) => `Expenses by category, ${month}`,
     categories: {

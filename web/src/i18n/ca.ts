@@ -398,6 +398,7 @@ const ca: Translations = {
     noRows: "Cap moviment coincideix.",
     dayTotal: "total del dia",
     rowsShown: (shown: number, total: number) => `${shown} de ${total}`,
+    showMore: (n: number) => `Mostra'n ${n} més`,
     barsAria: "Despeses mensuals per categoria",
     donutAria: (month: string) => `Despeses per categoria, ${month}`,
     categories: {

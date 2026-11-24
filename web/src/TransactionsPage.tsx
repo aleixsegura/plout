@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Card from "./Card";
 import Bars, { type Bar } from "./charts/Bars";
 import Donut from "./charts/Donut";
@@ -14,12 +14,15 @@ import {
   categoryColorVar,
   categoryLabel,
   daysElapsed,
+  daysSinceFirst,
   deltaPct,
   expensesByCategory,
   inMonth,
   interestInMonth,
   interestSeries,
+  localDay,
   matchesQuery,
+  netOfRows,
   monthKey,
   monthsBack,
   previousMonth,
@@ -35,6 +38,8 @@ const MIN_BAR_MONTHS = 6;
 const BAR_ON = "var(--chart-2)";
 const BAR_OFF = "var(--chart-2-soft)";
 const INTEREST_DAYS = 90;
+/** Rows rendered before "show more": a long month or all time stays snappy. */
+const ROW_PAGE = 150;
 /** Daily-interest chart height when it can't borrow the table's (stacked layout). */
 const INTEREST_CHART_MIN = 180;
 
@@ -80,6 +85,8 @@ export default function TransactionsPage() {
   const [kind, setKind] = useState<KindFilter>("all");
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [limit, setLimit] = useState(ROW_PAGE);
+  useEffect(() => setLimit(ROW_PAGE), [period, category, kind, query]);
   const [interestChartRef, interestChartHeight] = useContainerHeight(INTEREST_CHART_MIN);
 
   const isAll = period === ALL;
@@ -101,9 +108,7 @@ export default function TransactionsPage() {
   }, [file, period, isAll]);
   const previous = !isAll ? file?.months.find((m) => m.month === previousMonth(period)) : undefined;
   const spentDelta = deltaPct(summary.expenses, previous?.expenses);
-  const days = isAll
-    ? Math.max(1, (file?.months.length ?? 1) * 30)
-    : Math.max(daysElapsed(period), 1);
+  const days = isAll ? daysSinceFirst(file?.transactions ?? []) : Math.max(daysElapsed(period), 1);
 
   // Rows of the period, then the table's own filters on top.
   const periodRows = useMemo(() => {
@@ -165,6 +170,9 @@ export default function TransactionsPage() {
     });
   }, [file, barMonths, category, period, isAll, ranking, locale, t]);
 
+  // What "x of y" counts against: interest rows only show under Income.
+  const listable = useMemo(() => (kind === "all" ? periodRows.filter((tx) => tx.kind !== "interest") : periodRows), [periodRows, kind]);
+
   const tableRows = useMemo(() => {
     return periodRows.filter((tx) => {
       if (kind === "expense" && tx.kind !== "expense" && tx.kind !== "refund" && tx.kind !== "fee") return false;
@@ -179,7 +187,7 @@ export default function TransactionsPage() {
   // Group the visible rows by day with a day subtotal of what was spent.
   const groups = useMemo(() => {
     const out: { day: string; rows: RevolutTransaction[]; spent: number }[] = [];
-    for (const tx of tableRows) {
+    for (const tx of tableRows.slice(0, limit)) {
       const day = tx.date.slice(0, 10);
       let g = out[out.length - 1];
       if (!g || g.day !== day) {
@@ -190,7 +198,9 @@ export default function TransactionsPage() {
       if (tx.kind === "expense" || tx.kind === "refund" || tx.kind === "fee") g.spent -= tx.amountEur;
     }
     return out;
-  }, [tableRows]);
+  }, [tableRows, limit]);
+  const filtered = query.trim() !== "" || category !== null || kind !== "all";
+  const filteredNet = useMemo(() => netOfRows(tableRows, kind === "internal"), [tableRows, kind]);
 
   // Interest section.
   const interest = file?.interest;
@@ -345,6 +355,17 @@ export default function TransactionsPage() {
                   onMouseEnter={() => setActiveCategory(c.category)}
                   onMouseLeave={() => setActiveCategory(null)}
                   onClick={() => setCategory(category === c.category ? null : c.category)}
+                  onFocus={() => setActiveCategory(c.category)}
+                  onBlur={() => setActiveCategory(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setCategory(category === c.category ? null : c.category);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={category === c.category}
                 >
                   <div className="flex items-center gap-2 text-sm">
                     <span className="size-2.5 flex-none rounded-[3px]" style={{ background: color(c.category) }} aria-hidden />
@@ -389,7 +410,12 @@ export default function TransactionsPage() {
               </button>
             )}
           </div>
-          <span className="ml-auto text-xs tabular-nums text-muted">{t.transactions.rowsShown(tableRows.length, periodRows.length)}</span>
+          <span className="ml-auto text-xs tabular-nums text-muted">
+            {filtered && tableRows.length > 0 && (
+              <span className={`mr-3 font-medium ${filteredNet >= 0 ? "text-gain" : "text-loss"}`}>{eurSigned.format(filteredNet)}</span>
+            )}
+            {t.transactions.rowsShown(tableRows.length, listable.length)}
+          </span>
         </div>
 
         <div className={LIST_WRAP}>
@@ -416,6 +442,11 @@ export default function TransactionsPage() {
             </tbody>
           </table>
         </div>
+        {tableRows.length > limit && (
+          <button type="button" className={`mt-3 ${chipClass(false)}`} onClick={() => setLimit((l) => l + ROW_PAGE)}>
+            {t.transactions.showMore(Math.min(ROW_PAGE, tableRows.length - limit))}
+          </button>
+        )}
       </section>
 
       <Card className="mt-6" title={t.transactions.interest.title}>
@@ -452,12 +483,12 @@ export default function TransactionsPage() {
                     <StepArea
                       points={interestDaily.map((d, i) => ({
                         key: d.date,
-                        label: (i + 1) % 15 === 0 ? new Date(d.date).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "",
+                        label: (i + 1) % 15 === 0 ? localDay(d.date).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "",
                         value: d.amount,
                       }))}
                       height={interestChartHeight}
                       formatValue={(v) => eur.format(v)}
-                      tooltipTitle={(p) => new Date(p.key).toLocaleDateString(locale, { day: "numeric", month: "long" })}
+                      tooltipTitle={(p) => localDay(p.key).toLocaleDateString(locale, { day: "numeric", month: "long" })}
                       ariaLabel={t.transactions.interest.dailyAria}
                     />
                   </div>
@@ -507,7 +538,7 @@ function GroupRows({
   color: (c: string) => string;
 }) {
   const { t } = useTranslation();
-  const dayLabel = capFirst(new Date(group.day).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }));
+  const dayLabel = capFirst(localDay(group.day).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }));
   return (
     <>
       <tr className="bg-elevated">
@@ -531,7 +562,7 @@ function GroupRows({
             <td className={`${TD} max-w-[28rem]`}>
               <div className="truncate font-medium text-primary">{title}</div>
               <div className="truncate text-xs text-secondary">
-                {[sub, tx.cardLastFour ? `•••• ${tx.cardLastFour}` : null, tx.kind !== "expense" && tx.kind !== "income" ? t.transactions.kinds[tx.kind] : null]
+                {[sub, tx.currency !== "EUR" ? `${Math.abs(tx.amount).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${tx.currency}` : null, tx.cardLastFour ? `•••• ${tx.cardLastFour}` : null, tx.kind !== "expense" && tx.kind !== "income" ? t.transactions.kinds[tx.kind] : null]
                   .filter(Boolean)
                   .join(" · ")}
               </div>

@@ -158,3 +158,29 @@ function normalise(s: string): string {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
 }
+
+/** Parses a "YYYY-MM-DD" (or full ISO) date as a *local* day. `new Date("2026-03-05")`
+ * is UTC midnight and renders as the previous day west of Greenwich. */
+export function localDay(iso: string): Date {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Calendar days from the earliest transaction to `today`, inclusive — the
+ * divisor for "average per day" over all time. At least 1. */
+export function daysSinceFirst(txs: RevolutTransaction[], today = new Date()): number {
+  if (txs.length === 0) return 1;
+  let first = txs[0].date;
+  for (const t of txs) if (t.date < first) first = t.date;
+  const start = localDay(first);
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
+}
+
+/** Net EUR movement of the rows. Internal moves are left out (they net to zero
+ * across accounts) unless `includeTransfers`, e.g. when only those are listed. */
+export function netOfRows(txs: RevolutTransaction[], includeTransfers = false): number {
+  let sum = 0;
+  for (const t of txs) if (includeTransfers || t.kind !== "transfer") sum += t.amountEur;
+  return sum;
+}
