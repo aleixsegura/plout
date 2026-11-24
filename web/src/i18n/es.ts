@@ -49,7 +49,6 @@ const es: Translations = {
     plEur: "P/L €",
     plPct: "P/L %",
     weight: "Peso",
-    todayEur: "Hoy €",
     total: "Total",
     lotsToggle: (name: string) => `Lotes de compra de ${name}`,
     lotBought: "Compra",

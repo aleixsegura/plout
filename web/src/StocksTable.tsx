@@ -75,7 +75,7 @@ const TH =
 const TD = "border-b border-hairline px-2.5 py-2 whitespace-nowrap";
 const NUM = "text-right tabular-nums";
 
-type SortKey = "type" | "marketCap" | "value" | "pl" | "plPct" | "today";
+type SortKey = "type" | "marketCap" | "value" | "pl" | "plPct";
 type SortDir = "asc" | "desc";
 
 interface SortState {
@@ -171,7 +171,7 @@ export default function StocksTable({
   const locale = { en: "en-GB", ca: "ca-ES", es: "es-ES" }[lang];
   const lotDate = (iso: string) =>
     new Date(`${iso}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
-  const columnCount = 4 + (showPositions ? 7 : 0) + (onAnalyse ? 1 : 0);
+  const columnCount = 4 + (showPositions ? 6 : 0) + (onAnalyse ? 1 : 0);
   // `chosenSort` is what the user clicked; until then the table shows the
   // heaviest position first. Derived rather than seeded into state because the
   // positions load after the first render, when there's no value to sort by.
@@ -200,8 +200,6 @@ export default function StocksTable({
           return p?.valueEur ?? rp?.valueEur ?? null;
         case "pl":
           return p?.plEur ?? rp?.plEur ?? null;
-        case "today":
-          return p?.todayPlEur ?? rp?.todayPlEur ?? null;
         case "plPct": {
           const pl = p?.plEur ?? rp?.plEur ?? null;
           const cost = p?.costEur ?? rp?.costEur;
@@ -264,13 +262,6 @@ export default function StocksTable({
                   numeric
                 />
                 <th className={`${TH} ${NUM}`}>{t.stocksTable.weight}</th>
-                <SortableTh
-                  label={t.stocksTable.todayEur}
-                  sortKey="today"
-                  sort={sort}
-                  onSort={toggleSort}
-                  numeric
-                />
                 <SortableTh
                   label={t.stocksTable.plEur}
                   sortKey="pl"
@@ -395,9 +386,6 @@ export default function StocksTable({
                         ? `${weightFormat.format((fig.value / totals.value) * 100)}%`
                         : "—"}
                     </td>
-                    <td className={`${TD} ${NUM} ${fig.today === null ? "" : gainLoss(fig.today)}`}>
-                      {fig.today !== null ? eurSignedFormat.format(fig.today) : "—"}
-                    </td>
                     <td className={`${TD} ${NUM} ${plClass}`}>
                       {plEur !== null ? eurSignedFormat.format(plEur) : "—"}
                     </td>
@@ -441,9 +429,6 @@ export default function StocksTable({
               </td>
               <td className={`${TD} ${NUM} border-t border-hairline-strong`}>{eurFormat.format(totals.value)}</td>
               <td className={`${TD} border-t border-hairline-strong`} />
-              <td className={`${TD} ${NUM} border-t border-hairline-strong ${gainLoss(totals.today)}`}>
-                {eurSignedFormat.format(totals.today)}
-              </td>
               <td className={`${TD} ${NUM} border-t border-hairline-strong ${gainLoss(totals.pl)}`}>
                 {eurSignedFormat.format(totals.pl)}
               </td>
@@ -500,7 +485,7 @@ function LotRows({
             <td className={`${LOT_TD} ${NUM}`}>{numberFormat.format(lot.quantity)}</td>
             <td className={`${LOT_TD} ${NUM}`}>{formatInCurrency(lot.price, lot.currency)}</td>
             <td className={`${LOT_TD} ${NUM}`}>{eurFormat.format(lot.valueEur)}</td>
-            <td className={LOT_TD} colSpan={2} />
+            <td className={LOT_TD} />
             <td className={`${LOT_TD} ${NUM} ${cls}`}>{eurSignedFormat.format(lot.plEur)}</td>
             <td className={`${LOT_TD} ${NUM} ${cls}`}>
               {lot.plPct !== null ? `${pctSignedFormat.format(lot.plPct * 100)}%` : "—"}

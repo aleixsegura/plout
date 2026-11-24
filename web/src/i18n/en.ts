@@ -50,7 +50,6 @@ const en = {
     plEur: "P/L €",
     plPct: "P/L %",
     weight: "Weight",
-    todayEur: "Today €",
     total: "Total",
     lotsToggle: (name: string) => `Purchase lots of ${name}`,
     lotBought: "Bought",
