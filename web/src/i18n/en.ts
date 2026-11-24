@@ -111,6 +111,7 @@ const en = {
       `${model} · ${input.toLocaleString("es-ES")} input / ${output.toLocaleString("es-ES")} output tokens`,
     unavailable: "Analysis runs on the dev server (npm run dev) with the Claude Code CLI (claude) installed and logged in.",
     analyseRow: (name: string) => `Analyse ${name}`,
+    stopped: "Stopped: the answer above is incomplete.",
     close: "Close",
   },
   holdings: {

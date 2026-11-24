@@ -110,6 +110,7 @@ const es: Translations = {
       `${model} · ${input.toLocaleString("es-ES")} tokens de entrada / ${output.toLocaleString("es-ES")} de salida`,
     unavailable: "El análisis funciona con el servidor de desarrollo (npm run dev) y la CLI de Claude Code (claude) instalada y con la sesión iniciada.",
     analyseRow: (name: string) => `Analizar ${name}`,
+    stopped: "Detenido: la respuesta de arriba está incompleta.",
     close: "Cerrar",
   },
   holdings: {

@@ -110,6 +110,7 @@ const ca: Translations = {
       `${model} · ${input.toLocaleString("es-ES")} tokens d'entrada / ${output.toLocaleString("es-ES")} de sortida`,
     unavailable: "L'anàlisi funciona amb el servidor de desenvolupament (npm run dev) i la CLI de Claude Code (claude) instal·lada i amb la sessió iniciada.",
     analyseRow: (name: string) => `Analitza ${name}`,
+    stopped: "Aturat: la resposta de dalt és incompleta.",
     close: "Tanca",
   },
   holdings: {

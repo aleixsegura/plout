@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { assetContext, loadExports, portfolioContext, symbolKey } from "./portfolioContext";
+import { assetContext, capList, loadExports, portfolioContext, symbolKey } from "./portfolioContext";
 
 const DEMO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../demo-data");
 const ex = loadExports(DEMO);
@@ -46,5 +46,19 @@ describe("assetContext", () => {
 
   it("returns null for something neither held nor watched", () => {
     expect(assetContext(ex, "NOT-A-SYMBOL")).toBeNull();
+  });
+});
+
+describe("capList", () => {
+  it("truncates long lists with a count", () => {
+    expect(capList(["a", "b", "c"], 5)).toEqual(["a", "b", "c"]);
+    expect(capList(["a", "b", "c"], 2)).toEqual(["a", "b", "… and 1 more"]);
+  });
+});
+
+describe("capList", () => {
+  it("truncates long lists with a count", () => {
+    expect(capList(["a", "b", "c"], 5)).toEqual(["a", "b", "c"]);
+    expect(capList(["a", "b", "c"], 2)).toEqual(["a", "b", "… and 1 more"]);
   });
 });
