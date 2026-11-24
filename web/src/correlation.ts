@@ -19,6 +19,12 @@ export const PERIODS_PER_YEAR: Record<Frequency, number> = { daily: 252, weekly:
  * about six months either way. */
 export const MIN_OBSERVATIONS: Record<Frequency, number> = { daily: 120, weekly: 26 };
 
+/** How long a close is carried forward over a missing stretch. Covers a long
+ * weekend plus a holiday; beyond it the asset has no price (a gap in the data,
+ * a delisting) and its returns are left out rather than read as flat zeros,
+ * which would drag its correlations and volatility toward zero. */
+export const MAX_FILL_DAYS = 7;
+
 /** Above this many assets the exact MIS search gives way to a greedy one. */
 const EXACT_MIS_LIMIT = 60;
 /** Equally large independent sets whose weights differ by less than this tie. */
@@ -37,6 +43,9 @@ export interface ReturnsPanel {
   returns: (number | null)[][];
   /** Symbols dropped for having fewer than MIN_OBSERVATIONS returns. */
   excluded: string[];
+  /** Kept symbols whose last close is more than MAX_FILL_DAYS before the
+   * panel's end, so the recent stretch is missing for them. */
+  stale: string[];
 }
 
 const DAY_MS = 86_400_000;
@@ -73,11 +82,12 @@ export function alignReturns(
     const last = series[s].dates[series[s].dates.length - 1];
     return last > max ? last : max;
   }, "");
-  if (!end) return { symbols: [], dates: [], returns: [], excluded: symbols };
+  if (!end) return { symbols: [], dates: [], returns: [], excluded: symbols, stale: [] };
   const start = isoDate(parseIso(end) - Math.round(years * 365) * DAY_MS);
   const days = calendar(start, end, frequency);
 
   const kept: string[] = [];
+  const stale: string[] = [];
   const returns: (number | null)[][] = [];
   const excluded = symbols.filter((s) => !present.includes(s));
   for (const symbol of present) {
@@ -86,7 +96,8 @@ export function alignReturns(
     let i = -1;
     for (const day of days) {
       while (i + 1 < dates.length && dates[i + 1] <= day) i++;
-      levels.push(i >= 0 && closesEur[i] > 0 ? closesEur[i] : null);
+      const fresh = i >= 0 && (parseIso(day) - parseIso(dates[i])) / DAY_MS <= MAX_FILL_DAYS;
+      levels.push(fresh && closesEur[i] > 0 ? closesEur[i] : null);
     }
     const r: (number | null)[] = [];
     for (let t = 1; t < levels.length; t++) {
@@ -99,9 +110,10 @@ export function alignReturns(
       continue;
     }
     kept.push(symbol);
+    if ((parseIso(end) - parseIso(dates[dates.length - 1])) / DAY_MS > MAX_FILL_DAYS) stale.push(symbol);
     returns.push(r);
   }
-  return { symbols: kept, dates: days.slice(1), returns, excluded };
+  return { symbols: kept, dates: days.slice(1), returns, excluded, stale };
 }
 
 // ── Statistics ────────────────────────────────────────────────────────────────
@@ -317,6 +329,36 @@ export function contiguousOrder(order: number[], groups: number[][]): number[] {
     out.push(...block);
   }
   return out;
+}
+
+// ── Pairs ────────────────────────────────────────────────────────────────────
+
+export interface Pair {
+  i: number;
+  j: number;
+  rho: number;
+}
+
+/** The `count` highest and lowest observed correlations among pairs measured
+ * over at least `minOverlap` returns, most extreme first. A pair never shows
+ * in both lists. */
+export function extremePairs(
+  corr: number[][],
+  overlap: number[][],
+  count: number,
+  minOverlap: number,
+): { highest: Pair[]; lowest: Pair[] } {
+  const all: Pair[] = [];
+  for (let i = 0; i < corr.length; i++)
+    for (let j = i + 1; j < corr.length; j++)
+      if (Number.isFinite(corr[i][j]) && overlap[i][j] >= minOverlap) all.push({ i, j, rho: corr[i][j] });
+  const highest = [...all].sort((a, b) => b.rho - a.rho).slice(0, count);
+  const taken = new Set(highest);
+  const lowest = [...all]
+    .filter((p) => !taken.has(p))
+    .sort((a, b) => a.rho - b.rho)
+    .slice(0, count);
+  return { highest, lowest };
 }
 
 // ── Market graph ──────────────────────────────────────────────────────────────

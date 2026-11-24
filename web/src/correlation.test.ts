@@ -6,6 +6,7 @@ import {
   computeStats,
   concentration,
   contiguousOrder,
+  extremePairs,
   correlatedClusters,
   diversification,
   inverseVolatilityWeights,
@@ -32,6 +33,7 @@ function panelOf(returns: number[][]): ReturnsPanel {
     dates: returns[0].map((_, t) => `d${t}`),
     returns,
     excluded: [],
+    stale: [],
   };
 }
 
@@ -372,5 +374,35 @@ describe("concentration", () => {
     const corr = symmetric(4, [[2, 3, 0.5]]);
     const c = concentration([0.45, 0.45, 0.05, 0.05], statsOf(corr, [0.2, 0.2, 0.2, 0.2]));
     expect(c.clusters).toEqual([]);
+  });
+});
+
+describe("stale prices", () => {
+  it("leaves out returns beyond the fill limit instead of reading them as flat", () => {
+    const dates = calendar("2023-01-02", "2024-12-31", "daily");
+    const full = { dates, closesEur: dates.map((_, i) => 100 + i) };
+    const cut = dates.length - 60;
+    const dead = { dates: dates.slice(0, cut), closesEur: dates.slice(0, cut).map((_, i) => 100 + i) };
+    const panel = alignReturns({ A: full, B: dead }, ["A", "B"], 2, "daily");
+    const b = panel.returns[panel.symbols.indexOf("B")];
+    expect(panel.stale).toEqual(["B"]);
+    expect(b.slice(-40).every((r) => r === null)).toBe(true);
+    // A short gap inside the series is still carried forward.
+    expect(b.slice(0, cut - 5).some((r) => r === null)).toBe(false);
+  });
+});
+
+describe("extremePairs", () => {
+  it("lists the highest and lowest pairs without overlap between them", () => {
+    const corr = [
+      [1, 0.9, -0.5],
+      [0.9, 1, 0.1],
+      [-0.5, 0.1, 1],
+    ];
+    const overlap = corr.map((r) => r.map(() => 100));
+    const { highest, lowest } = extremePairs(corr, overlap, 2, 50);
+    expect(highest.map((p) => [p.i, p.j])).toEqual([[0, 1], [1, 2]]);
+    expect(lowest.map((p) => [p.i, p.j])).toEqual([[0, 2]]);
+    expect(extremePairs(corr, overlap, 2, 500).highest).toEqual([]);
   });
 });

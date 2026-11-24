@@ -12,6 +12,8 @@ import {
   CONCENTRATION,
   contiguousOrder,
   diversification,
+  extremePairs,
+  MIN_OBSERVATIONS,
   inverseVolatilityWeights,
   marketGraph,
   maximumIndependentSet,
@@ -103,6 +105,9 @@ export default function CorrelationPage() {
       ?.members.filter((j) => j !== i)
       .map((j) => panel.symbols[j])
       .join(", ");
+  const pairs = extremePairs(stats.corr, stats.overlap, 3, MIN_OBSERVATIONS[frequency]);
+  const totalValue = [...valueBySymbol.values()].reduce((a, b) => a + Math.max(0, b), 0);
+  const excludedValue = panel.excluded.reduce((a, sym) => a + Math.max(0, valueBySymbol.get(sym) ?? 0), 0);
   const ivw = inverseVolatilityWeights(stats.sigma);
   const coreWeight = [...core].reduce((s, i) => s + weights[i], 0);
   const locale = LOCALE[lang];
@@ -200,6 +205,32 @@ export default function CorrelationPage() {
               </>
             )}
           />
+          <div className="mt-4 grid grid-cols-1 gap-4 border-t border-hairline pt-3 sm:grid-cols-2">
+            {(
+              [
+                [t.correlation.pairsHighest, pairs.highest],
+                [t.correlation.pairsLowest, pairs.lowest],
+              ] as const
+            ).map(([heading, list]) => (
+              <div key={heading}>
+                <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{heading}</h3>
+                <ul className="flex flex-col gap-1 text-sm">
+                  {list.map((p) => (
+                    <li
+                      key={`${p.i}-${p.j}`}
+                      className="flex items-baseline justify-between gap-3"
+                      title={t.correlation.pairWeight(pct(weights[p.i] + weights[p.j]))}
+                    >
+                      <span className="font-semibold">
+                        {panel.symbols[p.i]} · {panel.symbols[p.j]}
+                      </span>
+                      <span className="tabular-nums text-secondary">{rho(p.rho)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </Card>
 
         <Card className="col-span-12 xl:col-span-5" title={t.correlation.graph}>
@@ -378,7 +409,12 @@ export default function CorrelationPage() {
           )}
         </p>
         <p>{t.correlation.shrinkage(pct(stats.shrinkage.intensity), rho(stats.shrinkage.target))}</p>
-        {panel.excluded.length > 0 && <p>{t.correlation.excluded(panel.excluded.join(", "))}</p>}
+        {panel.excluded.length > 0 && (
+          <p>
+            {t.correlation.excluded(panel.excluded.join(", "), pct(totalValue > 0 ? excludedValue / totalValue : NaN))}
+          </p>
+        )}
+        {panel.stale.length > 0 && <p>{t.correlation.stale(panel.stale.join(", "))}</p>}
         {prices.unresolved.length > 0 && <p>{t.correlation.unresolved(prices.unresolved.join(", "))}</p>}
         <p>{t.correlation.source(prices.source)}</p>
         <p className="tabular-nums">
