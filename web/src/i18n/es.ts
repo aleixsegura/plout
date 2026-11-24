@@ -390,6 +390,7 @@ const es: Translations = {
     noRows: "Ningún movimiento coincide.",
     dayTotal: "total del día",
     rowsShown: (shown: number, total: number) => `${shown} de ${total}`,
+    showMore: (n: number) => `Mostrar ${n} más`,
     barsAria: "Gastos mensuales por categoría",
     donutAria: (month: string) => `Gastos por categoría, ${month}`,
     categories: {
