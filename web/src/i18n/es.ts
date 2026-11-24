@@ -358,6 +358,8 @@ const es: Translations = {
     recentTransactions: "Movimientos recientes",
     seeAll: "Ver todos",
     upcomingDividends: "Próximos dividendos",
+    totalExpected: "Total previsto",
+    vsLastMonthSoFar: (delta: string) => `${delta} respecto al mes pasado a estas alturas`,
     portfolioValue: "Valor de la cartera",
     noTransactionsIntro: "Todavía no hay movimientos. Ejecuta",
     noTransactionsOutro: "para traer el extracto de Revolut a",

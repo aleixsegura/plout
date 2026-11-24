@@ -359,6 +359,8 @@ const en = {
     recentTransactions: "Recent transactions",
     seeAll: "See all",
     upcomingDividends: "Upcoming dividends",
+    totalExpected: "Expected in total",
+    vsLastMonthSoFar: (delta: string) => `${delta} vs last month at this point`,
     portfolioValue: "Portfolio value",
     noTransactionsIntro: "No transactions yet. Run",
     noTransactionsOutro: "to pull your Revolut statement into",
